@@ -117,7 +117,7 @@ function EzUI.CreateWindow(config)
 	local UserInputService = game:GetService("UserInputService")
 
 	resizeHandle.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			resizeDragging = true
 			resizeStartPos = input.Position
 			resizeStartSize = frame.Size
@@ -131,7 +131,7 @@ function EzUI.CreateWindow(config)
 	end)
 
 	resizeHandle.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 			resizeInput = input
 		end
 	end)
@@ -209,7 +209,7 @@ function EzUI.CreateWindow(config)
 
 	-- 🎯 Drag header (move window)
 	header.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = frame.Position
@@ -225,14 +225,14 @@ function EzUI.CreateWindow(config)
 	end)
 
 	header.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 			dragInput = input
 		end
 	end)
 
 	-- 🎯 Drag floating button
 	floatBtn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = floatBtn.Position
@@ -248,7 +248,7 @@ function EzUI.CreateWindow(config)
 	end)
 
 	floatBtn.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 			dragInput = input
 		end
 	end)
@@ -1756,10 +1756,11 @@ function EzUI.CreateWindow(config)
 				numberBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
 			end)
 			
-			-- Update posisi Y untuk elemen berikutnya
+			-- Update position Y for next element
+			-- Use fixed spacing like other components
 			tabCurrentY = tabCurrentY + 40
 			
-			-- Update canvas size jika tab ini sedang aktif
+			-- Update canvas size for active tab
 			if tabContent == activeTab then
 				currentY = tabCurrentY
 				api:UpdateWindowSize()
@@ -1803,7 +1804,7 @@ function EzUI.CreateWindow(config)
 
 		-- Tab button click
 		tabBtn.MouseButton1Click:Connect(function()
-			-- Reset semua tab button ke warna normal
+			-- Reset all tab buttons to normal color and hide contents
 			for _, content in pairs(tabContents) do
 				content.Visible = false
 			end
@@ -1812,8 +1813,8 @@ function EzUI.CreateWindow(config)
 					btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 				end
 			end
-			
-			-- Aktifkan tab yang diklik
+
+			-- Activate the clicked tab
 			tabContent.Visible = true
 			tabBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 			activeTab = tabContent
@@ -1824,7 +1825,7 @@ function EzUI.CreateWindow(config)
 			print("Tab activated:", tabName)
 		end)
 
-		-- Jika tab pertama, auto aktif
+		-- Auto-activate first tab
 		if not activeTab then
 			tabContent.Visible = true
 			activeTab = tabContent
