@@ -1,10 +1,11 @@
 -- Import library
 
--- If using as a ModuleScript in ReplicatedStorage, uncomment below:
--- local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- local EzUI = require(ReplicatedStorage:WaitForChild("EzUI"))
+-- If using as a ModuleScript in ReplicatedStorage roblox studio:
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EzUI = require(ReplicatedStorage:WaitForChild("EzUI"))
 
-local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
+-- If using via loadstring, uncomment below:
+-- local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
 
 -- Create window with configuration enabled
 local window = EzUI.CreateWindow({
@@ -213,3 +214,79 @@ print("All configurations:")
 for key, value in pairs(allConfigs) do
 	print("  " .. key .. ":", value)
 end
+
+-- Example 6: SelectBox with OnDropdownOpen callback
+print("\n6. SelectBox with dynamic options:")
+local dynamicOptions = {
+	{text = "Option 1", value = "opt1"},
+	{text = "Option 2", value = "opt2"}
+}
+
+tab:AddSelectBox({
+	Name = "Dynamic SelectBox",
+	Options = dynamicOptions,
+	Default = "opt1",
+	Flag = "DynamicSelect",
+	Callback = function(selectedValues, changedValue)
+		print("Dynamic SelectBox changed:", selectedValues[1] or "none")
+	end,
+	OnDropdownOpen = function(currentOptions, updateOptions)
+		print("Dropdown opened! Current options count:", #currentOptions)
+		
+		-- Simulate dynamic data loading (e.g., from server, time-based data)
+		local timeBasedOptions = {
+			{text = "Current Time Option: " .. os.date("%H:%M:%S"), value = "time_" .. os.time()},
+			{text = "Random Option: " .. math.random(1, 100), value = "random_" .. math.random(1, 100)},
+			{text = "Static Option 1", value = "static1"},
+			{text = "Static Option 2", value = "static2"}
+		}
+		
+		-- Update the options with new data
+		updateOptions(timeBasedOptions)
+		print("Options updated with", #timeBasedOptions, "new options")
+	end
+})
+
+-- Example 7: Multi-select SelectBox with OnDropdownOpen
+print("\n7. Multi-select SelectBox with dynamic options:")
+tab:AddSelectBox({
+	Name = "Dynamic Multi-Select",
+	Options = {{text = "Loading...", value = "loading"}},
+	Default = {},
+	MultiSelect = true,
+	Flag = "DynamicMultiSelect",
+	Callback = function(selectedValues, changedValue)
+		print("Dynamic Multi-Select changed. Selected:", table.concat(selectedValues, ", "))
+	end,
+	OnDropdownOpen = function(currentOptions, updateOptions)
+		-- Simulate loading data from different sources
+		local serverData = {
+			{text = "Server Item 1", value = "server1"},
+			{text = "Server Item 2", value = "server2"},
+			{text = "Server Item 3", value = "server3"}
+		}
+		
+		local userPreferences = customConfig.GetAll()
+		local configOptions = {}
+		
+		-- Convert custom config to options
+		for key, value in pairs(userPreferences) do
+			table.insert(configOptions, {
+				text = key .. ": " .. tostring(value),
+				value = "config_" .. key
+			})
+		end
+		
+		-- Combine all options
+		local combinedOptions = {}
+		for _, option in ipairs(serverData) do
+			table.insert(combinedOptions, option)
+		end
+		for _, option in ipairs(configOptions) do
+			table.insert(combinedOptions, option)
+		end
+		
+		updateOptions(combinedOptions)
+		print("Loaded", #combinedOptions, "options from multiple sources")
+	end
+})
