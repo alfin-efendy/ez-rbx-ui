@@ -7,8 +7,8 @@ local EzUILib = require(ReplicatedStorage:WaitForChild("EzUI"))
 -- Create window and set properties
 local window = EzUILib.CreateWindow({
 	Name = "My New UI",
-	Width = 400, -- Optional: Override default calculated width
-	Height = 300, -- Optional: Override default calculated height
+	Width = 700, -- Optional: Override default calculated width
+	Height = 400, -- Optional: Override default calculated height
 	Opacity = 0.9,  -- 0.1 to 1.0 (10% to 100%)
 	AutoAdapt = true, -- Optional: Auto-resize on viewport changes (default true)
 })
@@ -574,6 +574,16 @@ basicAccordion:AddToggle({
     Default = true,
     Callback = function(enabled)
         print("Notifications:", enabled and "ON" or "OFF")
+    end
+})
+
+basicAccordion:AddTextBox({
+    Name = "Player Name",
+    Placeholder = "Enter your name...",
+    Default = "",
+    MaxLength = 50,
+    Callback = function(text)
+        print("Name changed to:", text)
     end
 })
 
