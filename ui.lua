@@ -3118,6 +3118,112 @@ function EzUI.CreateWindow(config)
 		}
 	end
 	
+	-- Custom Configuration Key Management
+	function api:SetConfigValue(key, value)
+		if not key then
+			warn("EzUI: SetConfigValue requires a key parameter")
+			return false
+		end
+		
+		-- Set the value in global flags
+		EzUI.Flags[key] = value
+		
+		-- Auto-save if enabled
+		if configEnabled and configAutoSave then
+			saveConfiguration(configFileName)
+		end
+		
+		-- Update components with this flag
+		updateComponentsByFlag(key, value)
+		
+		return true
+	end
+	
+	function api:GetConfigValue(key, defaultValue)
+		if not key then
+			warn("EzUI: GetConfigValue requires a key parameter")
+			return defaultValue
+		end
+		
+		local value = EzUI.Flags[key]
+		return value ~= nil and value or defaultValue
+	end
+	
+	function api:DeleteConfigValue(key)
+		if not key then
+			warn("EzUI: DeleteConfigValue requires a key parameter")
+			return false
+		end
+		
+		if EzUI.Flags[key] ~= nil then
+			EzUI.Flags[key] = nil
+			
+			-- Auto-save if enabled
+			if configEnabled and configAutoSave then
+				saveConfiguration(configFileName)
+			end
+			
+			return true
+		end
+		
+		return false
+	end
+	
+	function api:HasConfigValue(key)
+		if not key then
+			warn("EzUI: HasConfigValue requires a key parameter")
+			return false
+		end
+		
+		return EzUI.Flags[key] ~= nil
+	end
+	
+	function api:GetAllConfigValues()
+		local configCopy = {}
+		for key, value in pairs(EzUI.Flags) do
+			configCopy[key] = value
+		end
+		return configCopy
+	end
+	
+	function api:ClearAllConfigValues()
+		-- Clear all flags
+		for key in pairs(EzUI.Flags) do
+			EzUI.Flags[key] = nil
+		end
+		
+		-- Auto-save if enabled
+		if configEnabled and configAutoSave then
+			saveConfiguration(configFileName)
+		end
+		
+		return true
+	end
+	
+	function api:SetMultipleConfigValues(keyValuePairs)
+		if type(keyValuePairs) ~= "table" then
+			warn("EzUI: SetMultipleConfigValues requires a table parameter")
+			return false
+		end
+		
+		local updatedKeys = {}
+		for key, value in pairs(keyValuePairs) do
+			if type(key) == "string" then
+				EzUI.Flags[key] = value
+				table.insert(updatedKeys, key)
+				-- Update components with this flag
+				updateComponentsByFlag(key, value)
+			end
+		end
+		
+		-- Auto-save if enabled
+		if configEnabled and configAutoSave then
+			saveConfiguration(configFileName)
+		end
+		
+		return updatedKeys
+	end
+	
 	-- Connect close button functionality
 	closeBtn.MouseButton1Click:Connect(function()
 		api:Close()
