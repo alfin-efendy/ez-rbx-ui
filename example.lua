@@ -186,7 +186,6 @@ print("\n=== Custom Configuration System Examples ===")
 -- Example 1: Create a custom configuration
 print("\n1. Create custom configuration:")
 local customConfig = EzUI.NewConfig("CustomConfig")
-print("Custom config created:", customConfig.GetName())
 
 -- Example 2: Set and get values in custom config
 print("\n2. Set and get values in custom config:")
@@ -206,7 +205,6 @@ print("Updated Volume:", customConfig.GetValue("Volume"))
 -- Example 4: Delete By Key
 print("\n4. Delete by key:")
 customConfig.DeleteKey("AutoConnect")
-print("AutoConnect after deletion:", customConfig.GetValue("AutoConnect"))  -- Should be nil
 
 -- Example 5: Get all config keys and values
 print("\n5. Get all config keys and values:")
