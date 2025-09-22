@@ -10,6 +10,9 @@ local ConfigurationExtension = ".json"
 -- Global flags storage for configuration saving
 EzUI.Flags = {}
 
+-- Component registry for flag-based updates
+EzUI.Components = {}
+
 -- Global configuration state
 EzUI.Configuration = {
 	Enabled = false,
@@ -18,6 +21,32 @@ EzUI.Configuration = {
 	AutoSave = true,
 	AutoLoad = true
 }
+
+-- Helper functions for component registry
+local function registerComponent(flag, componentAPI)
+	if flag and componentAPI then
+		if not EzUI.Components[flag] then
+			EzUI.Components[flag] = {}
+		end
+		table.insert(EzUI.Components[flag], componentAPI)
+	end
+end
+
+local function updateComponentsByFlag(flag, value)
+	if EzUI.Components[flag] then
+		for _, componentAPI in ipairs(EzUI.Components[flag]) do
+			if componentAPI.Set then
+				componentAPI.Set(value)
+			elseif componentAPI.SetValue then
+				componentAPI.SetValue(value)
+			elseif componentAPI.SetText then
+				componentAPI.SetText(value)
+			elseif componentAPI.SetSelected then
+				componentAPI.SetSelected(value)
+			end
+		end
+	end
+end
 
 -- Configuration functions
 local function saveConfiguration(fileName)
@@ -93,10 +122,12 @@ local function loadConfiguration(fileName)
 		return false
 	end
 	
-	-- Apply loaded configuration to flags
+	-- Apply loaded configuration to flags and update components
 	local applied = 0
 	for flagName, flagValue in pairs(configData) do
 		EzUI.Flags[flagName] = flagValue
+		-- Update UI components that use this flag
+		updateComponentsByFlag(flagName, flagValue)
 		applied = applied + 1
 	end
 	
@@ -925,8 +956,8 @@ function EzUI.CreateWindow(config)
 				toggleDropdown()
 			end)
 			
-			-- Return SelectBox API
-			return {
+			-- Create SelectBox API
+			local selectBoxAPI = {
 				GetSelected = function()
 					return selectedValues
 				end,
@@ -1088,7 +1119,48 @@ function EzUI.CreateWindow(config)
 								callback(selectedValues, option.value)
 							end
 							
+							-- Save to flag if specified
+							if flag then
+								if multiSelect then
+									EzUI.Flags[flag] = selectedValues
+								else
+									EzUI.Flags[flag] = selectedValues[1] or nil
+								end
+								if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+									saveConfiguration(EzUI.Configuration.FileName)
+								end
+							end
+							
+							if not multiSelect and not preventAutoClose then
+								spawn(function()
+									wait(0.1)
+									isOpen = false
+									dropdownFrame.Visible = false
+									arrow.Text = "▼"
+								end)
+							end
+							
 							preventAutoClose = false
+						end)
+						
+						optionButton.MouseEnter:Connect(function()
+							if optionButton.BackgroundColor3 ~= Color3.fromRGB(70, 120, 70) then
+								optionButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+							end
+						end)
+						
+						optionButton.MouseLeave:Connect(function()
+							local isSelected = false
+							for _, val in ipairs(selectedValues) do
+								if val == option.value then
+									isSelected = true
+									break
+								end
+							end
+							
+							if not isSelected then
+								optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+							end
 						end)
 					end
 					
@@ -1099,8 +1171,19 @@ function EzUI.CreateWindow(config)
 					-- Clear selected values
 					selectedValues = {}
 					updateDisplayText()
+				end,
+				-- Set function for configuration loading
+				Set = function(values)
+					selectedValues = values or {}
+					updateDisplayText()
 				end
 			}
+			
+			-- Register component for flag-based updates
+			registerComponent(flag, selectBoxAPI)
+			
+			-- Return SelectBox API
+			return selectBoxAPI
 		end
 
 		-- Centralized Label component that can be used by both tab and accordion APIs
@@ -1406,6 +1489,9 @@ function EzUI.CreateWindow(config)
 			-- Set function for configuration loading
 			toggleAPI.Set = toggleAPI.SetValue
 			
+			-- Register component for flag-based updates
+			registerComponent(flag, toggleAPI)
+			
 			return toggleAPI
 		end
 
@@ -1543,7 +1629,7 @@ function EzUI.CreateWindow(config)
 			end)
 			
 			-- Return TextBox API
-			return {
+			local textBoxAPI = {
 				GetText = function()
 					return currentText
 				end,
@@ -1582,8 +1668,19 @@ function EzUI.CreateWindow(config)
 				end,
 				SetCallback = function(newCallback)
 					callback = newCallback or function() end
+				end,
+				-- Set function for configuration loading
+				Set = function(newText)
+					textBox.Text = tostring(newText or "")
+					currentText = textBox.Text
+					updateCharCounter()
 				end
 			}
+			
+			-- Register component for flag-based updates
+			registerComponent(flag, textBoxAPI)
+			
+			return textBoxAPI
 		end
 
 		-- Centralized NumberBox component that can be used by both tab and accordion APIs
@@ -1791,7 +1888,7 @@ function EzUI.CreateWindow(config)
 			end)
 			
 			-- Return NumberBox API
-			return {
+			local numberBoxAPI = {
 				GetValue = function()
 					return currentValue
 				end,
@@ -1825,8 +1922,20 @@ function EzUI.CreateWindow(config)
 				end,
 				SetCallback = function(newCallback)
 					callback = newCallback or function() end
+				end,
+				-- Set function for configuration loading
+				Set = function(newValue)
+					local numValue = tonumber(newValue)
+					if numValue then
+						updateValue(numValue)
+					end
 				end
 			}
+			
+			-- Register component for flag-based updates
+			registerComponent(flag, numberBoxAPI)
+			
+			return numberBoxAPI
 		end
 
 		-- Create tab API object
