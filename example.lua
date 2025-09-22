@@ -1,4 +1,7 @@
 -- Import library
+-- local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- local EzUILib = require(ReplicatedStorage:WaitForChild("EzUI"))
+
 local EzUILib = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
 
 -- Create window and set properties
@@ -12,6 +15,7 @@ local window = EzUILib.CreateWindow({
 local inputTab = window:AddTab("Inputs")
 local selectBoxTab = window:AddTab("Select Box")
 local toggleTab = window:AddTab("Toggles")
+local accordionTab = window:AddTab("Accordions")
 
 -- Add input field to inputTab
 inputTab:AddLabel("TextBox & NumberBox Components")
@@ -513,3 +517,204 @@ toggleTab:AddButton("Randomize All", function()
 	end
 	print("🎲 All toggles randomized!")
 end)
+
+-- ===== ACCORDION TAB =====
+accordionTab:AddLabel("Komponen Accordion - Collapsible Sections")
+accordionTab:AddLabel("")
+
+-- Basic Accordion (collapsed by default)
+local basicAccordion = accordionTab:AddAccordion({
+	Title = "Basic Accordion",
+	Icon = "📂",
+	Expanded = false,
+	Callback = function(expanded)
+		print("Basic Accordion:", expanded and "📂 Expanded" or "📁 Collapsed")
+	end
+})
+
+-- Add content to basic accordion
+basicAccordion:AddLabel("This is content inside the accordion!")
+basicAccordion:AddLabel("You can add multiple items here.")
+basicAccordion:AddButton("Action Button", function()
+	print("Button clicked inside basic accordion!")
+end)
+basicAccordion:AddSeparator()
+basicAccordion:AddLabel("Content after separator")
+
+-- Settings Accordion (expanded by default)
+local settingsAccordion = accordionTab:AddAccordion({
+	Title = "Application Settings",
+	Icon = "⚙️",
+	Expanded = true,
+	Callback = function(expanded)
+		print("Settings Accordion:", expanded and "⚙️ Expanded" or "🔧 Collapsed")
+	end
+})
+
+-- Add settings content
+settingsAccordion:AddLabel("🎨 Theme Settings")
+settingsAccordion:AddButton("Dark Theme", function()
+	print("Dark theme applied!")
+end)
+settingsAccordion:AddButton("Light Theme", function()
+	print("Light theme applied!")
+end)
+settingsAccordion:AddSeparator()
+settingsAccordion:AddLabel("🔊 Audio Settings")
+settingsAccordion:AddButton("Enable Sound", function()
+	print("Sound enabled!")
+end)
+settingsAccordion:AddButton("Disable Sound", function()
+	print("Sound disabled!")
+end)
+
+-- File Operations Accordion
+local fileAccordion = accordionTab:AddAccordion({
+	Title = "File Operations",
+	Icon = "💾",
+	Expanded = false,
+	Callback = function(expanded)
+		print("File Operations:", expanded and "💾 Expanded" or "📁 Collapsed")
+	end
+})
+
+-- Add file operation content
+fileAccordion:AddLabel("📁 File Management")
+fileAccordion:AddButton("Create New File", function()
+	print("Creating new file...")
+end)
+fileAccordion:AddButton("Open File", function()
+	print("Opening file...")
+end)
+fileAccordion:AddButton("Save File", function()
+	print("Saving file...")
+end)
+fileAccordion:AddSeparator()
+fileAccordion:AddLabel("🗂️ Recent Files")
+fileAccordion:AddButton("document.txt", function()
+	print("Opening document.txt")
+end)
+fileAccordion:AddButton("script.lua", function()
+	print("Opening script.lua")
+end)
+
+-- User Profile Accordion
+local profileAccordion = accordionTab:AddAccordion({
+	Title = "User Profile",
+	Icon = "👤",
+	Expanded = false,
+	Callback = function(expanded)
+		print("Profile Accordion:", expanded and "👤 Expanded" or "👥 Collapsed")
+	end
+})
+
+-- Add profile content
+profileAccordion:AddLabel("👋 Welcome, User!")
+profileAccordion:AddLabel("Level: 25 | XP: 1,250/2,000")
+profileAccordion:AddButton("View Profile", function()
+	print("Opening profile page...")
+end)
+profileAccordion:AddButton("Edit Profile", function()
+	print("Opening profile editor...")
+end)
+profileAccordion:AddSeparator()
+profileAccordion:AddLabel("🏆 Achievements")
+profileAccordion:AddButton("View Achievements", function()
+	print("Showing achievements...")
+end)
+
+-- Advanced Accordion with Many Items
+local advancedAccordion = accordionTab:AddAccordion({
+	Title = "Advanced Features",
+	Icon = "🚀",
+	Expanded = false,
+	Callback = function(expanded)
+		print("Advanced Accordion:", expanded and "🚀 Expanded" or "🛸 Collapsed")
+	end
+})
+
+-- Add many items to test scrolling
+advancedAccordion:AddLabel("🔬 Experimental Features")
+for i = 1, 10 do
+	advancedAccordion:AddButton("Feature " .. i, function()
+		print("Feature " .. i .. " activated!")
+	end)
+end
+advancedAccordion:AddSeparator()
+advancedAccordion:AddLabel("📊 Analytics")
+advancedAccordion:AddButton("View Statistics", function()
+	print("Showing statistics...")
+end)
+advancedAccordion:AddButton("Export Data", function()
+	print("Exporting data...")
+end)
+advancedAccordion:AddLabel("More content to test scrolling...")
+advancedAccordion:AddLabel("This accordion should scroll!")
+
+accordionTab:AddLabel("")
+accordionTab:AddLabel("Accordion Control Buttons:")
+
+-- Control buttons for demonstration
+accordionTab:AddButton("Expand All Accordions", function()
+	basicAccordion.Expand()
+	wait(0.1)
+	settingsAccordion.Expand()
+	wait(0.1)
+	fileAccordion.Expand()
+	wait(0.1)
+	profileAccordion.Expand()
+	wait(0.1)
+	advancedAccordion.Expand()
+	print("🔄 All accordions expanded!")
+end)
+
+accordionTab:AddButton("Collapse All Accordions", function()
+	basicAccordion.Collapse()
+	wait(0.1)
+	settingsAccordion.Collapse()
+	wait(0.1)
+	fileAccordion.Collapse()
+	wait(0.1)
+	profileAccordion.Collapse()
+	wait(0.1)
+	advancedAccordion.Collapse()
+	print("📁 All accordions collapsed!")
+end)
+
+accordionTab:AddButton("Toggle Basic Accordion", function()
+	local expanded = basicAccordion.Toggle()
+	print("Basic accordion toggled:", expanded and "📂 Expanded" or "📁 Collapsed")
+end)
+
+accordionTab:AddButton("Check Accordion States", function()
+	print("=== ACCORDION STATES ===")
+	print("Basic:", basicAccordion.IsExpanded() and "📂 Expanded" or "📁 Collapsed")
+	print("Settings:", settingsAccordion.IsExpanded() and "⚙️ Expanded" or "🔧 Collapsed")
+	print("File Ops:", fileAccordion.IsExpanded() and "💾 Expanded" or "📁 Collapsed")
+	print("Profile:", profileAccordion.IsExpanded() and "👤 Expanded" or "👥 Collapsed")
+	print("Advanced:", advancedAccordion.IsExpanded() and "🚀 Expanded" or "🛸 Collapsed")
+	print("========================")
+end)
+
+accordionTab:AddButton("Change Accordion Titles", function()
+	basicAccordion.SetTitle("Updated Basic Title")
+	settingsAccordion.SetTitle("New Settings Title")
+	fileAccordion.SetTitle("Modified File Ops")
+	print("📝 Accordion titles updated!")
+end)
+
+accordionTab:AddButton("Change Accordion Icons", function()
+	basicAccordion.SetIcon("🎁")
+	settingsAccordion.SetIcon("🎮")
+	fileAccordion.SetIcon("🎯")
+	profileAccordion.SetIcon("🎨")
+	advancedAccordion.SetIcon("🎪")
+	print("🎨 Accordion icons updated!")
+end)
+
+accordionTab:AddLabel("")
+accordionTab:AddLabel("💡 Tips:")
+accordionTab:AddLabel("• Click accordion headers to expand/collapse")
+accordionTab:AddLabel("• Accordions can contain buttons, labels, and separators")
+accordionTab:AddLabel("• Content area is scrollable for many items")
+accordionTab:AddLabel("• Smooth animations for better UX")
