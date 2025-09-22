@@ -135,6 +135,187 @@ local function loadConfiguration(fileName)
 	return true
 end
 
+-- Custom Configuration System (Independent from Window Configuration)
+function EzUI.NewConfig(configName)
+	-- Create a new custom configuration object
+	-- configName: string - name of the configuration (will be used as filename)
+	-- Returns: table - custom configuration object with its own methods
+	
+	if not configName or type(configName) ~= "string" then
+		warn("EzUI.NewConfig: configName must be a string")
+		return nil
+	end
+	
+	-- Create independent storage for this custom config
+	local customFlags = {}
+	
+	-- Save function for this custom config
+	local function saveCustomConfig()
+		-- Filter out keys with nil values
+		local dataToSave = {}
+		local hasData = false
+		
+		for key, value in pairs(customFlags) do
+			if value ~= nil then
+				dataToSave[key] = value
+				hasData = true
+			end
+		end
+		
+		if not hasData then
+			print("EzUI.CustomConfig: No valid data to save for " .. configName)
+			return false
+		end
+		
+		if not writefile or not isfolder or not makefolder then
+			warn("EzUI.CustomConfig: File operations not available")
+			return false
+		end
+		
+		-- Use the main EzUI folder structure
+		local dynamicFolderName = EzUI.Configuration.FolderName or "EzUI"
+		local dynamicConfigurationFolder = dynamicFolderName .. "/Configurations"
+		
+		-- Create folders if they don't exist
+		if not isfolder(dynamicFolderName) then
+			makefolder(dynamicFolderName)
+		end
+		
+		if not isfolder(dynamicConfigurationFolder) then
+			makefolder(dynamicConfigurationFolder)
+		end
+		
+		-- Save to separate JSON file
+		local filePath = dynamicConfigurationFolder .. "/" .. configName .. ".json"
+		local success, result = pcall(function()
+			writefile(filePath, HttpService:JSONEncode(dataToSave))
+		end)
+		
+		if success then
+			local savedCount = 0
+			for _ in pairs(dataToSave) do
+				savedCount = savedCount + 1
+			end
+			print("EzUI.CustomConfig: " .. configName .. " saved to " .. filePath .. " (" .. savedCount .. " keys)")
+			return true
+		else
+			warn("EzUI.CustomConfig: Failed to save " .. configName .. ": " .. tostring(result))
+			return false
+		end
+	end
+	
+	-- Load function for this custom config
+	local function loadCustomConfig()
+		if not readfile or not isfile then
+			warn("EzUI.CustomConfig: File operations not available")
+			return false
+		end
+		
+		local dynamicFolderName = EzUI.Configuration.FolderName or "EzUI"
+		local dynamicConfigurationFolder = dynamicFolderName .. "/Configurations"
+		local filePath = dynamicConfigurationFolder .. "/" .. configName .. ".json"
+		
+		if not isfile(filePath) then
+			print("EzUI.CustomConfig: No file found for " .. configName .. " at " .. filePath)
+			return false
+		end
+		
+		local success, configData = pcall(function()
+			return HttpService:JSONDecode(readfile(filePath))
+		end)
+		
+		if not success then
+			warn("EzUI.CustomConfig: Failed to load " .. configName .. ": " .. tostring(configData))
+			return false
+		end
+		
+		-- Apply loaded data and update components
+		local applied = 0
+		for flagName, flagValue in pairs(configData) do
+			customFlags[flagName] = flagValue
+			applied = applied + 1
+		end
+		
+		print("EzUI.CustomConfig: " .. configName .. " loaded (" .. applied .. " settings applied)")
+		return true
+	end
+
+	-- Auto-load function for custom config
+	local function autoLoadCustomConfig()
+		if loadCustomConfig() then
+			-- Apply loaded values to EzUI.Flags to sync with main configuration system
+			for flagName, flagValue in pairs(customFlags) do
+				EzUI.Flags[flagName] = flagValue
+				-- Update UI components that use this flag
+				updateComponentsByFlag(flagName, flagValue)
+			end
+		end
+	end
+	
+	-- Auto-load configuration when first declaring custom config
+	task.defer(function()
+		autoLoadCustomConfig()
+	end)
+	
+	-- Return custom configuration object
+	return {
+		-- Get value by key
+		GetValue = function(key)
+			if not key then
+				warn("EzUI.CustomConfig.GetValue: key parameter is required")
+				return nil
+			end
+			return customFlags[key]
+		end,
+		
+		-- Set value by key and update associated components
+		SetValue = function(key, value)
+			if not key then
+				warn("EzUI.CustomConfig.SetValue: key parameter is required")
+				return false
+			end
+			
+			customFlags[key] = value
+			-- Save to main EzUI.Flags to sync with main configuration system
+			EzUI.Flags[key] = value
+			
+			saveCustomConfig()
+			return true
+		end,
+
+		-- Get all key-value pairs
+		GetAll = function()
+			local result = {}
+			for key, value in pairs(customFlags) do
+				if value ~= nil then
+					result[key] = value
+				end
+			end
+			return result
+		end,
+
+		-- Delete a specific key
+		DeleteKey = function(key)
+			if not key then
+				warn("EzUI.CustomConfig.DeleteKey: key parameter is required")
+				return false
+			end
+			
+			if customFlags[key] ~= nil then
+				customFlags[key] = nil
+				-- Remove from main EzUI.Flags to sync
+				EzUI.Flags[key] = nil
+				
+				saveCustomConfig()
+				return true
+			else
+				warn("EzUI.CustomConfig.DeleteKey: key '" .. key .. "' not found")
+				return false
+			end
+		end
+	}
+end
+
 function EzUI.CreateWindow(config)
 	-- Extract opacity parameter (default 1.0 = fully opaque)
 	local windowOpacity = config.Opacity or 1.0
