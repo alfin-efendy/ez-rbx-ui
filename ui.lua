@@ -774,6 +774,7 @@ function EzUI.CreateWindow(config)
 			local placeholder = config.Placeholder or "Select option..."
 			local multiSelect = config.MultiSelect or false
 			local callback = config.Callback or function() end
+			local onDropdownOpen = config.OnDropdownOpen or function() end
 			local flag = config.Flag
 			
 			-- Normalize options to object format {text = "", value = ""}
@@ -968,12 +969,168 @@ function EzUI.CreateWindow(config)
 				dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, dropdownHeight)
 			end
 			
+			-- Function to refresh options display
+			local function refreshOptionsDisplay()
+				-- Clear existing options
+				for _, child in pairs(optionsContainer:GetChildren()) do
+					if child:IsA("TextButton") then
+						child:Destroy()
+					end
+				end
+				
+				-- Recreate options with new data
+				for i, option in ipairs(options) do
+					local optionHeight = isForAccordion and 25 or 30
+					local optionButton = Instance.new("TextButton")
+					optionButton.Size = UDim2.new(1, -10, 0, optionHeight)
+					optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
+					optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+					optionButton.BorderSizePixel = 0
+					optionButton.Text = "  " .. option.text
+					optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+					optionButton.TextXAlignment = Enum.TextXAlignment.Left
+					optionButton.Font = Enum.Font.SourceSans
+					optionButton.TextSize = isForAccordion and 10 or 12
+					optionButton.ZIndex = 27
+					optionButton.Parent = optionsContainer
+					
+					-- Checkmark for multi-select
+					local checkmark = Instance.new("TextLabel")
+					checkmark.Size = UDim2.new(0, 20, 1, 0)
+					checkmark.Position = UDim2.new(1, -20, 0, 0)
+					checkmark.BackgroundTransparency = 1
+					checkmark.Text = ""
+					checkmark.TextColor3 = Color3.fromRGB(100, 255, 100)
+					checkmark.TextXAlignment = Enum.TextXAlignment.Center
+					checkmark.Font = Enum.Font.SourceSansBold
+					checkmark.TextSize = 12
+					checkmark.ZIndex = 28
+					checkmark.Parent = optionButton
+					checkmark.Visible = multiSelect
+					
+					-- Check if this option is already selected
+					local isSelected = false
+					for _, value in ipairs(selectedValues) do
+						if value == option.value then
+							isSelected = true
+							break
+						end
+					end
+					
+					if isSelected then
+						checkmark.Text = "✓"
+						optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+					end
+					
+					optionButton.MouseButton1Click:Connect(function()
+						preventAutoClose = true -- Prevent auto-close during processing
+						
+						if multiSelect then
+							-- Toggle selection for multi-select
+							local isCurrentlySelected = false
+							local indexToRemove = nil
+							for j, value in ipairs(selectedValues) do
+								if value == option.value then
+									isCurrentlySelected = true
+									indexToRemove = j
+									break
+								end
+							end
+							
+							if isCurrentlySelected then
+								table.remove(selectedValues, indexToRemove)
+								checkmark.Text = ""
+								optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+							else
+								table.insert(selectedValues, option.value)
+								checkmark.Text = "✓"
+								optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+							end
+						else
+							-- Single select
+							selectedValues = {option.value}
+							updateDisplayText()
+							isOpen = false
+							dropdownFrame.Visible = false
+							arrow.Text = "▼"
+						end
+						
+						updateDisplayText()
+						
+						-- Save to flag if specified
+						if flag then
+							if multiSelect then
+								EzUI.Flags[flag] = selectedValues
+							else
+								EzUI.Flags[flag] = selectedValues[1] or nil
+							end
+							if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+								saveConfiguration(EzUI.Configuration.FileName)
+							end
+						end
+						
+						-- Call callback
+						if callback then
+							callback(selectedValues, option.value)
+						end
+						
+						preventAutoClose = false -- Re-enable auto-close
+					end)
+					
+					optionButton.MouseEnter:Connect(function()
+						if optionButton.BackgroundColor3 ~= Color3.fromRGB(70, 120, 70) then
+							optionButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+						end
+					end)
+					
+					optionButton.MouseLeave:Connect(function()
+						local isCurrentlySelected = false
+						for _, val in ipairs(selectedValues) do
+							if val == option.value then
+								isCurrentlySelected = true
+								break
+							end
+						end
+						
+						if not isCurrentlySelected then
+							optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+						end
+					end)
+				end
+				
+				-- Update canvas size
+				local optionHeight = isForAccordion and 25 or 30
+				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight + 30)
+			end
+			
 			local function toggleDropdown()
 				isOpen = not isOpen
 				dropdownFrame.Visible = isOpen
 				
 				-- Update arrow direction
 				arrow.Text = isOpen and "▲" or "▼"
+				
+				-- Call OnDropdownOpen callback when dropdown is opened
+				if isOpen and onDropdownOpen then
+					onDropdownOpen(options, function(newOptions)
+						-- Callback function to update options
+						if newOptions and type(newOptions) == "table" then
+							-- Update options dengan format baru
+							rawOptions = newOptions
+							options = {}
+							for i, option in ipairs(rawOptions) do
+								if type(option) == "string" then
+									table.insert(options, {text = option, value = option})
+								elseif type(option) == "table" and option.text and option.value then
+									table.insert(options, {text = option.text, value = option.value})
+								end
+							end
+							
+							-- Refresh tampilan options
+							refreshOptionsDisplay()
+						end
+					end)
+				end
 				
 				-- Only adjust dropdown size, keep container size fixed
 				if isOpen then
@@ -1000,90 +1157,7 @@ function EzUI.CreateWindow(config)
 			end
 			
 			-- Create dropdown options
-			for i, option in ipairs(options) do
-				local optionHeight = isForAccordion and 25 or 30
-				local optionButton = Instance.new("TextButton")
-				optionButton.Size = UDim2.new(1, -10, 0, optionHeight)
-				optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
-				optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-				optionButton.BorderSizePixel = 0
-				optionButton.Text = "  " .. option.text
-				optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-				optionButton.TextXAlignment = Enum.TextXAlignment.Left
-				optionButton.Font = Enum.Font.SourceSans
-				optionButton.TextSize = isForAccordion and 10 or 12
-				optionButton.ZIndex = 27
-				optionButton.Parent = optionsContainer
-				
-				-- Checkmark for multi-select
-				local checkmark = Instance.new("TextLabel")
-				checkmark.Size = UDim2.new(0, 20, 1, 0)
-				checkmark.Position = UDim2.new(1, -20, 0, 0)
-				checkmark.BackgroundTransparency = 1
-				checkmark.Text = ""
-				checkmark.TextColor3 = Color3.fromRGB(100, 255, 100)
-				checkmark.TextXAlignment = Enum.TextXAlignment.Center
-				checkmark.Font = Enum.Font.SourceSansBold
-				checkmark.TextSize = 12
-				checkmark.ZIndex = 28
-				checkmark.Parent = optionButton
-				checkmark.Visible = multiSelect
-				
-				optionButton.MouseButton1Click:Connect(function()
-					preventAutoClose = true -- Prevent auto-close during processing
-					
-					if multiSelect then
-						-- Toggle selection for multi-select
-						local isSelected = false
-						local indexToRemove = nil
-						for j, value in ipairs(selectedValues) do
-							if value == option.value then
-								isSelected = true
-								indexToRemove = j
-								break
-							end
-						end
-						
-						if isSelected then
-							table.remove(selectedValues, indexToRemove)
-							checkmark.Text = ""
-							optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-						else
-							table.insert(selectedValues, option.value)
-							checkmark.Text = "✓"
-							optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
-						end
-					else
-						-- Single select
-						selectedValues = {option.value}
-						updateDisplayText()
-						isOpen = false
-						dropdownFrame.Visible = false
-						arrow.Text = "▼"
-					end
-					
-					updateDisplayText()
-					
-					-- Save to flag if specified
-					if flag then
-						if multiSelect then
-							EzUI.Flags[flag] = selectedValues
-						else
-							EzUI.Flags[flag] = selectedValues[1] or nil
-						end
-						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
-							saveConfiguration(EzUI.Configuration.FileName)
-						end
-					end
-					
-					-- Call callback
-					if callback then
-						callback(selectedValues, option.value)
-					end
-					
-					preventAutoClose = false -- Re-enable auto-close
-				end)
-			end
+			refreshOptionsDisplay()
 			
 			-- Filter options based on search
 			local function filterOptions(searchText)
