@@ -1,6 +1,109 @@
 -- EzUI
 local EzUI = {}
 
+-- Configuration System
+local HttpService = game:GetService("HttpService")
+local EzUIFolder = "EzUI"
+local ConfigurationFolder = EzUIFolder .. "/Configurations"
+local ConfigurationExtension = ".json"
+
+-- Global flags storage for configuration saving
+EzUI.Flags = {}
+
+-- Global configuration state
+EzUI.Configuration = {
+	Enabled = false,
+	FileName = "DefaultConfig",
+	FolderName = "EzUI",
+	AutoSave = true,
+	AutoLoad = true
+}
+
+-- Configuration functions
+local function saveConfiguration(fileName)
+	if not fileName then return false end
+	
+	-- Check if we have any flags to save
+	if next(EzUI.Flags) == nil then
+		print("EzUI: No configuration data to save")
+		return false
+	end
+	
+	-- Use dynamic folder name from configuration
+	local dynamicFolderName = EzUI.Configuration.FolderName or "EzUI"
+	local dynamicConfigurationFolder = dynamicFolderName .. "/Configurations"
+	
+	-- Save to file if writefile is available
+	if writefile then
+		-- Create folder if it doesn't exist
+		if not isfolder then
+			warn("EzUI: Configuration saving requires isfolder function")
+			return false
+		end
+		
+		if not isfolder(dynamicFolderName) then
+			makefolder(dynamicFolderName)
+		end
+		
+		if not isfolder(dynamicConfigurationFolder) then
+			makefolder(dynamicConfigurationFolder)
+		end
+		
+		-- Write configuration file
+		local filePath = dynamicConfigurationFolder .. "/" .. fileName .. ConfigurationExtension
+		local success, result = pcall(function()
+			writefile(filePath, HttpService:JSONEncode(EzUI.Flags))
+		end)
+		
+		if success then
+			print("EzUI: Configuration saved to " .. filePath)
+			return true
+		else
+			warn("EzUI: Failed to save configuration: " .. tostring(result))
+			return false
+		end
+	else
+		warn("EzUI: Configuration saving requires writefile function")
+		return false
+	end
+end
+
+local function loadConfiguration(fileName)
+	if not fileName or not readfile or not isfile then 
+		warn("EzUI: Configuration loading requires readfile and isfile functions")
+		return false 
+	end
+	
+	-- Use dynamic folder name from configuration
+	local dynamicFolderName = EzUI.Configuration.FolderName or "EzUI"
+	local dynamicConfigurationFolder = dynamicFolderName .. "/Configurations"
+	local filePath = dynamicConfigurationFolder .. "/" .. fileName .. ConfigurationExtension
+	
+	if not isfile(filePath) then
+		print("EzUI: No configuration file found at " .. filePath)
+		return false
+	end
+	
+	local success, configData = pcall(function()
+		return HttpService:JSONDecode(readfile(filePath))
+	end)
+	
+	if not success then
+		warn("EzUI: Failed to load configuration file: " .. tostring(configData))
+		return false
+	end
+	
+	-- Apply loaded configuration to flags
+	local applied = 0
+	for flagName, flagValue in pairs(configData) do
+		EzUI.Flags[flagName] = flagValue
+		applied = applied + 1
+	end
+	
+	print("EzUI: Configuration loaded from " .. filePath .. " (" .. applied .. " settings applied)")
+	return true
+end
+
 function EzUI.CreateWindow(config)
 	-- Extract opacity parameter (default 1.0 = fully opaque)
 	local windowOpacity = config.Opacity or 1.0
@@ -12,6 +115,27 @@ function EzUI.CreateWindow(config)
 	if autoShow == nil then
 		autoShow = true -- Default to true if not specified
 	end
+	
+	-- Extract Configuration parameters
+	local configSaving = config.ConfigurationSaving or {}
+	local configEnabled = configSaving.Enabled or false
+	local configFileName = configSaving.FileName or config.Name or "DefaultConfig"
+	local configFolderName = configSaving.FolderName or "EzUI"
+	local configAutoSave = configSaving.AutoSave
+	if configAutoSave == nil then
+		configAutoSave = true -- Default to true if not specified
+	end
+	local configAutoLoad = configSaving.AutoLoad
+	if configAutoLoad == nil then
+		configAutoLoad = true -- Default to true if not specified
+	end
+	
+	-- Set global configuration for components to access
+	EzUI.Configuration.Enabled = configEnabled
+	EzUI.Configuration.FileName = configFileName
+	EzUI.Configuration.FolderName = configFolderName
+	EzUI.Configuration.AutoSave = configAutoSave
+	EzUI.Configuration.AutoLoad = configAutoLoad
 	
 	-- Get viewport size for dynamic scaling with proper initialization
 	local function getViewportSize()
@@ -442,6 +566,7 @@ function EzUI.CreateWindow(config)
 			local placeholder = config.Placeholder or "Select option..."
 			local multiSelect = config.MultiSelect or false
 			local callback = config.Callback or function() end
+			local flag = config.Flag
 			
 			-- Normalize options to object format {text = "", value = ""}
 			local options = {}
@@ -459,6 +584,18 @@ function EzUI.CreateWindow(config)
 			
 			-- Selected values storage (stores actual values, not display text)
 			local selectedValues = {}
+			
+			-- Set initial values from flag if exists
+			if flag and EzUI.Flags[flag] ~= nil then
+				if multiSelect then
+					-- For multiselect, flag should be an array
+					selectedValues = EzUI.Flags[flag] or {}
+				else
+					-- For single select, flag should be a single value
+					selectedValues = {EzUI.Flags[flag]}
+				end
+			end
+			
 			local isOpen = false
 			local preventAutoClose = false -- Flag to prevent auto-closing during option clicks
 			
@@ -719,6 +856,18 @@ function EzUI.CreateWindow(config)
 					
 					updateDisplayText()
 					
+					-- Save to flag if specified
+					if flag then
+						if multiSelect then
+							EzUI.Flags[flag] = selectedValues
+						else
+							EzUI.Flags[flag] = selectedValues[1] or nil
+						end
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
+					
 					-- Call callback
 					if callback then
 						callback(selectedValues, option.value)
@@ -785,6 +934,18 @@ function EzUI.CreateWindow(config)
 					selectedValues = values or {}
 					updateDisplayText()
 					
+					-- Save to flag if specified
+					if flag then
+						if multiSelect then
+							EzUI.Flags[flag] = selectedValues
+						else
+							EzUI.Flags[flag] = selectedValues[1] or nil
+						end
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
+					
 					-- Update visual state of options
 					for _, child in pairs(optionsContainer:GetChildren()) do
 						if child:IsA("TextButton") then
@@ -818,6 +979,18 @@ function EzUI.CreateWindow(config)
 				Clear = function()
 					selectedValues = {}
 					updateDisplayText()
+					
+					-- Save to flag if specified
+					if flag then
+						if multiSelect then
+							EzUI.Flags[flag] = {}
+						else
+							EzUI.Flags[flag] = nil
+						end
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
 					
 					-- Clear visual state
 					for _, child in pairs(optionsContainer:GetChildren()) do
@@ -1029,9 +1202,15 @@ function EzUI.CreateWindow(config)
 			local text = config.Name or config.Text or "Toggle"
 			local defaultValue = config.Default or false
 			local callback = config.Callback or function() end
+			local flag = config.Flag -- Optional flag for configuration saving
 			
 			-- Toggle state
 			local isToggled = defaultValue
+			
+			-- Set initial value from flag if exists
+			if flag and EzUI.Flags[flag] ~= nil then
+				isToggled = EzUI.Flags[flag]
+			end
 			
 			-- Main toggle container
 			local toggleContainer = Instance.new("Frame")
@@ -1142,6 +1321,14 @@ function EzUI.CreateWindow(config)
 				isToggled = not isToggled
 				updateToggleAppearance()
 				
+				-- Save to flag if specified
+				if flag then
+					EzUI.Flags[flag] = isToggled
+					if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+						saveConfiguration(EzUI.Configuration.FileName)
+					end
+				end
+				
 				-- Call user callback
 				local success, errorMsg = pcall(function()
 					callback(isToggled)
@@ -1157,6 +1344,14 @@ function EzUI.CreateWindow(config)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					isToggled = not isToggled
 					updateToggleAppearance()
+					
+					-- Save to flag if specified
+					if flag then
+						EzUI.Flags[flag] = isToggled
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
 					
 					-- Call user callback
 					local success, errorMsg = pcall(function()
@@ -1179,24 +1374,39 @@ function EzUI.CreateWindow(config)
 			end)
 			
 			-- Return Toggle API
-			return {
-				SetValue = function(newValue)
-					if type(newValue) == "boolean" and newValue ~= isToggled then
-						isToggled = newValue
-						updateToggleAppearance()
+			local toggleAPI = {}
+			toggleAPI.SetValue = function(newValue)
+				if type(newValue) == "boolean" and newValue ~= isToggled then
+					isToggled = newValue
+					updateToggleAppearance()
+					
+					-- Save to flag if specified
+					if flag then
+						EzUI.Flags[flag] = isToggled
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
 					end
-				end,
-				GetValue = function()
-					return isToggled
-				end,
-				SetText = function(newText)
-					text = newText
-					toggleLabel.Text = newText
-				end,
-				SetCallback = function(newCallback)
-					callback = newCallback or function() end
 				end
-			}
+			end
+			
+			toggleAPI.GetValue = function()
+				return isToggled
+			end
+			
+			toggleAPI.SetText = function(newText)
+				text = newText
+				toggleLabel.Text = newText
+			end
+			
+			toggleAPI.SetCallback = function(newCallback)
+				callback = newCallback or function() end
+			end
+			
+			-- Set function for configuration loading
+			toggleAPI.Set = toggleAPI.SetValue
+			
+			return toggleAPI
 		end
 
 		-- Centralized TextBox component that can be used by both tab and accordion APIs
@@ -1207,9 +1417,16 @@ function EzUI.CreateWindow(config)
 			local callback = config.Callback or function() end
 			local maxLength = config.MaxLength or 100
 			local multiline = config.Multiline or false
+			local flag = config.Flag
 			
 			-- TextBox state
 			local currentText = defaultText
+			
+			-- Set initial value from flag if exists
+			if flag and EzUI.Flags[flag] ~= nil then
+				currentText = EzUI.Flags[flag]
+				defaultText = currentText
+			end
 			
 			-- Main textbox container
 			local textBoxContainer = Instance.new("Frame")
@@ -1297,6 +1514,14 @@ function EzUI.CreateWindow(config)
 					currentText = textBox.Text
 					updateCharCounter()
 					
+					-- Save to flag if specified
+					if flag then
+						EzUI.Flags[flag] = currentText
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
+					
 					-- Call user callback
 					local success, errorMsg = pcall(function()
 						callback(currentText)
@@ -1326,11 +1551,25 @@ function EzUI.CreateWindow(config)
 					textBox.Text = tostring(newText or "")
 					currentText = textBox.Text
 					updateCharCounter()
+					-- Save to flag if specified
+					if flag then
+						EzUI.Flags[flag] = currentText
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
 				end,
 				Clear = function()
 					textBox.Text = ""
 					currentText = ""
 					updateCharCounter()
+					-- Save to flag if specified
+					if flag then
+						EzUI.Flags[flag] = currentText
+						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+							saveConfiguration(EzUI.Configuration.FileName)
+						end
+					end
 				end,
 				SetPlaceholder = function(newPlaceholder)
 					textBox.PlaceholderText = tostring(newPlaceholder or "")
@@ -1357,9 +1596,16 @@ function EzUI.CreateWindow(config)
 			local maxValue = config.Max or math.huge
 			local increment = config.Increment or 1
 			local decimals = config.Decimals or 0
+			local flag = config.Flag
 			
 			-- NumberBox state
 			local currentValue = defaultValue
+			
+			-- Set initial value from flag if exists
+			if flag and EzUI.Flags[flag] ~= nil then
+				currentValue = EzUI.Flags[flag]
+				defaultValue = currentValue
+			end
 			
 			-- Main numberbox container
 			local numberBoxContainer = Instance.new("Frame")
@@ -1469,6 +1715,14 @@ function EzUI.CreateWindow(config)
 					numberBox.Text = string.format("%." .. decimals .. "f", newValue)
 				else
 					numberBox.Text = tostring(newValue)
+				end
+				
+				-- Save to flag if specified
+				if flag then
+					EzUI.Flags[flag] = currentValue
+					if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+						saveConfiguration(EzUI.Configuration.FileName)
+					end
 				end
 				
 				-- Call user callback
@@ -2464,6 +2718,35 @@ function EzUI.CreateWindow(config)
 		end
 	end
 	
+	-- Configuration Management API
+	function api:SaveConfiguration()
+		if configEnabled then
+			saveConfiguration(configFileName)
+		else
+			warn("EzUI: Configuration saving is not enabled for this window")
+		end
+	end
+	
+	function api:LoadConfiguration()
+		if configEnabled then
+			return loadConfiguration(configFileName)
+		else
+			warn("EzUI: Configuration saving is not enabled for this window")
+			return false
+		end
+	end
+	
+	function api:GetConfigurationStatus()
+		return {
+			Enabled = configEnabled,
+			FileName = configFileName,
+			FolderName = configFolderName,
+			AutoSave = configAutoSave,
+			AutoLoad = configAutoLoad,
+			FlagsCount = #EzUI.Flags
+		}
+	end
+	
 	-- Connect close button functionality
 	closeBtn.MouseButton1Click:Connect(function()
 		api:Close()
@@ -2489,6 +2772,16 @@ function EzUI.CreateWindow(config)
 	api.Close = function(self)
 		disconnectCloseConnection()
 		originalClose(self)
+	end
+	
+	-- Auto-load configuration if enabled
+	if configEnabled and configAutoLoad then
+		task.defer(function()
+			local loaded = loadConfiguration(configFileName)
+			if loaded then
+				print("EzUI: Auto-loaded configuration for " .. configFileName)
+			end
+		end)
 	end
 
 	return api
