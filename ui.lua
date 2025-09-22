@@ -1340,6 +1340,234 @@ function EzUI.CreateWindow(config)
 			}
 		end
 
+		-- Centralized NumberBox component that can be used by both tab and accordion APIs
+		local function createNumberBox(config, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			-- Default config
+			local placeholder = config.Placeholder or "Enter number..."
+			local defaultValue = config.Default or 0
+			local callback = config.Callback or function() end
+			local minValue = config.Min or -math.huge
+			local maxValue = config.Max or math.huge
+			local increment = config.Increment or 1
+			local decimals = config.Decimals or 0
+			
+			-- NumberBox state
+			local currentValue = defaultValue
+			
+			-- Main numberbox container
+			local numberBoxContainer = Instance.new("Frame")
+			if isForAccordion then
+				numberBoxContainer.Size = UDim2.new(1, -10, 0, 25) -- Compact for accordion
+				numberBoxContainer.Position = UDim2.new(0, 5, 0, currentY)
+				numberBoxContainer.ZIndex = 6
+			else
+				numberBoxContainer.Size = UDim2.new(1, -20, 0, 30) -- Standard for tab
+				numberBoxContainer.Position = UDim2.new(0, 10, 0, currentY)
+				numberBoxContainer.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				numberBoxContainer:SetAttribute("ComponentStartY", currentY)
+			end
+			numberBoxContainer.BackgroundTransparency = 1
+			numberBoxContainer.Parent = parentContainer
+			
+			-- Number input box
+			local numberBox = Instance.new("TextBox")
+			if isForAccordion then
+				numberBox.Size = UDim2.new(1, -45, 1, 0) -- Smaller for accordion
+				numberBox.TextSize = 12 -- Smaller text for accordion
+				numberBox.ZIndex = 7
+			else
+				numberBox.Size = UDim2.new(1, -60, 1, 0) -- Standard for tab
+				numberBox.TextSize = 14 -- Normal text for tab
+				numberBox.ZIndex = 4
+			end
+			numberBox.Position = UDim2.new(0, 0, 0, 0)
+			numberBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+			numberBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			numberBox.BorderSizePixel = 1
+			numberBox.Text = decimals > 0 and string.format("%." .. decimals .. "f", defaultValue) or tostring(defaultValue)
+			numberBox.PlaceholderText = placeholder
+			numberBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+			numberBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+			numberBox.Font = Enum.Font.SourceSans
+			numberBox.TextXAlignment = Enum.TextXAlignment.Center
+			numberBox.TextYAlignment = Enum.TextYAlignment.Center
+			numberBox.ClearTextOnFocus = false
+			numberBox.Parent = numberBoxContainer
+			
+			-- Round corners for number box
+			local numberCorner = Instance.new("UICorner")
+			numberCorner.CornerRadius = UDim.new(0, 4)
+			numberCorner.Parent = numberBox
+			
+			-- Increment button (up arrow)
+			local incrementBtn = Instance.new("TextButton")
+			if isForAccordion then
+				incrementBtn.Size = UDim2.new(0, 20, 0, 12) -- Smaller for accordion
+				incrementBtn.Position = UDim2.new(1, -22, 0, 1)
+				incrementBtn.TextSize = 8
+				incrementBtn.ZIndex = 7
+			else
+				incrementBtn.Size = UDim2.new(0, 25, 0, 14) -- Standard for tab
+				incrementBtn.Position = UDim2.new(1, -30, 0, 1)
+				incrementBtn.TextSize = 10
+				incrementBtn.ZIndex = 4
+			end
+			incrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			incrementBtn.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			incrementBtn.BorderSizePixel = 1
+			incrementBtn.Text = "▲"
+			incrementBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+			incrementBtn.Font = Enum.Font.SourceSans
+			incrementBtn.Parent = numberBoxContainer
+			
+			-- Decrement button (down arrow)
+			local decrementBtn = Instance.new("TextButton")
+			if isForAccordion then
+				decrementBtn.Size = UDim2.new(0, 20, 0, 12) -- Smaller for accordion
+				decrementBtn.Position = UDim2.new(1, -22, 0, 13)
+				decrementBtn.TextSize = 8
+				decrementBtn.ZIndex = 7
+			else
+				decrementBtn.Size = UDim2.new(0, 25, 0, 14) -- Standard for tab
+				decrementBtn.Position = UDim2.new(1, -30, 0, 15)
+				decrementBtn.TextSize = 10
+				decrementBtn.ZIndex = 4
+			end
+			decrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			decrementBtn.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			decrementBtn.BorderSizePixel = 1
+			decrementBtn.Text = "▼"
+			decrementBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+			decrementBtn.Font = Enum.Font.SourceSans
+			decrementBtn.Parent = numberBoxContainer
+			
+			-- Function to validate and update value
+			local function updateValue(newValue)
+				-- Clamp to min/max
+				newValue = math.max(minValue, math.min(maxValue, newValue))
+				
+				-- Round to decimal places
+				if decimals > 0 then
+					local multiplier = 10 ^ decimals
+					newValue = math.floor(newValue * multiplier + 0.5) / multiplier
+				else
+					newValue = math.floor(newValue + 0.5)
+				end
+				
+				currentValue = newValue
+				
+				-- Update text box display
+				if decimals > 0 then
+					numberBox.Text = string.format("%." .. decimals .. "f", newValue)
+				else
+					numberBox.Text = tostring(newValue)
+				end
+				
+				-- Call user callback
+				local success, errorMsg = pcall(function()
+					callback(currentValue)
+				end)
+				
+				if not success then
+					warn("NumberBox callback error:", errorMsg)
+				end
+				
+				return newValue
+			end
+			
+			-- Text change handler with validation
+			numberBox.FocusLost:Connect(function()
+				local inputText = numberBox.Text
+				local numValue = tonumber(inputText)
+				
+				if numValue then
+					updateValue(numValue)
+				else
+					-- Invalid input, revert to current value
+					if decimals > 0 then
+						numberBox.Text = string.format("%." .. decimals .. "f", currentValue)
+					else
+						numberBox.Text = tostring(currentValue)
+					end
+				end
+			end)
+			
+			-- Increment button handler
+			incrementBtn.MouseButton1Click:Connect(function()
+				updateValue(currentValue + increment)
+			end)
+			
+			-- Decrement button handler
+			decrementBtn.MouseButton1Click:Connect(function()
+				updateValue(currentValue - increment)
+			end)
+			
+			-- Button hover effects
+			incrementBtn.MouseEnter:Connect(function()
+				incrementBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+			end)
+			
+			incrementBtn.MouseLeave:Connect(function()
+				incrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			end)
+			
+			decrementBtn.MouseEnter:Connect(function()
+				decrementBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+			end)
+			
+			decrementBtn.MouseLeave:Connect(function()
+				decrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			end)
+			
+			-- Focus effects
+			numberBox.Focused:Connect(function()
+				numberBox.BorderColor3 = Color3.fromRGB(100, 150, 250)
+			end)
+			
+			numberBox.FocusLost:Connect(function()
+				numberBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			end)
+			
+			-- Return NumberBox API
+			return {
+				GetValue = function()
+					return currentValue
+				end,
+				SetValue = function(newValue)
+					local numValue = tonumber(newValue)
+					if numValue then
+						updateValue(numValue)
+					else
+						warn("NumberBox SetValue: Expected number, got " .. type(newValue))
+					end
+				end,
+				SetMin = function(newMin)
+					minValue = tonumber(newMin) or -math.huge
+					updateValue(currentValue) -- Re-validate current value
+				end,
+				SetMax = function(newMax)
+					maxValue = tonumber(newMax) or math.huge
+					updateValue(currentValue) -- Re-validate current value
+				end,
+				SetIncrement = function(newIncrement)
+					increment = tonumber(newIncrement) or 1
+				end,
+				Clear = function()
+					updateValue(0)
+				end,
+				Focus = function()
+					numberBox:CaptureFocus()
+				end,
+				Blur = function()
+					numberBox:ReleaseFocus()
+				end,
+				SetCallback = function(newCallback)
+					callback = newCallback or function() end
+				end
+			}
+		end
+
 		-- Create tab API object
 		local tabAPI = {}
 
@@ -1437,170 +1665,10 @@ function EzUI.CreateWindow(config)
 		end
 
 		function tabAPI:AddNumberBox(config)
-			-- Default config
-			local placeholder = config.Placeholder or "Enter number..."
-			local defaultValue = config.Default or 0
-			local callback = config.Callback or function() end
-			local minValue = config.Min or -math.huge
-			local maxValue = config.Max or math.huge
-			local increment = config.Increment or 1
-			local decimals = config.Decimals or 0
-			
-			-- NumberBox state
-			local currentValue = defaultValue
-			
-			-- Main numberbox container
-			local numberBoxContainer = Instance.new("Frame")
-			numberBoxContainer.Size = UDim2.new(1, -20, 0, 30)
-			numberBoxContainer.Position = UDim2.new(0, 10, 0, tabCurrentY)
-			numberBoxContainer.BackgroundTransparency = 1
-			numberBoxContainer.ZIndex = 3
-			numberBoxContainer.Parent = tabContent
-			
-			-- Mark this component's start position for accordion tracking
-			numberBoxContainer:SetAttribute("ComponentStartY", tabCurrentY)
-			
-			-- Number input box
-			local numberBox = Instance.new("TextBox")
-			numberBox.Size = UDim2.new(1, -60, 1, 0)
-			numberBox.Position = UDim2.new(0, 0, 0, 0)
-			numberBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-			numberBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			numberBox.BorderSizePixel = 1
-			numberBox.Text = decimals > 0 and string.format("%." .. decimals .. "f", defaultValue) or tostring(defaultValue)
-			numberBox.PlaceholderText = placeholder
-			numberBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-			numberBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-			numberBox.Font = Enum.Font.SourceSans
-			numberBox.TextSize = 14
-			numberBox.TextXAlignment = Enum.TextXAlignment.Center
-			numberBox.TextYAlignment = Enum.TextYAlignment.Center
-			numberBox.ClearTextOnFocus = false
-			numberBox.ZIndex = 4
-			numberBox.Parent = numberBoxContainer
-			
-			-- Round corners for number box
-			local numberCorner = Instance.new("UICorner")
-			numberCorner.CornerRadius = UDim.new(0, 4)
-			numberCorner.Parent = numberBox
-			
-			-- Increment button (up arrow)
-			local incrementBtn = Instance.new("TextButton")
-			incrementBtn.Size = UDim2.new(0, 25, 0, 14)
-			incrementBtn.Position = UDim2.new(1, -30, 0, 1)
-			incrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			incrementBtn.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			incrementBtn.BorderSizePixel = 1
-			incrementBtn.Text = "▲"
-			incrementBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-			incrementBtn.Font = Enum.Font.SourceSans
-			incrementBtn.TextSize = 10
-			incrementBtn.ZIndex = 4
-			incrementBtn.Parent = numberBoxContainer
-			
-			-- Decrement button (down arrow)
-			local decrementBtn = Instance.new("TextButton")
-			decrementBtn.Size = UDim2.new(0, 25, 0, 14)
-			decrementBtn.Position = UDim2.new(1, -30, 0, 15)
-			decrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			decrementBtn.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			decrementBtn.BorderSizePixel = 1
-			decrementBtn.Text = "▼"
-			decrementBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-			decrementBtn.Font = Enum.Font.SourceSans
-			decrementBtn.TextSize = 10
-			decrementBtn.ZIndex = 4
-			decrementBtn.Parent = numberBoxContainer
-			
-			-- Function to validate and update value
-			local function updateValue(newValue)
-				-- Clamp to min/max
-				newValue = math.max(minValue, math.min(maxValue, newValue))
-				
-				-- Round to decimal places
-				if decimals > 0 then
-					local multiplier = 10 ^ decimals
-					newValue = math.floor(newValue * multiplier + 0.5) / multiplier
-				else
-					newValue = math.floor(newValue + 0.5)
-				end
-				
-				currentValue = newValue
-				
-				-- Update text box display
-				if decimals > 0 then
-					numberBox.Text = string.format("%." .. decimals .. "f", newValue)
-				else
-					numberBox.Text = tostring(newValue)
-				end
-				
-				-- Call user callback
-				local success, errorMsg = pcall(function()
-					callback(currentValue)
-				end)
-				
-				if not success then
-					warn("NumberBox callback error:", errorMsg)
-				end
-				
-				return newValue
-			end
-			
-			-- Text change handler with validation
-			numberBox.FocusLost:Connect(function()
-				local inputText = numberBox.Text
-				local numValue = tonumber(inputText)
-				
-				if numValue then
-					updateValue(numValue)
-				else
-					-- Invalid input, revert to current value
-					if decimals > 0 then
-						numberBox.Text = string.format("%." .. decimals .. "f", currentValue)
-					else
-						numberBox.Text = tostring(currentValue)
-					end
-				end
-			end)
-			
-			-- Increment button handler
-			incrementBtn.MouseButton1Click:Connect(function()
-				updateValue(currentValue + increment)
-			end)
-			
-			-- Decrement button handler
-			decrementBtn.MouseButton1Click:Connect(function()
-				updateValue(currentValue - increment)
-			end)
-			
-			-- Button hover effects
-			incrementBtn.MouseEnter:Connect(function()
-				incrementBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-			end)
-			
-			incrementBtn.MouseLeave:Connect(function()
-				incrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			end)
-			
-			decrementBtn.MouseEnter:Connect(function()
-				decrementBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-			end)
-			
-			decrementBtn.MouseLeave:Connect(function()
-				decrementBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			end)
-			
-			-- Focus effects
-			numberBox.Focused:Connect(function()
-				numberBox.BorderColor3 = Color3.fromRGB(100, 150, 250)
-			end)
-			
-			numberBox.FocusLost:Connect(function()
-				numberBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			end)
+			-- Use centralized NumberBox function for tab
+			local numberBoxAPI = createNumberBox(config, tabContent, tabCurrentY, nil, nil, nil, false)
 			
 			-- Update position Y for next element
-			-- Use fixed spacing like other components
 			tabCurrentY = tabCurrentY + 40
 			
 			-- Update canvas size for active tab
@@ -1610,39 +1678,7 @@ function EzUI.CreateWindow(config)
 			end
 			
 			-- Return NumberBox API
-			return {
-				GetValue = function()
-					return currentValue
-				end,
-				SetValue = function(newValue)
-					local numValue = tonumber(newValue)
-					if numValue then
-						updateValue(numValue)
-					else
-						warn("NumberBox SetValue: Expected number, got " .. type(newValue))
-					end
-				end,
-				SetMin = function(newMin)
-					minValue = tonumber(newMin) or -math.huge
-					updateValue(currentValue) -- Re-validate current value
-				end,
-				SetMax = function(newMax)
-					maxValue = tonumber(newMax) or math.huge
-					updateValue(currentValue) -- Re-validate current value
-				end,
-				SetIncrement = function(newIncrement)
-					increment = tonumber(newIncrement) or 1
-				end,
-				Clear = function()
-					updateValue(0)
-				end,
-				Focus = function()
-					numberBox:CaptureFocus()
-				end,
-				Blur = function()
-					numberBox:ReleaseFocus()
-				end
-			}
+			return numberBoxAPI
 		end
 
 		function tabAPI:AddSeparator()
@@ -2036,6 +2072,22 @@ function EzUI.CreateWindow(config)
 				-- Return TextBox API
 				return textBoxAPI
 			end
+
+			function accordionAPI:AddNumberBox(config)
+				-- Use centralized NumberBox function for accordion
+				local numberBoxAPI = createNumberBox(config, accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
+				
+				-- Update accordion position
+				accordionCurrentY = accordionCurrentY + 35 -- Compact spacing for accordion
+				updateAccordionSize()
+				
+				if isExpanded then
+					animateAccordion()
+				end
+				
+				-- Return NumberBox API
+				return numberBoxAPI
+			end
 			
 			-- Initialize with expanded state
 			if isExpanded then
@@ -2106,7 +2158,8 @@ function EzUI.CreateWindow(config)
 				AddSelectBox = accordionAPI.AddSelectBox,
 				AddSeparator = accordionAPI.AddSeparator,
 				AddToggle = accordionAPI.AddToggle,
-				AddTextBox = accordionAPI.AddTextBox
+				AddTextBox = accordionAPI.AddTextBox,
+				AddNumberBox = accordionAPI.AddNumberBox
 			}
 		end
 
