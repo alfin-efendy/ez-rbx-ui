@@ -2,8 +2,6 @@
 local EzUI = {}
 
 function EzUI.CreateWindow(config)
-	print("Creating window with config:", config.Name) -- debug info
-	
 	-- Extract opacity parameter (default 1.0 = fully opaque)
 	local windowOpacity = config.Opacity or 1.0
 	-- Clamp opacity between 0.1 and 1.0
@@ -11,11 +9,10 @@ function EzUI.CreateWindow(config)
 	
 	-- Get viewport size for dynamic scaling
 	local viewportSize = workspace.CurrentCamera.ViewportSize
-	print("Viewport size:", viewportSize.X, "x", viewportSize.Y) -- debug info
 	
 	-- Calculate dynamic window dimensions based on viewport
 	local function calculateDynamicSize()
-		local baseWidth = config.Width or (viewportSize.X * 0.3) -- 30% of screen width
+		local baseWidth = config.Width or (viewportSize.X * 0.7) -- 70% of screen width
 		local baseHeight = config.Height or (viewportSize.Y * 0.4) -- 40% of screen height
 		
 		-- Apply resolution-based scaling
@@ -34,7 +31,6 @@ function EzUI.CreateWindow(config)
 		local finalWidth = math.max(300, math.min(viewportSize.X * 0.8, baseWidth * scaleMultiplier))
 		local finalHeight = math.max(200, math.min(viewportSize.Y * 0.8, baseHeight * scaleMultiplier))
 		
-		print("Dynamic size calculated:", finalWidth, "x", finalHeight) -- debug info
 		return finalWidth, finalHeight
 	end
 	
@@ -43,7 +39,6 @@ function EzUI.CreateWindow(config)
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = config.Name or "MyWindow"
 	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-	print("ScreenGui created and parented") -- debug info
 
 	-- 🟦 Main window in the center of the screen
 	local frame = Instance.new("Frame")
@@ -113,42 +108,18 @@ function EzUI.CreateWindow(config)
 	local activeTabName = nil
 
 	-- Resize handle in the bottom right corner
-	local resizeHandle = Instance.new("Frame")
+	local resizeHandle = Instance.new("ImageButton")
 	resizeHandle.Size = UDim2.new(0, 16, 0, 16)
 	resizeHandle.Position = UDim2.new(1, -16, 1, -16)
 	resizeHandle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 	resizeHandle.BorderSizePixel = 0
+	resizeHandle.Image = "rbxassetid://16898613613"
+	resizeHandle.ImageRectOffset = Vector2.new(820,196)
+	resizeHandle.ImageRectSize = Vector2.new(48, 48) 
 	resizeHandle.ZIndex = 27 -- Higher than header
 	resizeHandle.Parent = frame
-
-	-- Resize icon using Frame as diagonal lines
-	local line1 = Instance.new("Frame")
-	line1.Size = UDim2.new(0, 1, 0, 12)
-	line1.Position = UDim2.new(0, 11, 0, 2)
-	line1.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-	line1.BorderSizePixel = 0
-	line1.Rotation = 45
-	line1.ZIndex = 11
-	line1.Parent = resizeHandle
-
-	local line2 = Instance.new("Frame")
-	line2.Size = UDim2.new(0, 1, 0, 9)
-	line2.Position = UDim2.new(0, 8, 0, 4)
-	line2.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-	line2.BorderSizePixel = 0
-	line2.Rotation = 45
-	line2.ZIndex = 11
-	line2.Parent = resizeHandle
-
-	local line3 = Instance.new("Frame")
-	line3.Size = UDim2.new(0, 1, 0, 6)
-	line3.Position = UDim2.new(0, 5, 0, 6)
-	line3.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-	line3.BorderSizePixel = 0
-	line3.Rotation = 45
-	line3.ZIndex = 11
-	line3.Parent = resizeHandle
-
+	
+	-- Resize dragging variables
 	local resizeDragging = false
 	local resizeStartPos, resizeStartSize, resizeInput
 
@@ -193,8 +164,6 @@ function EzUI.CreateWindow(config)
 			scrollFrame.Size = UDim2.new(1, -100, 1, -30)
 			-- Update resize handle position
 			resizeHandle.Position = UDim2.new(1, -16, 1, -16)
-			
-			print("Resized to:", newWidth, "x", newHeight) -- debug info
 		end
 	end)
 
@@ -208,7 +177,7 @@ function EzUI.CreateWindow(config)
 	header.Parent = frame
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -40, 1, 0)
+	title.Size = UDim2.new(1, -100, 1, 0) -- Make room for resize, minimize and close buttons
 	title.Position = UDim2.new(0, 10, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Name or "My Window"
@@ -222,11 +191,32 @@ function EzUI.CreateWindow(config)
 	-- Minimize Button
 	local minimizeBtn = Instance.new("TextButton")
 	minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
-	minimizeBtn.Position = UDim2.new(1, -30, 0, 0)
+	minimizeBtn.Position = UDim2.new(1, -60, 0, 0) -- Positioned to the left of close button
 	minimizeBtn.BackgroundColor3 = Color3.fromRGB(200, 170, 0)
-	minimizeBtn.Text = "_"
+	minimizeBtn.Text = "-"
 	minimizeBtn.ZIndex = 26 -- Higher than header
 	minimizeBtn.Parent = header
+
+	-- Close Button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 30, 0, 30)
+	closeBtn.Position = UDim2.new(1, -30, 0, 0) -- Positioned at the far right
+	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeBtn.Font = Enum.Font.SourceSansBold
+	closeBtn.TextSize = 18
+	closeBtn.ZIndex = 26 -- Higher than header
+	closeBtn.Parent = header
+	
+	-- Close button hover effects
+	closeBtn.MouseEnter:Connect(function()
+		closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+	end)
+	
+	closeBtn.MouseLeave:Connect(function()
+		closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	end)
 
 	-- 🟩 Floating button at the top left (below the Roblox logo button)
 	local floatBtn = Instance.new("TextButton")
@@ -324,42 +314,6 @@ function EzUI.CreateWindow(config)
 	local currentY = 10 -- Initial Y position inside the active tab content
 	local currentTabContent = nil
 
-	function api:AddLabel(text)
-		if not currentTabContent then return end
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, -20, 0, 30)
-		label.Position = UDim2.new(0, 10, 0, currentY)
-		label.BackgroundTransparency = 1
-		label.Text = text
-		label.TextColor3 = Color3.fromRGB(255, 255, 255)
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.Font = Enum.Font.SourceSans
-		label.TextSize = 16
-		label.Parent = currentTabContent
-		-- Update Y position for the next element
-		currentY = currentY + 35 -- 30px height + 5px spacing
-		api:UpdateWindowSize()
-	end
-
-	function api:AddButton(text, callback)
-		if not currentTabContent then return end
-		local button = Instance.new("TextButton")
-		button.Size = UDim2.new(0, 120, 0, 30)
-		button.Position = UDim2.new(0, 10, 0, currentY)
-		button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
-		button.Text = text
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.Font = Enum.Font.SourceSans
-		button.TextSize = 14
-		button.BorderSizePixel = 0
-		button.Parent = currentTabContent
-
-		button.MouseButton1Click:Connect(callback)
-		-- Update posisi Y untuk elemen berikutnya
-		currentY = currentY + 35 -- 30px tinggi + 5px spacing
-		api:UpdateWindowSize()
-	end
-	
 	-- Fungsi untuk mengupdate ukuran window secara otomatis
 	function api:UpdateWindowSize()
 		-- Update CanvasSize dari currentTabContent agar scroll vertical aktif
@@ -1170,21 +1124,12 @@ function EzUI.CreateWindow(config)
 			local function updateToggleAppearance()
 				local targetBgColor = isToggled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(100, 100, 100)
 				local targetPosition = isToggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
-				
-				print("🎨 Updating toggle appearance for '" .. text .. "':")
-				print("   isToggled:", isToggled)
-				print("   targetBgColor:", targetBgColor)
-				print("   targetPosition:", targetPosition)
-				print("   Current toggleBg color:", toggleBg.BackgroundColor3)
-				print("   Current toggleButton position:", toggleButton.Position)
-				
+								
 				-- Immediately update the background color (no animation for SetValue calls)
 				toggleBg.BackgroundColor3 = targetBgColor
-				print("   ✅ Background color updated to:", toggleBg.BackgroundColor3)
 				
 				-- Immediately update the button position (no animation for SetValue calls)
 				toggleButton.Position = targetPosition
-				print("   ✅ Button position updated to:", toggleButton.Position)
 				
 				-- Also animate for smooth visual feedback
 				local bgTween = game:GetService("TweenService"):Create(
@@ -1201,8 +1146,6 @@ function EzUI.CreateWindow(config)
 					{Position = targetPosition}
 				)
 				buttonTween:Play()
-				
-				print("   🎬 Tweens started for smooth animation")
 			end
 			
 			-- Toggle click handler
@@ -1218,8 +1161,6 @@ function EzUI.CreateWindow(config)
 				if not success then
 					warn("Toggle callback error:", errorMsg)
 				end
-				
-				print("Toggle '" .. text .. "' changed to:", isToggled)
 			end)
 			
 			-- Also allow clicking the background to toggle
@@ -1236,8 +1177,6 @@ function EzUI.CreateWindow(config)
 					if not success then
 						warn("Toggle callback error:", errorMsg)
 					end
-					
-					print("Toggle '" .. text .. "' changed to:", isToggled)
 				end
 			end)
 			
@@ -1280,8 +1219,6 @@ function EzUI.CreateWindow(config)
 			-- SetValue function (outside of return)
 			function toggleAPI:SetValue(newValue)
 				-- Simplified SetValue method inspired by Rayfield's clean approach
-				print("🔧 Toggle '" .. text .. "' SetValue called with:", newValue, "(" .. type(newValue) .. ")")
-				
 				-- Handle toggle object detection (from previous debugging)
 				if type(newValue) == "table" and newValue.GetValue and type(newValue.GetValue) == "function" then
 					warn("🚨 ERROR: You're passing a TOGGLE OBJECT to SetValue!")
@@ -1290,7 +1227,6 @@ function EzUI.CreateWindow(config)
 					-- Auto-fix: extract boolean value
 					local success, toggleValue = pcall(function() return newValue:GetValue() end)
 					if success and type(toggleValue) == "boolean" then
-						print("   🛠️ Auto-fix: Extracted boolean value:", toggleValue)
 						newValue = toggleValue
 					else
 						warn("   ❌ Cannot extract boolean from toggle object!")
@@ -1315,12 +1251,8 @@ function EzUI.CreateWindow(config)
 				local oldValue = isToggled
 				isToggled = boolValue
 				
-				print("   Changed from", oldValue, "to", isToggled)
-				
 				-- Update visual appearance immediately
 				updateToggleAppearance()
-				
-				print("   ✅ Toggle '" .. text .. "' successfully set to:", isToggled)
 			end
 			
 			-- SetText function (outside of return)
@@ -1892,12 +1824,7 @@ function EzUI.CreateWindow(config)
 				local targetContentHeight = isExpanded and accordionContentHeight or 0
 				local targetContainerHeight = 35 + targetContentHeight
 				local heightDifference = targetContainerHeight - oldContainerHeight
-				
-				print("Accordion animation:", isExpanded and "EXPAND" or "COLLAPSE")
-				print("  Old height:", oldContainerHeight)
-				print("  Target height:", targetContainerHeight) 
-				print("  Height difference:", heightDifference)
-				
+							
 				-- Store components that come after this accordion BEFORE size changes
 				local componentsBelow = {}
 				local accordionBottom = accordionContainer.Position.Y.Offset + oldContainerHeight
@@ -1911,7 +1838,6 @@ function EzUI.CreateWindow(config)
 								currentY = childY,
 								targetY = childY + heightDifference
 							})
-							print("  Component below found at Y:", childY, "-> target Y:", childY + heightDifference)
 						end
 					end
 				end
@@ -1978,7 +1904,6 @@ function EzUI.CreateWindow(config)
 				end
 				
 				animateAccordion()
-				print("Accordion '" .. title .. "' " .. (isExpanded and "expanded" or "collapsed"))
 			end)
 			
 			-- Header hover effects
@@ -2158,8 +2083,6 @@ function EzUI.CreateWindow(config)
 					warn("Tab callback error:", errorMsg)
 				end
 			end
-			
-			print("Tab activated:", tabName)
 		end)
 
 		-- Auto-activate first tab
@@ -2241,8 +2164,6 @@ function EzUI.CreateWindow(config)
 					warn("Tab callback error:", errorMsg)
 				end
 			end
-			
-			print("Tab programmatically activated:", tabName)
 		end
 		
 		function enhancedTabAPI:IsActive()
@@ -2266,8 +2187,6 @@ function EzUI.CreateWindow(config)
 		frame.BackgroundTransparency = transparency
 		tabPanel.BackgroundTransparency = transparency
 		header.BackgroundTransparency = transparency
-		
-		print("Window opacity set to:", windowOpacity)
 	end
 	
 	function api:GetOpacity()
@@ -2294,8 +2213,6 @@ function EzUI.CreateWindow(config)
 		frameTween:Play()
 		tabPanelTween:Play()
 		headerTween:Play()
-		
-		print("Window fading in over", duration, "seconds")
 	end
 	
 	function api:FadeOut(duration)
@@ -2312,8 +2229,6 @@ function EzUI.CreateWindow(config)
 		frameTween:Play()
 		tabPanelTween:Play()
 		headerTween:Play()
-		
-		print("Window fading out over", duration, "seconds")
 	end
 	
 	function api:AdaptToViewport()
@@ -2341,8 +2256,6 @@ function EzUI.CreateWindow(config)
 		-- Apply new size and center the window
 		frame.Size = UDim2.new(0, newWidth, 0, newHeight)
 		frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
-		
-		print("Window adapted to viewport:", newWidth, "x", newHeight)
 	end
 	
 	function api:GetDynamicSize()
@@ -2354,6 +2267,24 @@ function EzUI.CreateWindow(config)
 		}
 	end
 	
+	-- Set window size programmatically
+	function api:SetSize(width, height)
+		local viewportSize = workspace.CurrentCamera.ViewportSize
+		
+		-- Apply constraints
+		width = math.max(300, math.min(width, viewportSize.X * 0.9))
+		height = math.max(200, math.min(height, viewportSize.Y * 0.9))
+		
+		frame.Size = UDim2.new(0, width, 0, height)
+		
+		-- Update canvas size for scrolling
+		if currentTabContent then
+			scrollFrame.CanvasSize = UDim2.new(0, 0, 0, currentY + 10)
+		end
+		
+		return {Width = width, Height = height}
+	end
+	
 	-- Auto-adapt to viewport changes (optional)
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
 		if config.AutoAdapt ~= false then -- Default true, can be disabled
@@ -2361,6 +2292,58 @@ function EzUI.CreateWindow(config)
 			api:AdaptToViewport()
 		end
 	end)
+
+	-- Close window functionality
+	local onCloseCallback = nil
+	
+	function api:SetCloseCallback(callback)
+		onCloseCallback = callback
+	end
+	
+	function api:Close()
+		-- Call user callback before destroying
+		if onCloseCallback then
+			local success, errorMsg = pcall(function()
+				onCloseCallback()
+			end)
+			
+			if not success then
+				warn("Close callback error:", errorMsg)
+			end
+		end
+		
+		-- Destroy the UI
+		if screenGui then
+			screenGui:Destroy()
+		end
+	end
+	
+	-- Connect close button functionality
+	closeBtn.MouseButton1Click:Connect(function()
+		api:Close()
+	end)
+	
+	-- Add ESC key support for closing window
+	local closeConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not gameProcessed and input.KeyCode == Enum.KeyCode.Escape then
+			api:Close()
+		end
+	end)
+	
+	-- Store connection to disconnect it when window is destroyed
+	local function disconnectCloseConnection()
+		if closeConnection then
+			closeConnection:Disconnect()
+			closeConnection = nil
+		end
+	end
+	
+	-- Override Close function to also disconnect the connection
+	local originalClose = api.Close
+	api.Close = function(self)
+		disconnectCloseConnection()
+		originalClose(self)
+	end
 
 	return api
 end

@@ -13,6 +13,19 @@ local window = EzUILib.CreateWindow({
 	AutoAdapt = true, -- Optional: Auto-resize on viewport changes (default true)
 })
 
+-- Set up close callback (optional)
+window:SetCloseCallback(function()
+	print("Window is closing! Performing cleanup...")
+	
+	-- You can add cleanup logic here:
+	-- - Save data
+	-- - Disconnect events
+	-- - Clean up variables
+	-- - Show confirmation dialog
+	
+	print("Cleanup completed!")
+end)
+
 -- Create tabs and store references
 local inputTab = window:AddTab({
     Name = "Inputs",
