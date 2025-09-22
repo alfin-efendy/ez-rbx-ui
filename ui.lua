@@ -7,6 +7,12 @@ function EzUI.CreateWindow(config)
 	-- Clamp opacity between 0.1 and 1.0
 	windowOpacity = math.max(0.1, math.min(1.0, windowOpacity))
 	
+	-- Extract AutoShow parameter (default true = automatically show window)
+	local autoShow = config.AutoShow
+	if autoShow == nil then
+		autoShow = true -- Default to true if not specified
+	end
+	
 	-- Get viewport size for dynamic scaling with proper initialization
 	local function getViewportSize()
 		local camera = workspace.CurrentCamera
@@ -69,6 +75,7 @@ function EzUI.CreateWindow(config)
 	frame.Active = true
 	frame.ClipsDescendants = true -- ensure components do not go outside the window
 	frame.ZIndex = 1 -- Base Z-index for window
+	frame.Visible = autoShow -- Set initial visibility based on AutoShow parameter
 	frame.Parent = screenGui
 
 	-- ScrollingFrame for window content
@@ -243,7 +250,7 @@ function EzUI.CreateWindow(config)
 	floatBtn.Position = UDim2.new(0, 10, 0, 45) -- offset downward to avoid Roblox logo collision
 	floatBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
 	floatBtn.Text = "Open "..(config.Name or "UI")
-	floatBtn.Visible = false
+	floatBtn.Visible = not autoShow -- Show floating button if window starts hidden
 	floatBtn.ZIndex = 30 -- Very high Z-index for floating button
 	floatBtn.Parent = screenGui
 
@@ -2340,6 +2347,33 @@ function EzUI.CreateWindow(config)
 		frameTween:Play()
 		tabPanelTween:Play()
 		headerTween:Play()
+	end
+	
+	function api:Show()
+		-- Show the window by enabling the ScreenGui
+		screenGui.Enabled = true
+		-- Hide the floating button when window is shown
+		floatBtn.Visible = false
+	end
+	
+	function api:Hide()
+		-- Hide the window by disabling the ScreenGui
+		screenGui.Enabled = false
+		-- Show the floating button when window is hidden
+		floatBtn.Visible = true
+	end
+	
+	function api:IsVisible()
+		-- Check if the window is currently visible
+		return screenGui.Enabled
+	end
+	
+	function api:ToggleVisibility()
+		-- Toggle window visibility
+		screenGui.Enabled = not screenGui.Enabled
+		-- Toggle floating button visibility (opposite of window)
+		floatBtn.Visible = not screenGui.Enabled
+		return screenGui.Enabled
 	end
 	
 	function api:AdaptToViewport()
