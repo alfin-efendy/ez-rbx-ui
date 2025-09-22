@@ -549,6 +549,12 @@ basicAccordion:AddButton("Action Button", function()
 end)
 basicAccordion:AddSeparator()
 basicAccordion:AddLabel("Content after separator")
+basicAccordion:AddSelectBox({
+    Options = {"Option 1", "Option 2", "Option 3"},
+    Placeholder = "Select option...",
+    MultiSelect = false,
+    Callback = function(selected, clicked) end
+})
 
 -- Settings Accordion (expanded by default)
 local settingsAccordion = accordionTab:AddAccordion({
