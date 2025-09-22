@@ -276,8 +276,6 @@ function EzUI.NewConfig(configName)
 			end
 			
 			customFlags[key] = value
-			-- Save to main EzUI.Flags to sync with main configuration system
-			EzUI.Flags[key] = value
 			
 			saveCustomConfig()
 			return true
@@ -303,8 +301,6 @@ function EzUI.NewConfig(configName)
 			
 			if customFlags[key] ~= nil then
 				customFlags[key] = nil
-				-- Remove from main EzUI.Flags to sync
-				EzUI.Flags[key] = nil
 				
 				saveCustomConfig()
 				return true
