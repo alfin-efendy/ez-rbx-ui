@@ -569,6 +569,14 @@ basicAccordion:AddSelectBox({
     Callback = function(selected, clicked) end
 })
 
+basicAccordion:AddToggle({
+    Name = "Enable Notifications",
+    Default = true,
+    Callback = function(enabled)
+        print("Notifications:", enabled and "ON" or "OFF")
+    end
+})
+
 -- Settings Accordion (expanded by default)
 local settingsAccordion = accordionTab:AddAccordion({
 	Title = "Application Settings",

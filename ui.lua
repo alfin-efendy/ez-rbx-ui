@@ -1016,6 +1016,182 @@ function EzUI.CreateWindow(config)
 			return separator
 		end
 
+		-- Centralized Toggle component that can be used by both tab and accordion APIs
+		local function createToggle(config, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			-- Default config
+			local text = config.Name or config.Text or "Toggle"
+			local defaultValue = config.Default or false
+			local callback = config.Callback or function() end
+			
+			-- Toggle state
+			local isToggled = defaultValue
+			
+			-- Main toggle container
+			local toggleContainer = Instance.new("Frame")
+			if isForAccordion then
+				toggleContainer.Size = UDim2.new(1, -10, 0, 25) -- Compact size for accordion
+				toggleContainer.Position = UDim2.new(0, 5, 0, currentY)
+				toggleContainer.ZIndex = 6
+			else
+				toggleContainer.Size = UDim2.new(1, -20, 0, 30) -- Standard size for tab
+				toggleContainer.Position = UDim2.new(0, 10, 0, currentY)
+				toggleContainer.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				toggleContainer:SetAttribute("ComponentStartY", currentY)
+			end
+			toggleContainer.BackgroundTransparency = 1
+			toggleContainer.Parent = parentContainer
+			
+			-- Toggle label
+			local toggleLabel = Instance.new("TextLabel")
+			if isForAccordion then
+				toggleLabel.Size = UDim2.new(1, -45, 1, 0)
+				toggleLabel.TextSize = 12 -- Smaller text for accordion
+				toggleLabel.ZIndex = 7
+			else
+				toggleLabel.Size = UDim2.new(1, -60, 1, 0)
+				toggleLabel.TextSize = 16 -- Normal text for tab
+				toggleLabel.ZIndex = 4
+			end
+			toggleLabel.Position = UDim2.new(0, 0, 0, 0)
+			toggleLabel.BackgroundTransparency = 1
+			toggleLabel.Text = text
+			toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+			toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+			toggleLabel.Font = Enum.Font.SourceSans
+			toggleLabel.Parent = toggleContainer
+			
+			-- Toggle switch background
+			local toggleBg = Instance.new("Frame")
+			if isForAccordion then
+				toggleBg.Size = UDim2.new(0, 40, 0, 20) -- Smaller for accordion
+				toggleBg.Position = UDim2.new(1, -40, 0.5, -10)
+				toggleBg.ZIndex = 7
+			else
+				toggleBg.Size = UDim2.new(0, 50, 0, 24) -- Standard for tab
+				toggleBg.Position = UDim2.new(1, -50, 0.5, -12)
+				toggleBg.ZIndex = 4
+			end
+			toggleBg.BackgroundColor3 = isToggled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(100, 100, 100)
+			toggleBg.BorderSizePixel = 0
+			toggleBg.Parent = toggleContainer
+			
+			-- Round corners for toggle background
+			local toggleBgCorner = Instance.new("UICorner")
+			toggleBgCorner.CornerRadius = UDim.new(0, isForAccordion and 10 or 12)
+			toggleBgCorner.Parent = toggleBg
+			
+			-- Toggle switch button (circle)
+			local toggleButton = Instance.new("TextButton")
+			if isForAccordion then
+				toggleButton.Size = UDim2.new(0, 16, 0, 16) -- Smaller for accordion
+				toggleButton.Position = isToggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+				toggleButton.ZIndex = 8
+			else
+				toggleButton.Size = UDim2.new(0, 20, 0, 20) -- Standard for tab
+				toggleButton.Position = isToggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+				toggleButton.ZIndex = 5
+			end
+			toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			toggleButton.BorderSizePixel = 0
+			toggleButton.Text = ""
+			toggleButton.Parent = toggleBg
+			
+			-- Round corners for toggle button
+			local toggleButtonCorner = Instance.new("UICorner")
+			toggleButtonCorner.CornerRadius = UDim.new(0, isForAccordion and 8 or 10)
+			toggleButtonCorner.Parent = toggleButton
+			
+			-- Function to update toggle appearance
+			local function updateToggleAppearance()
+				local targetBgColor = isToggled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(100, 100, 100)
+				local targetPosition
+				
+				if isForAccordion then
+					targetPosition = isToggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+				else
+					targetPosition = isToggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+				end
+				
+				-- Animate background color
+				local bgTween = game:GetService("TweenService"):Create(
+					toggleBg,
+					TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+					{BackgroundColor3 = targetBgColor}
+				)
+				bgTween:Play()
+				
+				-- Animate button position
+				local buttonTween = game:GetService("TweenService"):Create(
+					toggleButton,
+					TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+					{Position = targetPosition}
+				)
+				buttonTween:Play()
+			end
+			
+			-- Toggle click handler
+			toggleButton.MouseButton1Click:Connect(function()
+				isToggled = not isToggled
+				updateToggleAppearance()
+				
+				-- Call user callback
+				local success, errorMsg = pcall(function()
+					callback(isToggled)
+				end)
+				
+				if not success then
+					warn("Toggle callback error:", errorMsg)
+				end
+			end)
+			
+			-- Also allow clicking the background to toggle
+			toggleBg.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					isToggled = not isToggled
+					updateToggleAppearance()
+					
+					-- Call user callback
+					local success, errorMsg = pcall(function()
+						callback(isToggled)
+					end)
+					
+					if not success then
+						warn("Toggle callback error:", errorMsg)
+					end
+				end
+			end)
+			
+			-- Hover effects
+			toggleButton.MouseEnter:Connect(function()
+				toggleButton.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+			end)
+			
+			toggleButton.MouseLeave:Connect(function()
+				toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			end)
+			
+			-- Return Toggle API
+			return {
+				SetValue = function(newValue)
+					if type(newValue) == "boolean" and newValue ~= isToggled then
+						isToggled = newValue
+						updateToggleAppearance()
+					end
+				end,
+				GetValue = function()
+					return isToggled
+				end,
+				SetText = function(newText)
+					text = newText
+					toggleLabel.Text = newText
+				end,
+				SetCallback = function(newCallback)
+					callback = newCallback or function() end
+				end
+			}
+		end
+
 		-- Create tab API object
 		local tabAPI = {}
 
@@ -1078,145 +1254,8 @@ function EzUI.CreateWindow(config)
 		end
 
 		function tabAPI:AddToggle(config)
-			-- Default config
-			local text = config.Name or config.Text or "Toggle"
-			local defaultValue = config.Default or false
-			local callback = config.Callback or function() end
-			
-			-- Toggle state
-			local isToggled = defaultValue
-			
-			-- Main toggle container
-			local toggleContainer = Instance.new("Frame")
-			toggleContainer.Size = UDim2.new(1, -20, 0, 30)
-			toggleContainer.Position = UDim2.new(0, 10, 0, tabCurrentY)
-			toggleContainer.BackgroundTransparency = 1
-			toggleContainer.ZIndex = 3
-			toggleContainer.Parent = tabContent
-			
-			-- Mark this component's start position for accordion tracking
-			toggleContainer:SetAttribute("ComponentStartY", tabCurrentY)
-			
-			-- Toggle label
-			local toggleLabel = Instance.new("TextLabel")
-			toggleLabel.Size = UDim2.new(1, -60, 1, 0)
-			toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-			toggleLabel.BackgroundTransparency = 1
-			toggleLabel.Text = text
-			toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-			toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-			toggleLabel.Font = Enum.Font.SourceSans
-			toggleLabel.TextSize = 16
-			toggleLabel.ZIndex = 4
-			toggleLabel.Parent = toggleContainer
-			
-			-- Toggle switch background
-			local toggleBg = Instance.new("Frame")
-			toggleBg.Size = UDim2.new(0, 50, 0, 24)
-			toggleBg.Position = UDim2.new(1, -50, 0.5, -12)
-			toggleBg.BackgroundColor3 = isToggled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(100, 100, 100)
-			toggleBg.BorderSizePixel = 0
-			toggleBg.ZIndex = 4
-			toggleBg.Parent = toggleContainer
-			
-			-- Round corners for toggle background
-			local toggleBgCorner = Instance.new("UICorner")
-			toggleBgCorner.CornerRadius = UDim.new(0, 12)
-			toggleBgCorner.Parent = toggleBg
-			
-			-- Toggle switch button (circle)
-			local toggleButton = Instance.new("TextButton")
-			toggleButton.Size = UDim2.new(0, 20, 0, 20)
-			toggleButton.Position = isToggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
-			toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			toggleButton.BorderSizePixel = 0
-			toggleButton.Text = ""
-			toggleButton.ZIndex = 5
-			toggleButton.Parent = toggleBg
-			
-			-- Round corners for toggle button
-			local toggleButtonCorner = Instance.new("UICorner")
-			toggleButtonCorner.CornerRadius = UDim.new(0, 10)
-			toggleButtonCorner.Parent = toggleButton
-			
-			-- Function to update toggle appearance
-			local function updateToggleAppearance()
-				local targetBgColor = isToggled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(100, 100, 100)
-				local targetPosition = isToggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
-								
-				-- Immediately update the background color (no animation for SetValue calls)
-				toggleBg.BackgroundColor3 = targetBgColor
-				
-				-- Immediately update the button position (no animation for SetValue calls)
-				toggleButton.Position = targetPosition
-				
-				-- Also animate for smooth visual feedback
-				local bgTween = game:GetService("TweenService"):Create(
-					toggleBg,
-					TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-					{BackgroundColor3 = targetBgColor}
-				)
-				bgTween:Play()
-				
-				-- Animate button position
-				local buttonTween = game:GetService("TweenService"):Create(
-					toggleButton,
-					TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-					{Position = targetPosition}
-				)
-				buttonTween:Play()
-			end
-			
-			-- Toggle click handler
-			toggleButton.MouseButton1Click:Connect(function()
-				isToggled = not isToggled
-				updateToggleAppearance()
-				
-				-- Call user callback
-				local success, errorMsg = pcall(function()
-					callback(isToggled)
-				end)
-				
-				if not success then
-					warn("Toggle callback error:", errorMsg)
-				end
-			end)
-			
-			-- Also allow clicking the background to toggle
-			toggleBg.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					isToggled = not isToggled
-					updateToggleAppearance()
-					
-					-- Call user callback
-					local success, errorMsg = pcall(function()
-						callback(isToggled)
-					end)
-					
-					if not success then
-						warn("Toggle callback error:", errorMsg)
-					end
-				end
-			end)
-			
-			-- Hover effects
-			toggleButton.MouseEnter:Connect(function()
-				local hoverTween = game:GetService("TweenService"):Create(
-					toggleButton,
-					TweenInfo.new(0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-					{Size = UDim2.new(0, 22, 0, 22)}
-				)
-				hoverTween:Play()
-			end)
-			
-			toggleButton.MouseLeave:Connect(function()
-				local hoverTween = game:GetService("TweenService"):Create(
-					toggleButton,
-					TweenInfo.new(0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-					{Size = UDim2.new(0, 20, 0, 20)}
-				)
-				hoverTween:Play()
-			end)
+			-- Use centralized Toggle function for tab
+			local toggleAPI = createToggle(config, tabContent, tabCurrentY, nil, nil, nil, false)
 			
 			-- Update posisi Y untuk elemen berikutnya
 			tabCurrentY = tabCurrentY + 35
@@ -1227,60 +1266,7 @@ function EzUI.CreateWindow(config)
 				api:UpdateWindowSize()
 			end
 			
-			-- Create toggle API object
-			local toggleAPI = {}
-			
-			-- GetValue function (outside of return)
-			function toggleAPI:GetValue()
-				return isToggled
-			end
-			
-			-- SetValue function (outside of return)
-			function toggleAPI:SetValue(newValue)
-				-- Simplified SetValue method inspired by Rayfield's clean approach
-				-- Handle toggle object detection (from previous debugging)
-				if type(newValue) == "table" and newValue.GetValue and type(newValue.GetValue) == "function" then
-					warn("🚨 ERROR: You're passing a TOGGLE OBJECT to SetValue!")
-					warn("   Use: toggle:SetValue(true) ✅ NOT: toggle:SetValue(anotherToggle) ❌")
-					
-					-- Auto-fix: extract boolean value
-					local success, toggleValue = pcall(function() return newValue:GetValue() end)
-					if success and type(toggleValue) == "boolean" then
-						newValue = toggleValue
-					else
-						warn("   ❌ Cannot extract boolean from toggle object!")
-						return
-					end
-				end
-				
-				-- Simple type conversion (inspired by Rayfield's simplicity)
-				local boolValue
-				if type(newValue) == "boolean" then
-					boolValue = newValue
-				elseif type(newValue) == "string" then
-					boolValue = (newValue:lower() == "true")
-				elseif type(newValue) == "number" then
-					boolValue = (newValue ~= 0)
-				else
-					warn("Toggle SetValue: Expected boolean, got " .. type(newValue))
-					return
-				end
-				
-				-- Update state and UI (following Rayfield's pattern)
-				local oldValue = isToggled
-				isToggled = boolValue
-				
-				-- Update visual appearance immediately
-				updateToggleAppearance()
-			end
-			
-			-- SetText function (outside of return)
-			function toggleAPI:SetText(newText)
-				text = newText
-				toggleLabel.Text = newText
-			end
-			
-			-- Return toggle API object
+			-- Return Toggle API
 			return toggleAPI
 		end
 
@@ -2000,6 +1986,22 @@ function EzUI.CreateWindow(config)
 				end
 			end
 			
+			function accordionAPI:AddToggle(config)
+				-- Use centralized Toggle function for accordion
+				local toggleAPI = createToggle(config, accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
+				
+				-- Update accordion position
+				accordionCurrentY = accordionCurrentY + 30
+				updateAccordionSize()
+				
+				if isExpanded then
+					animateAccordion()
+				end
+				
+				-- Return Toggle API
+				return toggleAPI
+			end
+			
 			-- Initialize with expanded state
 			if isExpanded then
 				updateAccordionSize()
@@ -2067,7 +2069,8 @@ function EzUI.CreateWindow(config)
 				AddLabel = accordionAPI.AddLabel,
 				AddButton = accordionAPI.AddButton,
 				AddSelectBox = accordionAPI.AddSelectBox,
-				AddSeparator = accordionAPI.AddSeparator
+				AddSeparator = accordionAPI.AddSeparator,
+				AddToggle = accordionAPI.AddToggle
 			}
 		end
 
