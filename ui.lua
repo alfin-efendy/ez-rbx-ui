@@ -455,66 +455,8 @@ function EzUI.CreateWindow(config)
 		-- Tab-specific Y position tracking
 		local tabCurrentY = 10
 
-		-- Create tab API object
-		local tabAPI = {}
-
-		function tabAPI:AddLabel(text)
-			local label = Instance.new("TextLabel")
-			label.Size = UDim2.new(1, -20, 0, 30)
-			label.Position = UDim2.new(0, 10, 0, tabCurrentY)
-			label.BackgroundTransparency = 1
-			label.Text = text
-			label.TextColor3 = Color3.fromRGB(255, 255, 255)
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.Font = Enum.Font.SourceSans
-			label.TextSize = 16
-			label.ZIndex = 3 -- Above tab content
-			label.Parent = tabContent
-			
-			-- Mark this component's start position for accordion tracking
-			label:SetAttribute("ComponentStartY", tabCurrentY)
-			
-			-- Update posisi Y untuk elemen berikutnya
-			tabCurrentY = tabCurrentY + 35
-			
-			-- Update canvas size jika tab ini sedang aktif
-			if tabContent == activeTab then
-				currentY = tabCurrentY
-				api:UpdateWindowSize()
-			end
-		end
-
-		function tabAPI:AddButton(text, callback)
-			local button = Instance.new("TextButton")
-			button.Size = UDim2.new(0, 120, 0, 30)
-			button.Position = UDim2.new(0, 10, 0, tabCurrentY)
-			button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
-			button.Text = text
-			button.TextColor3 = Color3.fromRGB(255, 255, 255)
-			button.Font = Enum.Font.SourceSans
-			button.TextSize = 14
-			button.BorderSizePixel = 0
-			button.ZIndex = 3 -- Above tab content
-			button.Parent = tabContent
-
-			-- Mark this component's start position for accordion tracking
-			button:SetAttribute("ComponentStartY", tabCurrentY)
-
-			if callback then
-				button.MouseButton1Click:Connect(callback)
-			end
-			
-			-- Update posisi Y untuk elemen berikutnya
-			tabCurrentY = tabCurrentY + 35
-			
-			-- Update canvas size jika tab ini sedang aktif
-			if tabContent == activeTab then
-				currentY = tabCurrentY
-				api:UpdateWindowSize()
-			end
-		end
-
-		function tabAPI:AddSelectBox(config)
+		-- Centralized SelectBox component that can be used by both tab and accordion APIs
+		local function createSelectBox(config, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
 			-- Default config
 			local rawOptions = config.Options or {"Option 1", "Option 2", "Option 3"}
 			local placeholder = config.Placeholder or "Select option..."
@@ -542,29 +484,33 @@ function EzUI.CreateWindow(config)
 			
 			-- Main SelectBox container
 			local selectContainer = Instance.new("Frame")
-			selectContainer.Size = UDim2.new(1, -20, 0, 30) -- Full width with 10px padding on each side
-			selectContainer.Position = UDim2.new(0, 10, 0, tabCurrentY)
+			if isForAccordion then
+				selectContainer.Size = UDim2.new(1, 0, 0, 25) -- Full width for accordion (padding handles spacing)
+				selectContainer.Position = UDim2.new(0, 0, 0, currentY)
+			else
+				selectContainer.Size = UDim2.new(1, -20, 0, 25) -- Standard size for tab
+				selectContainer.Position = UDim2.new(0, 10, 0, currentY)
+				-- Mark this component's start position for accordion tracking
+				selectContainer:SetAttribute("ComponentStartY", currentY)
+			end
 			selectContainer.BackgroundTransparency = 1
 			selectContainer.ClipsDescendants = false -- Important: allow dropdown to show outside
-			selectContainer.ZIndex = 5
-			selectContainer.Parent = tabContent
+			selectContainer.ZIndex = isForAccordion and 6 or 3 -- Higher Z-index for accordion
+			selectContainer.Parent = parentContainer
 			
-			-- Mark this component's start position for accordion tracking
-			selectContainer:SetAttribute("ComponentStartY", tabCurrentY)
-			
-			-- SelectBox button (display area)
+			-- SelectBox button (main clickable area)
 			local selectButton = Instance.new("TextButton")
-			selectButton.Size = UDim2.new(1, -25, 1, 0)
+			selectButton.Size = UDim2.new(1, -25, 1, 0) -- Leave space for arrow
 			selectButton.Position = UDim2.new(0, 0, 0, 0)
-			selectButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-			selectButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			selectButton.BorderSizePixel = 1
+			selectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+			selectButton.BorderColor3 = Color3.fromRGB(180, 180, 180)
+			selectButton.BorderSizePixel = 2
 			selectButton.Text = "  " .. placeholder
 			selectButton.TextColor3 = Color3.fromRGB(200, 200, 200)
 			selectButton.TextXAlignment = Enum.TextXAlignment.Left
 			selectButton.Font = Enum.Font.SourceSans
-			selectButton.TextSize = 14
-			selectButton.ZIndex = 6
+			selectButton.TextSize = isForAccordion and 12 or 14
+			selectButton.ZIndex = isForAccordion and 7 or 4
 			selectButton.Parent = selectContainer
 			
 			-- Dropdown arrow (clickable)
@@ -572,26 +518,27 @@ function EzUI.CreateWindow(config)
 			arrow.Size = UDim2.new(0, 25, 1, 0)
 			arrow.Position = UDim2.new(1, -25, 0, 0)
 			arrow.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			arrow.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			arrow.BorderSizePixel = 1
+			arrow.BorderColor3 = Color3.fromRGB(180, 180, 180)
+			arrow.BorderSizePixel = 2
 			arrow.Text = "▼"
 			arrow.TextColor3 = Color3.fromRGB(200, 200, 200)
 			arrow.TextXAlignment = Enum.TextXAlignment.Center
 			arrow.Font = Enum.Font.SourceSans
-			arrow.TextSize = 12
-			arrow.ZIndex = 7
+			arrow.TextSize = 10
+			arrow.ZIndex = isForAccordion and 7 or 4
 			arrow.Parent = selectContainer
 			
 			-- Dropdown list container
+			local dropdownHeight = isForAccordion and math.min(#options * 25 + 30, 150) or math.min(#options * 30 + 30, 200)
 			local dropdownFrame = Instance.new("ScrollingFrame")
-			dropdownFrame.Size = UDim2.new(1, 0, 0, math.min(#options * 30 + 35, 185)) -- Extra space for search box
+			dropdownFrame.Size = UDim2.new(1, 0, 0, dropdownHeight)
 			dropdownFrame.Position = UDim2.new(0, 0, 1, 3)
 			dropdownFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-			dropdownFrame.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			dropdownFrame.BorderSizePixel = 1
+			dropdownFrame.BorderColor3 = Color3.fromRGB(150, 150, 150)
+			dropdownFrame.BorderSizePixel = 2
 			dropdownFrame.Visible = false
-			dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * 30 + 35) -- Extra canvas space for search box
-			dropdownFrame.ScrollBarThickness = 8
+			dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, isForAccordion and (#options * 25 + 30) or (#options * 30 + 30))
+			dropdownFrame.ScrollBarThickness = 6
 			dropdownFrame.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
 			dropdownFrame.ZIndex = 25 -- Very high Z-index to appear above everything
 			dropdownFrame.ClipsDescendants = true
@@ -600,7 +547,7 @@ function EzUI.CreateWindow(config)
 			
 			-- Search box
 			local searchBox = Instance.new("TextBox")
-			searchBox.Size = UDim2.new(1, -10, 0, 25)
+			searchBox.Size = UDim2.new(1, -10, 0, 20)
 			searchBox.Position = UDim2.new(0, 5, 0, 5)
 			searchBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 			searchBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
@@ -610,17 +557,17 @@ function EzUI.CreateWindow(config)
 			searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 			searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 			searchBox.Font = Enum.Font.Gotham
-			searchBox.TextSize = 12
-			searchBox.ZIndex = 21 -- Higher than dropdown frame
+			searchBox.TextSize = 10
+			searchBox.ZIndex = 26 -- Higher than dropdown frame
 			searchBox.ClearTextOnFocus = false
 			searchBox.Parent = dropdownFrame
 			
 			-- Container for option items (below search box)
 			local optionsContainer = Instance.new("Frame")
-			optionsContainer.Size = UDim2.new(1, 0, 1, -35)
-			optionsContainer.Position = UDim2.new(0, 0, 0, 35)
+			optionsContainer.Size = UDim2.new(1, 0, 1, -30)
+			optionsContainer.Position = UDim2.new(0, 0, 0, 30)
 			optionsContainer.BackgroundTransparency = 1
-			optionsContainer.ZIndex = 21 -- Same as search box
+			optionsContainer.ZIndex = 26 -- Same as search box
 			optionsContainer.Parent = dropdownFrame
 			
 			-- List layout for dropdown items
@@ -680,38 +627,22 @@ function EzUI.CreateWindow(config)
 				local spaceAbove = absolutePos.Y
 				
 				local finalPosition
-				local showAbove = false
 				
 				if spaceBelow >= dropdownHeight + 10 then
 					-- Show dropdown below
 					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y + absoluteSize.Y + 3)
-					showAbove = false
 				elseif spaceAbove >= dropdownHeight + 10 then
 					-- Show dropdown above
 					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y - dropdownHeight - 3)
-					showAbove = true
 				else
-					-- Not enough space above or below, show below but adjust height
-					local maxHeight = math.max(spaceBelow - 10, 100)
-					dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, maxHeight)
+					-- Show below anyway if both spaces are insufficient
 					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y + absoluteSize.Y + 3)
-					showAbove = false
 				end
 				
-				-- Set size and position
-				dropdownFrame.Size = UDim2.new(0, dropdownWidth, dropdownFrame.Size.Y.Scale, dropdownFrame.Size.Y.Offset)
 				dropdownFrame.Position = finalPosition
-				
-				print("Dropdown position calculated:")
-				print("  SelectBox position:", absolutePos)
-				print("  Viewport size:", viewportSize)
-				print("  Space below:", spaceBelow)
-				print("  Space above:", spaceAbove)
-				print("  Show above:", showAbove)
-				print("  Final position:", finalPosition)
+				dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, dropdownHeight)
 			end
 			
-			-- Function to toggle dropdown
 			local function toggleDropdown()
 				isOpen = not isOpen
 				dropdownFrame.Visible = isOpen
@@ -719,12 +650,9 @@ function EzUI.CreateWindow(config)
 				-- Update arrow direction
 				arrow.Text = isOpen and "▲" or "▼"
 				
-				-- Debug print
-				print("Dropdown toggled:", isOpen, "Options count:", #options)
-				
 				-- Only adjust dropdown size, keep container size fixed
 				if isOpen then
-					local dropdownHeight = math.min(#options * 30 + 35, 185) -- Include search box height
+					local dropdownHeight = isForAccordion and math.min(#options * 25 + 30, 150) or math.min(#options * 30 + 30, 200)
 					dropdownFrame.Size = UDim2.new(0, selectContainer.AbsoluteSize.X, 0, dropdownHeight)
 					
 					-- Calculate optimal position
@@ -743,218 +671,112 @@ function EzUI.CreateWindow(config)
 							end
 						end
 					end
-					
-					print("Dropdown expanded, container size remains:", selectContainer.Size)
-				else
-					print("Dropdown collapsed, container size remains:", selectContainer.Size)
 				end
 			end
 			
 			-- Create dropdown options
 			for i, option in ipairs(options) do
+				local optionHeight = isForAccordion and 25 or 30
 				local optionButton = Instance.new("TextButton")
-				optionButton.Size = UDim2.new(1, 0, 0, 30)
-				optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+				optionButton.Size = UDim2.new(1, -10, 0, optionHeight)
+				optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
+				optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 				optionButton.BorderSizePixel = 0
-				optionButton.Text = "  " .. option.text -- Display the text property
+				optionButton.Text = "  " .. option.text
 				optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 				optionButton.TextXAlignment = Enum.TextXAlignment.Left
 				optionButton.Font = Enum.Font.SourceSans
-				optionButton.TextSize = 14
-				optionButton.LayoutOrder = i
-				optionButton.ZIndex = 22 -- Higher than container
-				optionButton.Active = true
+				optionButton.TextSize = isForAccordion and 10 or 12
+				optionButton.ZIndex = 27
 				optionButton.Parent = optionsContainer
 				
-				-- Selection indicator for multi-select
+				-- Checkmark for multi-select
 				local checkmark = Instance.new("TextLabel")
-				checkmark.Size = UDim2.new(0, 25, 1, 0)
-				checkmark.Position = UDim2.new(1, -25, 0, 0)
+				checkmark.Size = UDim2.new(0, 20, 1, 0)
+				checkmark.Position = UDim2.new(1, -20, 0, 0)
 				checkmark.BackgroundTransparency = 1
 				checkmark.Text = ""
-				checkmark.TextColor3 = Color3.fromRGB(100, 200, 100)
+				checkmark.TextColor3 = Color3.fromRGB(100, 255, 100)
 				checkmark.TextXAlignment = Enum.TextXAlignment.Center
 				checkmark.Font = Enum.Font.SourceSansBold
-				checkmark.TextSize = 14
-				checkmark.ZIndex = 23 -- Highest Z-index
+				checkmark.TextSize = 12
+				checkmark.ZIndex = 28
 				checkmark.Parent = optionButton
+				checkmark.Visible = multiSelect
 				
-				print("Created option button:", option.text, "Value:", option.value, "Parent:", optionButton.Parent.Name)
-				
-				-- Option hover effect
-				optionButton.MouseEnter:Connect(function()
-					print("Mouse entered option:", option.text)
-					if not table.find(selectedValues, option.value) then
-						optionButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-					end
-				end)
-				
-				optionButton.MouseLeave:Connect(function()
-					print("Mouse left option:", option.text)
-					if table.find(selectedValues, option.value) then
-						optionButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-					else
-						optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-					end
-				end)
-				
-				-- Option click handler - SIMPLIFIED VERSION
 				optionButton.MouseButton1Click:Connect(function()
-					print("=== OPTION BUTTON CLICKED ===")
-					print("Clicked option:", option.text, "Value:", option.value)
-					print("Current isOpen:", isOpen)
-					print("MultiSelect mode:", multiSelect)
-					
-					-- Set flag to prevent auto-close during processing
-					preventAutoClose = true
+					preventAutoClose = true -- Prevent auto-close during processing
 					
 					if multiSelect then
-						-- Multi-select mode - dropdown stays open
-						local found = false
-						local foundIndex = nil
-						for j, val in ipairs(selectedValues) do
-							if val == option.value then
-								found = true
-								foundIndex = j
+						-- Toggle selection for multi-select
+						local isSelected = false
+						local indexToRemove = nil
+						for j, value in ipairs(selectedValues) do
+							if value == option.value then
+								isSelected = true
+								indexToRemove = j
 								break
 							end
 						end
 						
-						if found then
-							-- Remove from selection
-							table.remove(selectedValues, foundIndex)
+						if isSelected then
+							table.remove(selectedValues, indexToRemove)
 							checkmark.Text = ""
-							optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-							print("Removed from selection:", option.text, "Value:", option.value)
+							optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 						else
-							-- Add to selection
 							table.insert(selectedValues, option.value)
 							checkmark.Text = "✓"
-							optionButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-							print("Added to selection:", option.text, "Value:", option.value)
+							optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
 						end
-						
-						print("Multi-select: Dropdown stays open")
-						-- DO NOT CLOSE DROPDOWN - let user continue selecting
-						
 					else
-						-- Single select mode - auto close after selection
-						print("Single select - clearing all previous selections")
+						-- Single select
 						selectedValues = {option.value}
-						
-						-- Update all option buttons in this dropdown
-						for _, child in pairs(optionsContainer:GetChildren()) do
-							if child:IsA("TextButton") then
-								local childCheckmark = child:FindFirstChild("TextLabel")
-								if childCheckmark then
-									-- Find the option that matches this button
-									local childOption = nil
-									for _, opt in ipairs(options) do
-										if "  " .. opt.text == child.Text then
-											childOption = opt
-											break
-										end
-									end
-									
-									if childOption and childOption.value == option.value then
-										childCheckmark.Text = "✓"
-										child.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-										print("Marked as selected:", childOption.text)
-									else
-										childCheckmark.Text = ""
-										child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-										if childOption then
-											print("Unmarked:", childOption.text)
-										end
-									end
-								end
-							end
-						end
-						
-						-- Close dropdown after selection for single select
-						print("Single select: Closing dropdown in 0.15 seconds...")
-						spawn(function()
-							wait(0.15)
-							if isOpen and not preventAutoClose then
-								print("Actually closing dropdown now...")
-								toggleDropdown()
-							end
-						end)
+						updateDisplayText()
+						isOpen = false
+						dropdownFrame.Visible = false
+						arrow.Text = "▼"
 					end
 					
-					-- Update display text
 					updateDisplayText()
-					print("Updated display text")
 					
-					-- Call user callback with selected values and the clicked option
-					print("Calling user callback...")
-					local success, errorMsg = pcall(function()
-						callback(selectedValues, option)
-					end)
-					
-					if not success then
-						warn("SelectBox callback error:", errorMsg)
-					else
-						print("Callback executed successfully")
+					-- Call callback
+					if callback then
+						callback(selectedValues, option.value)
 					end
 					
-					-- Reset flag after processing complete
-					spawn(function()
-						wait(0.3) -- Reset after longer delay
-						preventAutoClose = false
-						print("Reset preventAutoClose flag")
-					end)
-					
-					print("=== END OPTION CLICK ===")
+					preventAutoClose = false -- Re-enable auto-close
 				end)
 			end
 			
-			-- Search functionality
-			local allOptionButtons = {}
-			for _, child in pairs(optionsContainer:GetChildren()) do
-				if child:IsA("TextButton") then
-					table.insert(allOptionButtons, child)
-				end
-			end
-			
+			-- Filter options based on search
 			local function filterOptions(searchText)
-				searchText = searchText:lower()
 				local visibleCount = 0
-				
-				for _, optionButton in pairs(allOptionButtons) do
-					local optionText = optionButton.Text:sub(3):lower() -- Remove "  " prefix
-					local isVisible = searchText == "" or optionText:find(searchText, 1, true) ~= nil
-					
-					optionButton.Visible = isVisible
-					if isVisible then
-						visibleCount = visibleCount + 1
+				local optionHeight = isForAccordion and 25 or 30
+				for i, child in ipairs(optionsContainer:GetChildren()) do
+					if child:IsA("TextButton") then
+						local option = options[i]
+						if option and string.find(string.lower(option.text), string.lower(searchText), 1, true) then
+							child.Visible = true
+							child.Position = UDim2.new(0, 5, 0, visibleCount * optionHeight)
+							visibleCount = visibleCount + 1
+						else
+							child.Visible = false
+						end
 					end
 				end
 				
-				-- Update canvas size based on visible options
-				local newCanvasHeight = (visibleCount * 30) + 35
-				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, newCanvasHeight)
-				
-				-- Update dropdown frame size and recalculate position
-				local maxVisibleHeight = math.min(visibleCount * 30, 150) + 35
-				dropdownFrame.Size = UDim2.new(0, selectContainer.AbsoluteSize.X, 0, maxVisibleHeight)
-				
-				-- Recalculate position when size changes
-				if isOpen then
-					calculateDropdownPosition()
-				end
-				
-				print("Search filter applied:", searchText, "Visible options:", visibleCount)
+				-- Update canvas size
+				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, visibleCount * optionHeight + 30)
 			end
 			
-			-- Connect search box events
+			-- Search functionality
 			searchBox.Changed:Connect(function(property)
 				if property == "Text" then
 					filterOptions(searchBox.Text)
 				end
 			end)
 			
-			-- Clear search when dropdown closes
+			-- Wrapper to reset search when dropdown closes
 			local originalToggleDropdown = toggleDropdown
 			toggleDropdown = function()
 				originalToggleDropdown()
@@ -964,199 +786,15 @@ function EzUI.CreateWindow(config)
 				end
 			end
 			
-			-- Update dropdown position when window or tab content moves/resizes
-			local function onPositionChanged()
-				if isOpen then
-					calculateDropdownPosition()
-				end
-			end
-			
-			-- Connect to position/size changes
-			selectContainer:GetPropertyChangedSignal("AbsolutePosition"):Connect(onPositionChanged)
-			selectContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(onPositionChanged)
-			
-			-- Connect to scroll changes - close dropdown on scroll for better UX
-			scrollFrame:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-				if isOpen then
-					toggleDropdown() -- Close dropdown when scrolling
-				end
-			end)
-			
-			-- Also connect to frame changes for when window is moved/resized
-			frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(onPositionChanged)
-			frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-				if isOpen then
-					calculateDropdownPosition()
-				end
-			end)
-			
-			-- Close dropdown when clicking outside (improved detection)
-			local UserInputService = game:GetService("UserInputService")
-			local outsideConnection
-			
-			local function closeDropdownOutside()
-				if outsideConnection then
-					outsideConnection:Disconnect()
-					outsideConnection = nil
-				end
-				
-				-- Only setup outside click detection for multi-select mode
-				if not multiSelect then
-					print("Single select mode - no outside click detection needed")
-					return
-				end
-				
-				print("Setting up outside click detection for multi-select mode")
-				outsideConnection = UserInputService.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 and isOpen and not preventAutoClose then
-						print("Outside click detected for multi-select, checking position...")
-						
-						-- Use spawn for async check with longer delay
-						spawn(function()
-							wait(0.3) -- Longer delay to ensure option clicks complete
-							if isOpen and not preventAutoClose then
-								local mouse = game.Players.LocalPlayer:GetMouse()
-								local mousePos = Vector2.new(mouse.X, mouse.Y)
-								
-								-- Get container bounds
-								local containerPos = selectContainer.AbsolutePosition
-								local containerSize = selectContainer.AbsoluteSize
-								
-								-- Get dropdown bounds (includes search box)
-								local dropdownPos = dropdownFrame.AbsolutePosition
-								local dropdownSize = dropdownFrame.AbsoluteSize
-								
-								print("Mouse pos:", mousePos.X, mousePos.Y)
-								print("Container bounds:", containerPos.X, containerPos.Y, "to", containerPos.X + containerSize.X, containerPos.Y + containerSize.Y)
-								print("Dropdown bounds:", dropdownPos.X, dropdownPos.Y, "to", dropdownPos.X + dropdownSize.X, dropdownPos.Y + dropdownSize.Y)
-								
-								-- Check if click is outside both container AND dropdown areas
-								local outsideContainer = mousePos.X < containerPos.X or mousePos.X > containerPos.X + containerSize.X or
-								                        mousePos.Y < containerPos.Y or mousePos.Y > containerPos.Y + containerSize.Y
-								
-								local outsideDropdown = mousePos.X < dropdownPos.X or mousePos.X > dropdownPos.X + dropdownSize.X or
-								                       mousePos.Y < dropdownPos.Y or mousePos.Y > dropdownPos.Y + dropdownSize.Y
-								
-								local isOutside = outsideContainer and outsideDropdown
-								
-								if isOutside then
-									print("Multi-select: Click is outside both container and dropdown, closing dropdown")
-									toggleDropdown()
-									if outsideConnection then
-										outsideConnection:Disconnect()
-										outsideConnection = nil
-									end
-								else
-									print("Multi-select: Click is inside container or dropdown area, keeping dropdown open")
-								end
-							else
-								print("Outside click ignored - preventAutoClose is active or dropdown closed")
-							end
-						end)
-					end
-				end)
-			end
-			
 			-- SelectBox button click handler
 			selectButton.MouseButton1Click:Connect(function()
-				print("=== SELECTBOX BUTTON CLICKED ===")
-				print("Current isOpen state:", isOpen)
-				print("MultiSelect mode:", multiSelect)
 				toggleDropdown()
-				print("After toggle, isOpen:", isOpen)
-				
-				-- Disconnect any existing outside detection first
-				if outsideConnection then
-					print("Disconnecting existing outside click detection...")
-					outsideConnection:Disconnect()
-					outsideConnection = nil
-				end
-				
-				if isOpen and multiSelect then
-					print("Dropdown opened in multi-select mode - setting up outside click detection...")
-					-- Small delay before setting up outside detection to avoid immediate trigger
-					spawn(function()
-						wait(0.1)
-						closeDropdownOutside()
-					end)
-				elseif isOpen then
-					print("Dropdown opened in single-select mode - no outside detection needed")
-				else
-					print("Dropdown closed - no outside detection needed")
-				end
-				print("=== END SELECTBOX BUTTON CLICK ===")
 			end)
 			
 			-- Arrow click handler (same functionality as selectButton)
 			arrow.MouseButton1Click:Connect(function()
-				print("=== SELECTBOX ARROW CLICKED ===")
-				print("Current isOpen state:", isOpen)
-				print("MultiSelect mode:", multiSelect)
 				toggleDropdown()
-				print("After toggle, isOpen:", isOpen)
-				
-				-- Disconnect any existing outside detection first
-				if outsideConnection then
-					print("Disconnecting existing outside click detection...")
-					outsideConnection:Disconnect()
-					outsideConnection = nil
-				end
-				
-				-- Only enable outside click detection for multi-select when dropdown is open
-				if isOpen and multiSelect then
-					print("Setting up outside click detection for multi-select...")
-					wait(0.1) -- Small delay to prevent immediate closing
-					
-					outsideConnection = UserInputService.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-							local target = input.Target
-							print("Outside click detected, target:", target and target.Name or "nil")
-							
-							-- Check if click is outside dropdown area
-							local clickedOnDropdown = false
-							if target then
-								local current = target
-								while current do
-									if current == dropdownFrame or current == selectButton or current == arrow or current == selectContainer then
-										clickedOnDropdown = true
-										print("Click detected on dropdown element:", current.Name)
-										break
-									end
-									current = current.Parent
-								end
-							end
-							
-							if not clickedOnDropdown and not preventAutoClose then
-								print("Click outside dropdown detected - closing dropdown")
-								isOpen = false
-								dropdownFrame.Visible = false
-								arrow.Text = "▼"
-								if outsideConnection then
-									outsideConnection:Disconnect()
-									outsideConnection = nil
-								end
-							else
-								print("Outside click ignored - preventAutoClose is active or dropdown closed")
-							end
-						end
-					end)
-				elseif isOpen and not multiSelect then
-					print("Dropdown opened in single-select mode - no outside detection needed")
-				else
-					print("Dropdown closed - no outside detection needed")
-				end
-				print("=== END SELECTBOX ARROW CLICK ===")
 			end)
-			
-			-- Update posisi Y untuk elemen berikutnya
-			-- Use fixed spacing like other components
-			tabCurrentY = tabCurrentY + 40
-			
-			-- Update canvas size jika tab ini sedang aktif
-			if tabContent == activeTab then
-				currentY = tabCurrentY
-				api:UpdateWindowSize()
-			end
 			
 			-- Return SelectBox API
 			return {
@@ -1167,27 +805,27 @@ function EzUI.CreateWindow(config)
 					selectedValues = values or {}
 					updateDisplayText()
 					
-					-- Update checkmarks and colors based on values (not display text)
+					-- Update visual state of options
 					for _, child in pairs(optionsContainer:GetChildren()) do
 						if child:IsA("TextButton") then
-							local childCheckmark = child:FindFirstChild("TextLabel")
-							if childCheckmark then
-								-- Find the option that matches this button
-								local childOption = nil
-								for _, opt in ipairs(options) do
-									if "  " .. opt.text == child.Text then
-										childOption = opt
-										break
-									end
+							local childOption = nil
+							local childIndex = nil
+							for i, option in ipairs(options) do
+								local optionChild = optionsContainer:GetChildren()[i]
+								if optionChild == child then
+									childOption = option
+									childIndex = i
+									break
 								end
-								
+							end
+							
+							local childCheckmark = child:FindFirstChild("TextLabel")
+							if childCheckmark and childOption then
 								local isSelected = false
-								if childOption then
-									for _, val in ipairs(selectedValues) do
-										if val == childOption.value then
-											isSelected = true
-											break
-										end
+								for _, val in ipairs(selectedValues) do
+									if val == childOption.value then
+										isSelected = true
+										break
 									end
 								end
 								
@@ -1201,208 +839,269 @@ function EzUI.CreateWindow(config)
 					selectedValues = {}
 					updateDisplayText()
 					
-					-- Clear all checkmarks and colors
+					-- Clear visual state
 					for _, child in pairs(optionsContainer:GetChildren()) do
 						if child:IsA("TextButton") then
-							local childCheckmark = child:FindFirstChild("TextLabel")
-							if childCheckmark then
-								childCheckmark.Text = ""
-								child.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+							local checkmark = child:FindFirstChild("TextLabel")
+							if checkmark then
+								checkmark.Text = ""
 							end
+							child.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 						end
 					end
 				end,
 				Refresh = function(newOptions)
-					-- Clear existing options from optionsContainer
+					-- Clear existing options
 					for _, child in pairs(optionsContainer:GetChildren()) do
 						if child:IsA("TextButton") then
 							child:Destroy()
 						end
 					end
 					
-					-- Normalize new options to object format
-					local rawOptions = newOptions or {}
+					-- Update options
+					rawOptions = newOptions
 					options = {}
 					for i, option in ipairs(rawOptions) do
 						if type(option) == "string" then
-							-- Convert string to object format
 							table.insert(options, {text = option, value = option})
 						elseif type(option) == "table" and option.text and option.value then
-							-- Already in object format
 							table.insert(options, {text = option.text, value = option.value})
-						else
-							warn("SelectBox Refresh: Invalid option format at index " .. i .. ". Expected string or {text, value} object.")
 						end
 					end
 					
-					dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * 30 + 35) -- Include search box space
-					
-					-- Clear selected values
-					selectedValues = {}
-					updateDisplayText()
-					
-					-- Clear and rebuild allOptionButtons array
-					allOptionButtons = {}
-					
-					-- Recreate options with full functionality
+					-- Recreate options (similar to above)
 					for i, option in ipairs(options) do
+						local optionHeight = isForAccordion and 25 or 30
 						local optionButton = Instance.new("TextButton")
-						optionButton.Size = UDim2.new(1, 0, 0, 30)
-						optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+						optionButton.Size = UDim2.new(1, -10, 0, optionHeight)
+						optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
+						optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 						optionButton.BorderSizePixel = 0
-						optionButton.Text = "  " .. option.text -- Use text property
+						optionButton.Text = "  " .. option.text
 						optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 						optionButton.TextXAlignment = Enum.TextXAlignment.Left
 						optionButton.Font = Enum.Font.SourceSans
-						optionButton.TextSize = 14
-						optionButton.LayoutOrder = i
-						optionButton.ZIndex = 22 -- Updated Z-index
-						optionButton.Active = true
+						optionButton.TextSize = isForAccordion and 10 or 12
+						optionButton.ZIndex = 27
+						optionButton.Parent = optionsContainer
 						
-						-- Store the option value as an attribute for later reference
-						optionButton:SetAttribute("OptionValue", option.value)
-						
-						optionButton.Parent = optionsContainer -- Use optionsContainer instead of dropdownFrame
-						
-						-- Add to allOptionButtons array
-						table.insert(allOptionButtons, optionButton)
-						
-						-- Selection indicator
 						local checkmark = Instance.new("TextLabel")
-						checkmark.Size = UDim2.new(0, 25, 1, 0)
-						checkmark.Position = UDim2.new(1, -25, 0, 0)
+						checkmark.Size = UDim2.new(0, 20, 1, 0)
+						checkmark.Position = UDim2.new(1, -20, 0, 0)
 						checkmark.BackgroundTransparency = 1
 						checkmark.Text = ""
-						checkmark.TextColor3 = Color3.fromRGB(100, 200, 100)
+						checkmark.TextColor3 = Color3.fromRGB(100, 255, 100)
 						checkmark.TextXAlignment = Enum.TextXAlignment.Center
 						checkmark.Font = Enum.Font.SourceSansBold
-						checkmark.TextSize = 14
-						checkmark.ZIndex = 23 -- Updated Z-index
+						checkmark.TextSize = 12
+						checkmark.ZIndex = 28
 						checkmark.Parent = optionButton
+						checkmark.Visible = multiSelect
 						
-						-- Hover effects
-						optionButton.MouseEnter:Connect(function()
-							if not table.find(selectedValues, option.value) then
-								optionButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-							end
-						end)
-						
-						optionButton.MouseLeave:Connect(function()
-							if table.find(selectedValues, option.value) then
-								optionButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-							else
-								optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-							end
-						end)
-						
-						-- Click handler
 						optionButton.MouseButton1Click:Connect(function()
-							print("=== REFRESHED OPTION CLICK START ===")
-							print("Refreshed option clicked:", option.text, "Value:", option.value)
-							print("Multi-select mode:", multiSelect)
-							print("Current selected values:", table.concat(selectedValues, ", "))
-							
-							-- Set preventAutoClose flag for multi-select
-							if multiSelect then
-								preventAutoClose = true
-								print("Set preventAutoClose = true for multi-select")
-							end
+							preventAutoClose = true
 							
 							if multiSelect then
-								-- Multi-select mode - dropdown stays open
-								local index = nil
-								for j, val in ipairs(selectedValues) do
-									if val == option.value then
-										index = j
+								local isSelected = false
+								local indexToRemove = nil
+								for j, value in ipairs(selectedValues) do
+									if value == option.value then
+										isSelected = true
+										indexToRemove = j
 										break
 									end
 								end
 								
-								if index then
-									-- Remove from selection
-									table.remove(selectedValues, index)
+								if isSelected then
+									table.remove(selectedValues, indexToRemove)
 									checkmark.Text = ""
-									optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-									print("Removed from selection:", option.value)
+									optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 								else
-									-- Add to selection
 									table.insert(selectedValues, option.value)
 									checkmark.Text = "✓"
-									optionButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-									print("Added to selection:", option.value)
+									optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
 								end
-								
 							else
-								-- Single select mode
 								selectedValues = {option.value}
-								print("Single select - set to:", option.value)
-								
-								-- Update all checkmarks and colors
-								for _, child in pairs(optionsContainer:GetChildren()) do
-									if child:IsA("TextButton") then
-										local childCheckmark = child:FindFirstChild("TextLabel")
-										if childCheckmark then
-											-- Find the corresponding option for this button
-											local childOptionValue = child:GetAttribute("OptionValue")
-											if childOptionValue == option.value then
-												childCheckmark.Text = "✓"
-												child.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-											else
-												childCheckmark.Text = ""
-												child.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-											end
-										end
-									end
-								end
-								
-								-- Close dropdown for single select
-								print("Single select: Closing dropdown in 0.15 seconds...")
-								spawn(function()
-									wait(0.15)
-									if isOpen and not preventAutoClose then
-										print("Actually closing dropdown now...")
-										toggleDropdown()
-									end
-								end)
+								updateDisplayText()
+								isOpen = false
+								dropdownFrame.Visible = false
+								arrow.Text = "▼"
 							end
 							
-							-- Update display text
 							updateDisplayText()
-							print("Updated display text")
 							
-							-- Call user callback
-							print("Calling user callback...")
-							local success, errorMsg = pcall(function()
+							if callback then
 								callback(selectedValues, option.value)
-							end)
-							
-							if not success then
-								warn("SelectBox callback error:", errorMsg)
-							else
-								print("Callback executed successfully")
 							end
 							
-							-- Reset flag after processing complete
-							spawn(function()
-								wait(0.3) -- Reset after longer delay
-								preventAutoClose = false
-								print("Reset preventAutoClose flag")
-							end)
-							
-							print("=== REFRESHED OPTION CLICK END ===")
+							preventAutoClose = false
 						end)
 					end
-				end,
-				Disconnect = function()
-					if outsideConnection then
-						outsideConnection:Disconnect()
-					end
-					-- Clean up dropdown from ScreenGui
-					if dropdownFrame and dropdownFrame.Parent then
-						dropdownFrame:Destroy()
-					end
+					
+					-- Update canvas size
+					local optionHeight = isForAccordion and 25 or 30
+					dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight + 30)
+					
+					-- Clear selected values
+					selectedValues = {}
+					updateDisplayText()
 				end
 			}
+		end
+
+		-- Centralized Label component that can be used by both tab and accordion APIs
+		local function createLabel(text, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			local label = Instance.new("TextLabel")
+			if isForAccordion then
+				label.Size = UDim2.new(1, 0, 0, 25) -- Full width for accordion (padding handles spacing)
+				label.Position = UDim2.new(0, 0, 0, currentY)
+				label.TextSize = 14
+				label.ZIndex = 5
+			else
+				label.Size = UDim2.new(1, -20, 0, 30) -- Standard size for tab
+				label.Position = UDim2.new(0, 10, 0, currentY)
+				label.TextSize = 16
+				label.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				label:SetAttribute("ComponentStartY", currentY)
+			end
+			label.BackgroundTransparency = 1
+			label.Text = text
+			label.TextColor3 = Color3.fromRGB(255, 255, 255)
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Font = Enum.Font.SourceSans
+			label.Parent = parentContainer
+			
+			return label
+		end
+
+		-- Centralized Button component that can be used by both tab and accordion APIs
+		local function createButton(text, callback, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			local button = Instance.new("TextButton")
+			if isForAccordion then
+				button.Size = UDim2.new(0, 100, 0, 25)
+				button.Position = UDim2.new(0, 0, 0, currentY)
+				button.BorderColor3 = Color3.fromRGB(255, 255, 255)
+				button.BorderSizePixel = 2
+				button.TextSize = 12
+				button.ZIndex = 5
+				
+				-- Round corners for accordion button
+				local buttonCorner = Instance.new("UICorner")
+				buttonCorner.CornerRadius = UDim.new(0, 4)
+				buttonCorner.Parent = button
+				
+				-- Button hover effects for accordion
+				button.MouseEnter:Connect(function()
+					button.BackgroundColor3 = Color3.fromRGB(120, 170, 255)
+				end)
+				
+				button.MouseLeave:Connect(function()
+					button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
+				end)
+			else
+				button.Size = UDim2.new(0, 120, 0, 30)
+				button.Position = UDim2.new(0, 10, 0, currentY)
+				button.BorderSizePixel = 0
+				button.TextSize = 14
+				button.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				button:SetAttribute("ComponentStartY", currentY)
+			end
+			button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
+			button.Text = text
+			button.TextColor3 = Color3.fromRGB(255, 255, 255)
+			button.Font = Enum.Font.SourceSans
+			button.Parent = parentContainer
+
+			if callback then
+				button.MouseButton1Click:Connect(callback)
+			end
+			
+			return button
+		end
+
+		-- Centralized Separator component that can be used by both tab and accordion APIs
+		local function createSeparator(parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			local separator = Instance.new("Frame")
+			if isForAccordion then
+				separator.Size = UDim2.new(1, 0, 0, 1) -- Full width for accordion (padding handles spacing)
+				separator.Position = UDim2.new(0, 0, 0, currentY + 5)
+				separator.ZIndex = 5
+			else
+				separator.Size = UDim2.new(1, -20, 0, 1) -- Standard size for tab
+				separator.Position = UDim2.new(0, 10, 0, currentY + 5)
+				separator.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				separator:SetAttribute("ComponentStartY", currentY)
+			end
+			separator.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			separator.BorderSizePixel = 0
+			separator.Parent = parentContainer
+			
+			return separator
+		end
+
+		-- Create tab API object
+		local tabAPI = {}
+
+		function tabAPI:AddLabel(text)
+			-- Use centralized Label function for tab
+			local label = createLabel(text, tabContent, tabCurrentY, nil, nil, nil, false)
+			
+			-- Update posisi Y untuk elemen berikutnya
+			tabCurrentY = tabCurrentY + 35
+			
+			-- Update canvas size jika tab ini sedang aktif
+			if tabContent == activeTab then
+				currentY = tabCurrentY
+				api:UpdateWindowSize()
+			end
+		end
+
+		function tabAPI:AddButton(text, callback)
+			-- Use centralized Button function for tab
+			local button = createButton(text, callback, tabContent, tabCurrentY, nil, nil, nil, false)
+			
+			-- Update posisi Y untuk elemen berikutnya
+			tabCurrentY = tabCurrentY + 35
+			
+			-- Update canvas size jika tab ini sedang aktif
+			if tabContent == activeTab then
+				currentY = tabCurrentY
+				api:UpdateWindowSize()
+			end
+		end
+
+		function tabAPI:AddSelectBox(config)
+			-- Use centralized SelectBox function for tab
+			local selectBoxAPI = createSelectBox(
+				config, 
+				tabContent, 
+				tabCurrentY, 
+				function() -- updateSizeFunction
+					if tabContent == activeTab then
+						currentY = tabCurrentY
+						api:UpdateWindowSize()
+					end
+				end, 
+				nil, -- animateFunction (not needed for tabs)
+				true, -- isExpanded (always true for tabs)
+				false -- isForAccordion = false
+			)
+			
+			-- Update posisi Y untuk elemen berikutnya
+			tabCurrentY = tabCurrentY + 40
+			
+			-- Update canvas size jika tab ini sedang aktif
+			if tabContent == activeTab then
+				currentY = tabCurrentY
+				api:UpdateWindowSize()
+			end
+			
+			-- Return SelectBox API
+			return selectBoxAPI
 		end
 
 		function tabAPI:AddToggle(config)
@@ -1991,6 +1690,20 @@ function EzUI.CreateWindow(config)
 			}
 		end
 
+		function tabAPI:AddSeparator()
+			-- Use centralized Separator function for tab
+			local separator = createSeparator(tabContent, tabCurrentY, nil, nil, nil, false)
+			
+			-- Update posisi Y untuk elemen berikutnya (separator uses +15 spacing like accordion)
+			tabCurrentY = tabCurrentY + 15
+			
+			-- Update canvas size jika tab ini sedang aktif
+			if tabContent == activeTab then
+				currentY = tabCurrentY
+				api:UpdateWindowSize()
+			end
+		end
+
 		function tabAPI:AddAccordion(config)
 			-- Default config
 			local title = config.Title or config.Name or "Accordion"
@@ -2086,6 +1799,14 @@ function EzUI.CreateWindow(config)
 			local contentCorner = Instance.new("UICorner")
 			contentCorner.CornerRadius = UDim.new(0, 4)
 			contentCorner.Parent = accordionContent
+			
+			-- Add padding to accordion content
+			local contentPadding = Instance.new("UIPadding")
+			contentPadding.PaddingTop = UDim.new(0, 8)
+			contentPadding.PaddingBottom = UDim.new(0, 8)
+			contentPadding.PaddingLeft = UDim.new(0, 8)
+			contentPadding.PaddingRight = UDim.new(0, 8)
+			contentPadding.Parent = accordionContent
 			
 			-- Content layout
 			local contentLayout = Instance.new("UIListLayout")
@@ -2276,17 +1997,8 @@ function EzUI.CreateWindow(config)
 			local accordionAPI = {}
 			
 			function accordionAPI:AddLabel(text)
-				local label = Instance.new("TextLabel")
-				label.Size = UDim2.new(1, -20, 0, 25)
-				label.Position = UDim2.new(0, 10, 0, accordionCurrentY)
-				label.BackgroundTransparency = 1
-				label.Text = text
-				label.TextColor3 = Color3.fromRGB(255, 255, 255)
-				label.TextXAlignment = Enum.TextXAlignment.Left
-				label.Font = Enum.Font.SourceSans
-				label.TextSize = 14
-				label.ZIndex = 5
-				label.Parent = accordionContent
+				-- Use centralized Label function for accordion
+				local label = createLabel(text, accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
 				
 				accordionCurrentY = accordionCurrentY + 30
 				updateAccordionSize()
@@ -2297,35 +2009,8 @@ function EzUI.CreateWindow(config)
 			end
 			
 			function accordionAPI:AddButton(text, buttonCallback)
-				local button = Instance.new("TextButton")
-				button.Size = UDim2.new(0, 100, 0, 25)
-				button.Position = UDim2.new(0, 10, 0, accordionCurrentY)
-				button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
-				button.Text = text
-				button.TextColor3 = Color3.fromRGB(255, 255, 255)
-				button.Font = Enum.Font.SourceSans
-				button.TextSize = 12
-				button.BorderSizePixel = 0
-				button.ZIndex = 5
-				button.Parent = accordionContent
-				
-				-- Round corners for button
-				local buttonCorner = Instance.new("UICorner")
-				buttonCorner.CornerRadius = UDim.new(0, 4)
-				buttonCorner.Parent = button
-				
-				if buttonCallback then
-					button.MouseButton1Click:Connect(buttonCallback)
-				end
-				
-				-- Button hover effects
-				button.MouseEnter:Connect(function()
-					button.BackgroundColor3 = Color3.fromRGB(120, 170, 255)
-				end)
-				
-				button.MouseLeave:Connect(function()
-					button.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
-				end)
+				-- Use centralized Button function for accordion
+				local button = createButton(text, buttonCallback, accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
 				
 				accordionCurrentY = accordionCurrentY + 30
 				updateAccordionSize()
@@ -2335,14 +2020,33 @@ function EzUI.CreateWindow(config)
 				end
 			end
 			
+			function accordionAPI:AddSelectBox(config)
+				-- Use centralized SelectBox function for accordion
+				local selectBoxAPI = createSelectBox(
+					config, 
+					accordionContent, 
+					accordionCurrentY, 
+					updateAccordionSize, 
+					animateAccordion, 
+					isExpanded, 
+					true -- isForAccordion = true
+				)
+				
+				-- Update accordion position
+				accordionCurrentY = accordionCurrentY + 35 -- Height + spacing
+				updateAccordionSize()
+				
+				if isExpanded then
+					animateAccordion()
+				end
+				
+				-- Return SelectBox API
+				return selectBoxAPI
+			end
+			
 			function accordionAPI:AddSeparator()
-				local separator = Instance.new("Frame")
-				separator.Size = UDim2.new(1, -20, 0, 1)
-				separator.Position = UDim2.new(0, 10, 0, accordionCurrentY + 5)
-				separator.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-				separator.BorderSizePixel = 0
-				separator.ZIndex = 5
-				separator.Parent = accordionContent
+				-- Use centralized Separator function for accordion
+				local separator = createSeparator(accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
 				
 				accordionCurrentY = accordionCurrentY + 15
 				updateAccordionSize()
@@ -2418,6 +2122,7 @@ function EzUI.CreateWindow(config)
 				end,
 				AddLabel = accordionAPI.AddLabel,
 				AddButton = accordionAPI.AddButton,
+				AddSelectBox = accordionAPI.AddSelectBox,
 				AddSeparator = accordionAPI.AddSeparator
 			}
 		end
