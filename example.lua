@@ -587,6 +587,18 @@ basicAccordion:AddTextBox({
     end
 })
 
+basicAccordion:AddNumberBox({
+    Placeholder = "Enter age...",
+    Default = 18,
+    Min = 0,
+    Max = 150,
+    Increment = 1,
+    Decimals = 0,
+    Callback = function(value)
+        print("Age set to:", value)
+    end
+})
+
 -- Settings Accordion (expanded by default)
 local settingsAccordion = accordionTab:AddAccordion({
 	Title = "Application Settings",
