@@ -1956,18 +1956,13 @@ function EzUI.CreateWindow(config)
 			local accordionHeader = Instance.new("TextButton")
 			accordionHeader.Size = UDim2.new(1, 0, 0, 30)
 			accordionHeader.Position = UDim2.new(0, 0, 0, 0)
-			accordionHeader.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+			accordionHeader.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 			accordionHeader.BorderColor3 = Color3.fromRGB(100, 100, 100)
 			accordionHeader.BorderSizePixel = 1
 			accordionHeader.Text = "" -- We'll use custom labels
 			accordionHeader.ZIndex = 4
 			accordionHeader.Parent = accordionContainer
-			
-			-- Round corners for header
-			local headerCorner = Instance.new("UICorner")
-			headerCorner.CornerRadius = UDim.new(0, 4)
-			headerCorner.Parent = accordionHeader
-			
+					
 			-- Expand/Collapse arrow
 			local accordionArrow = Instance.new("TextLabel")
 			accordionArrow.Size = UDim2.new(0, 30, 1, 0)
