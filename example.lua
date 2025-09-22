@@ -180,6 +180,38 @@ tab:AddButton(
     end
 )
 
-print("Configuration system test loaded!")
-print("All components with Flag parameter will automatically save/load their values")
-print("Configuration will be saved to:", "workspace/"..EzUI.Configuration.FolderName.."/"..EzUI.Configuration.FileName..".json")
+-- New Custom Configuration System Examples
+print("\n=== Custom Configuration System Examples ===")
+
+-- Example 1: Create a custom configuration
+print("\n1. Create custom configuration:")
+local customConfig = EzUI.NewConfig("CustomConfig")
+print("Custom config created:", customConfig.GetName())
+
+-- Example 2: Set and get values in custom config
+print("\n2. Set and get values in custom config:")
+customConfig.SetValue("PlayerPreference", "Dark Mode")
+customConfig.SetValue("Volume", 75)
+customConfig.SetValue("AutoConnect", true)
+
+print("PlayerPreference:", customConfig.GetValue("PlayerPreference"))
+print("Volume:", customConfig.GetValue("Volume"))
+print("AutoConnect:", customConfig.GetValue("AutoConnect"))
+
+-- Example 3: Update a value
+print("\n3. Update a value:")
+customConfig.SetValue("Volume", 85)
+print("Updated Volume:", customConfig.GetValue("Volume"))
+
+-- Example 4: Delete By Key
+print("\n4. Delete by key:")
+customConfig.DeleteKey("AutoConnect")
+print("AutoConnect after deletion:", customConfig.GetValue("AutoConnect"))  -- Should be nil
+
+-- Example 5: Get all config keys and values
+print("\n5. Get all config keys and values:")
+local allConfigs = customConfig.GetAll()
+print("All configurations:")
+for key, value in pairs(allConfigs) do
+	print("  " .. key .. ":", value)
+end
