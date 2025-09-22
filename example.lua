@@ -7,8 +7,10 @@ local EzUILib = require(ReplicatedStorage:WaitForChild("EzUI"))
 -- Create window and set properties
 local window = EzUILib.CreateWindow({
 	Name = "My New UI",
-	Width = 400,
-	Height = 300
+	Width = 400, -- Optional: Override default calculated width
+	Height = 300, -- Optional: Override default calculated height
+	Opacity = 0.9,  -- 0.1 to 1.0 (10% to 100%)
+	AutoAdapt = true, -- Optional: Auto-resize on viewport changes (default true)
 })
 
 -- Create tabs and store references

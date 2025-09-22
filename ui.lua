@@ -4,6 +4,42 @@ local EzUI = {}
 function EzUI.CreateWindow(config)
 	print("Creating window with config:", config.Name) -- debug info
 	
+	-- Extract opacity parameter (default 1.0 = fully opaque)
+	local windowOpacity = config.Opacity or 1.0
+	-- Clamp opacity between 0.1 and 1.0
+	windowOpacity = math.max(0.1, math.min(1.0, windowOpacity))
+	
+	-- Get viewport size for dynamic scaling
+	local viewportSize = workspace.CurrentCamera.ViewportSize
+	print("Viewport size:", viewportSize.X, "x", viewportSize.Y) -- debug info
+	
+	-- Calculate dynamic window dimensions based on viewport
+	local function calculateDynamicSize()
+		local baseWidth = config.Width or (viewportSize.X * 0.3) -- 30% of screen width
+		local baseHeight = config.Height or (viewportSize.Y * 0.4) -- 40% of screen height
+		
+		-- Apply resolution-based scaling
+		local scaleMultiplier = 1
+		if viewportSize.X >= 1920 then -- 1080p+
+			scaleMultiplier = 1.2
+		elseif viewportSize.X >= 1366 then -- 720p-1080p
+			scaleMultiplier = 1.0
+		elseif viewportSize.X >= 1024 then -- Tablet size
+			scaleMultiplier = 0.9
+		else -- Mobile/small screens
+			scaleMultiplier = 0.8
+		end
+		
+		-- Apply scaling and enforce minimum/maximum sizes
+		local finalWidth = math.max(300, math.min(viewportSize.X * 0.8, baseWidth * scaleMultiplier))
+		local finalHeight = math.max(200, math.min(viewportSize.Y * 0.8, baseHeight * scaleMultiplier))
+		
+		print("Dynamic size calculated:", finalWidth, "x", finalHeight) -- debug info
+		return finalWidth, finalHeight
+	end
+	
+	local windowWidth, windowHeight = calculateDynamicSize()
+	
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = config.Name or "MyWindow"
 	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -11,9 +47,10 @@ function EzUI.CreateWindow(config)
 
 	-- 🟦 Main window in the center of the screen
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, config.Width or 300, 0, config.Height or 200)
-	frame.Position = UDim2.new(0.5, -(config.Width or 300) / 2, 0.5, -(config.Height or 200) / 2)
+	frame.Size = UDim2.new(0, windowWidth, 0, windowHeight)
+	frame.Position = UDim2.new(0.5, -windowWidth / 2, 0.5, -windowHeight / 2)
 	frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	frame.BackgroundTransparency = 1 - windowOpacity -- Convert opacity to transparency
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.ClipsDescendants = true -- ensure components do not go outside the window
@@ -37,6 +74,7 @@ function EzUI.CreateWindow(config)
 	tabPanel.Size = UDim2.new(0, 100, 1, -30)
 	tabPanel.Position = UDim2.new(0, 0, 0, 30)
 	tabPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	tabPanel.BackgroundTransparency = 1 - windowOpacity -- Match window opacity
 	tabPanel.BorderSizePixel = 0
 	tabPanel.ClipsDescendants = true
 	tabPanel.ZIndex = 2 -- Above window frame
@@ -139,8 +177,15 @@ function EzUI.CreateWindow(config)
 	UserInputService.InputChanged:Connect(function(input)
 		if input == resizeInput and resizeDragging then
 			local delta = input.Position - resizeStartPos
-			local newWidth = math.max(200, resizeStartSize.X.Offset + delta.X)
-			local newHeight = math.max(100, resizeStartSize.Y.Offset + delta.Y)
+			-- Calculate dynamic minimum sizes based on current viewport
+			local currentViewport = workspace.CurrentCamera.ViewportSize
+			local minWidth = math.max(250, currentViewport.X * 0.15) -- Minimum 15% of screen width
+			local minHeight = math.max(150, currentViewport.Y * 0.2) -- Minimum 20% of screen height
+			local maxWidth = currentViewport.X * 0.9 -- Maximum 90% of screen width
+			local maxHeight = currentViewport.Y * 0.9 -- Maximum 90% of screen height
+			
+			local newWidth = math.max(minWidth, math.min(maxWidth, resizeStartSize.X.Offset + delta.X))
+			local newHeight = math.max(minHeight, math.min(maxHeight, resizeStartSize.Y.Offset + delta.Y))
 			frame.Size = UDim2.new(0, newWidth, 0, newHeight)
 			-- Update window position to stay centered
 			frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
@@ -148,6 +193,8 @@ function EzUI.CreateWindow(config)
 			scrollFrame.Size = UDim2.new(1, -100, 1, -30)
 			-- Update resize handle position
 			resizeHandle.Position = UDim2.new(1, -16, 1, -16)
+			
+			print("Resized to:", newWidth, "x", newHeight) -- debug info
 		end
 	end)
 
@@ -155,6 +202,7 @@ function EzUI.CreateWindow(config)
 	local header = Instance.new("Frame")
 	header.Size = UDim2.new(1, 0, 0, 30)
 	header.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	header.BackgroundTransparency = 1 - windowOpacity -- Match window opacity
 	header.BorderSizePixel = 0
 	header.ZIndex = 25 -- Higher than SelectBox dropdown
 	header.Parent = frame
@@ -2443,6 +2491,112 @@ function EzUI.CreateWindow(config)
 		
 		return enhancedTabAPI
 	end
+
+	-- Window opacity control methods
+	function api:SetOpacity(opacity)
+		-- Clamp opacity between 0.1 and 1.0
+		windowOpacity = math.max(0.1, math.min(1.0, opacity))
+		local transparency = 1 - windowOpacity
+		
+		-- Update main window components
+		frame.BackgroundTransparency = transparency
+		tabPanel.BackgroundTransparency = transparency
+		header.BackgroundTransparency = transparency
+		
+		print("Window opacity set to:", windowOpacity)
+	end
+	
+	function api:GetOpacity()
+		return windowOpacity
+	end
+	
+	function api:FadeIn(duration)
+		duration = duration or 0.3
+		local TweenService = game:GetService("TweenService")
+		local targetTransparency = 1 - windowOpacity
+		
+		-- Start from fully transparent
+		frame.BackgroundTransparency = 1
+		tabPanel.BackgroundTransparency = 1
+		header.BackgroundTransparency = 1
+		
+		-- Tween to target opacity
+		local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+		
+		local frameTween = TweenService:Create(frame, tweenInfo, {BackgroundTransparency = targetTransparency})
+		local tabPanelTween = TweenService:Create(tabPanel, tweenInfo, {BackgroundTransparency = targetTransparency})
+		local headerTween = TweenService:Create(header, tweenInfo, {BackgroundTransparency = targetTransparency})
+		
+		frameTween:Play()
+		tabPanelTween:Play()
+		headerTween:Play()
+		
+		print("Window fading in over", duration, "seconds")
+	end
+	
+	function api:FadeOut(duration)
+		duration = duration or 0.3
+		local TweenService = game:GetService("TweenService")
+		
+		-- Tween to fully transparent
+		local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+		
+		local frameTween = TweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1})
+		local tabPanelTween = TweenService:Create(tabPanel, tweenInfo, {BackgroundTransparency = 1})
+		local headerTween = TweenService:Create(header, tweenInfo, {BackgroundTransparency = 1})
+		
+		frameTween:Play()
+		tabPanelTween:Play()
+		headerTween:Play()
+		
+		print("Window fading out over", duration, "seconds")
+	end
+	
+	function api:AdaptToViewport()
+		-- Recalculate window size based on current viewport
+		local currentViewport = workspace.CurrentCamera.ViewportSize
+		local baseWidth = config.Width or (currentViewport.X * 0.3)
+		local baseHeight = config.Height or (currentViewport.Y * 0.4)
+		
+		-- Apply resolution-based scaling
+		local scaleMultiplier = 1
+		if currentViewport.X >= 1920 then -- 1080p+
+			scaleMultiplier = 1.2
+		elseif currentViewport.X >= 1366 then -- 720p-1080p
+			scaleMultiplier = 1.0
+		elseif currentViewport.X >= 1024 then -- Tablet size
+			scaleMultiplier = 0.9
+		else -- Mobile/small screens
+			scaleMultiplier = 0.8
+		end
+		
+		-- Calculate new size with limits
+		local newWidth = math.max(250, math.min(currentViewport.X * 0.8, baseWidth * scaleMultiplier))
+		local newHeight = math.max(150, math.min(currentViewport.Y * 0.8, baseHeight * scaleMultiplier))
+		
+		-- Apply new size and center the window
+		frame.Size = UDim2.new(0, newWidth, 0, newHeight)
+		frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
+		
+		print("Window adapted to viewport:", newWidth, "x", newHeight)
+	end
+	
+	function api:GetDynamicSize()
+		return {
+			Width = frame.Size.X.Offset,
+			Height = frame.Size.Y.Offset,
+			ViewportWidth = workspace.CurrentCamera.ViewportSize.X,
+			ViewportHeight = workspace.CurrentCamera.ViewportSize.Y
+		}
+	end
+	
+	-- Auto-adapt to viewport changes (optional)
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		if config.AutoAdapt ~= false then -- Default true, can be disabled
+			wait(0.1) -- Small delay to ensure viewport is stable
+			api:AdaptToViewport()
+		end
+	end)
 
 	return api
 end
