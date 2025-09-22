@@ -292,6 +292,17 @@ function EzUI.NewConfig(configName)
 			return result
 		end,
 
+		-- Get All Keys
+		GetAllKeys = function()
+			local keys = {}
+			for key, value in pairs(customFlags) do
+				if value ~= nil then
+					table.insert(keys, key)
+				end
+			end
+			return keys
+		end,
+
 		-- Delete a specific key
 		DeleteKey = function(key)
 			if not key then
