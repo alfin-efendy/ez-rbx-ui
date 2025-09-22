@@ -11,6 +11,7 @@ local window = EzUILib.CreateWindow({
 	Height = 400, -- Optional: Override default calculated height
 	Opacity = 0.9,  -- 0.1 to 1.0 (10% to 100%)
 	AutoAdapt = true, -- Optional: Auto-resize on viewport changes (default true)
+	AutoShow = false, -- Start hidden, can be shown later
 })
 
 -- Set up close callback (optional)
