@@ -1192,6 +1192,154 @@ function EzUI.CreateWindow(config)
 			}
 		end
 
+		-- Centralized TextBox component that can be used by both tab and accordion APIs
+		local function createTextBox(config, parentContainer, currentY, updateSizeFunction, animateFunction, isExpanded, isForAccordion)
+			-- Default config
+			local placeholder = config.Placeholder or "Enter text..."
+			local defaultText = config.Default or ""
+			local callback = config.Callback or function() end
+			local maxLength = config.MaxLength or 100
+			local multiline = config.Multiline or false
+			
+			-- TextBox state
+			local currentText = defaultText
+			
+			-- Main textbox container
+			local textBoxContainer = Instance.new("Frame")
+			if isForAccordion then
+				textBoxContainer.Size = UDim2.new(1, -10, 0, multiline and 60 or 25) -- Compact for accordion
+				textBoxContainer.Position = UDim2.new(0, 5, 0, currentY)
+				textBoxContainer.ZIndex = 6
+			else
+				textBoxContainer.Size = UDim2.new(1, -20, 0, multiline and 80 or 30) -- Standard for tab
+				textBoxContainer.Position = UDim2.new(0, 10, 0, currentY)
+				textBoxContainer.ZIndex = 3
+				-- Mark this component's start position for accordion tracking
+				textBoxContainer:SetAttribute("ComponentStartY", currentY)
+			end
+			textBoxContainer.BackgroundTransparency = 1
+			textBoxContainer.Parent = parentContainer
+			
+			-- TextBox input
+			local textBox = Instance.new("TextBox")
+			textBox.Size = UDim2.new(1, 0, 1, 0)
+			textBox.Position = UDim2.new(0, 0, 0, 0)
+			textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+			textBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			textBox.BorderSizePixel = 1
+			textBox.Text = defaultText
+			textBox.PlaceholderText = placeholder
+			textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+			textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+			textBox.Font = Enum.Font.SourceSans
+			textBox.TextSize = isForAccordion and 12 or 14 -- Smaller text for accordion
+			textBox.TextXAlignment = Enum.TextXAlignment.Left
+			textBox.TextYAlignment = multiline and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
+			textBox.MultiLine = multiline
+			textBox.TextWrapped = multiline
+			textBox.ClearTextOnFocus = false
+			textBox.ZIndex = isForAccordion and 7 or 4
+			textBox.Parent = textBoxContainer
+			
+			-- Round corners
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 4)
+			corner.Parent = textBox
+			
+			-- Character counter (if maxLength is set)
+			local charCounter = nil
+			if maxLength and maxLength > 0 then
+				charCounter = Instance.new("TextLabel")
+				charCounter.Size = UDim2.new(0, 50, 0, 15)
+				charCounter.Position = UDim2.new(1, -55, 1, -18)
+				charCounter.BackgroundTransparency = 1
+				charCounter.Text = string.len(currentText) .. "/" .. maxLength
+				charCounter.TextColor3 = Color3.fromRGB(150, 150, 150)
+				charCounter.Font = Enum.Font.SourceSans
+				charCounter.TextSize = isForAccordion and 10 or 12 -- Smaller for accordion
+				charCounter.TextXAlignment = Enum.TextXAlignment.Right
+				charCounter.ZIndex = isForAccordion and 8 or 5
+				charCounter.Parent = textBoxContainer
+			end
+			
+			-- Function to update character counter
+			local function updateCharCounter()
+				if charCounter then
+					local textLength = string.len(textBox.Text)
+					charCounter.Text = textLength .. "/" .. maxLength
+					
+					-- Change color based on limit
+					if textLength >= maxLength then
+						charCounter.TextColor3 = Color3.fromRGB(255, 100, 100) -- Red when at limit
+					elseif textLength >= maxLength * 0.8 then
+						charCounter.TextColor3 = Color3.fromRGB(255, 200, 100) -- Orange when close to limit
+					else
+						charCounter.TextColor3 = Color3.fromRGB(150, 150, 150) -- Gray when safe
+					end
+				end
+			end
+			
+			-- Text change handler
+			textBox.Changed:Connect(function(property)
+				if property == "Text" then
+					-- Enforce max length
+					if maxLength and maxLength > 0 and string.len(textBox.Text) > maxLength then
+						textBox.Text = string.sub(textBox.Text, 1, maxLength)
+					end
+					
+					currentText = textBox.Text
+					updateCharCounter()
+					
+					-- Call user callback
+					local success, errorMsg = pcall(function()
+						callback(currentText)
+					end)
+					
+					if not success then
+						warn("TextBox callback error:", errorMsg)
+					end
+				end
+			end)
+			
+			-- Focus effects
+			textBox.Focused:Connect(function()
+				textBox.BorderColor3 = Color3.fromRGB(100, 150, 250)
+			end)
+			
+			textBox.FocusLost:Connect(function()
+				textBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
+			end)
+			
+			-- Return TextBox API
+			return {
+				GetText = function()
+					return currentText
+				end,
+				SetText = function(newText)
+					textBox.Text = tostring(newText or "")
+					currentText = textBox.Text
+					updateCharCounter()
+				end,
+				Clear = function()
+					textBox.Text = ""
+					currentText = ""
+					updateCharCounter()
+				end,
+				SetPlaceholder = function(newPlaceholder)
+					textBox.PlaceholderText = tostring(newPlaceholder or "")
+				end,
+				Focus = function()
+					textBox:CaptureFocus()
+				end,
+				Blur = function()
+					textBox:ReleaseFocus()
+				end,
+				SetCallback = function(newCallback)
+					callback = newCallback or function() end
+				end
+			}
+		end
+
 		-- Create tab API object
 		local tabAPI = {}
 
@@ -1271,118 +1419,11 @@ function EzUI.CreateWindow(config)
 		end
 
 		function tabAPI:AddTextBox(config)
-			-- Default config
-			local placeholder = config.Placeholder or "Enter text..."
-			local defaultText = config.Default or ""
-			local callback = config.Callback or function() end
-			local maxLength = config.MaxLength or 100
-			local multiline = config.Multiline or false
-			
-			-- TextBox state
-			local currentText = defaultText
-			
-			-- Main textbox container
-			local textBoxContainer = Instance.new("Frame")
-			textBoxContainer.Size = UDim2.new(1, -20, 0, multiline and 80 or 30)
-			textBoxContainer.Position = UDim2.new(0, 10, 0, tabCurrentY)
-			textBoxContainer.BackgroundTransparency = 1
-			textBoxContainer.ZIndex = 3
-			textBoxContainer.Parent = tabContent
-			
-			-- Mark this component's start position for accordion tracking
-			textBoxContainer:SetAttribute("ComponentStartY", tabCurrentY)
-			
-			-- TextBox input
-			local textBox = Instance.new("TextBox")
-			textBox.Size = UDim2.new(1, 0, 1, 0)
-			textBox.Position = UDim2.new(0, 0, 0, 0)
-			textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-			textBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			textBox.BorderSizePixel = 1
-			textBox.Text = defaultText
-			textBox.PlaceholderText = placeholder
-			textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-			textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-			textBox.Font = Enum.Font.SourceSans
-			textBox.TextSize = 14
-			textBox.TextXAlignment = Enum.TextXAlignment.Left
-			textBox.TextYAlignment = multiline and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
-			textBox.MultiLine = multiline
-			textBox.TextWrapped = multiline
-			textBox.ClearTextOnFocus = false
-			textBox.ZIndex = 4
-			textBox.Parent = textBoxContainer
-			
-			-- Round corners
-			local corner = Instance.new("UICorner")
-			corner.CornerRadius = UDim.new(0, 4)
-			corner.Parent = textBox
-			
-			-- Character counter (if maxLength is set)
-			local charCounter = nil
-			if maxLength and maxLength > 0 then
-				charCounter = Instance.new("TextLabel")
-				charCounter.Size = UDim2.new(0, 50, 0, 15)
-				charCounter.Position = UDim2.new(1, -55, 1, -18)
-				charCounter.BackgroundTransparency = 1
-				charCounter.Text = string.len(currentText) .. "/" .. maxLength
-				charCounter.TextColor3 = Color3.fromRGB(150, 150, 150)
-				charCounter.Font = Enum.Font.SourceSans
-				charCounter.TextSize = 12
-				charCounter.TextXAlignment = Enum.TextXAlignment.Right
-				charCounter.ZIndex = 5
-				charCounter.Parent = textBoxContainer
-			end
-			
-			-- Function to update character counter
-			local function updateCharCounter()
-				if charCounter then
-					local textLength = string.len(textBox.Text)
-					charCounter.Text = textLength .. "/" .. maxLength
-					
-					-- Change color based on limit
-					if textLength >= maxLength then
-						charCounter.TextColor3 = Color3.fromRGB(255, 100, 100) -- Red when at limit
-					elseif textLength >= maxLength * 0.8 then
-						charCounter.TextColor3 = Color3.fromRGB(255, 200, 100) -- Orange when close to limit
-					else
-						charCounter.TextColor3 = Color3.fromRGB(150, 150, 150) -- Gray when safe
-					end
-				end
-			end
-			
-			-- Text change handler
-			textBox.Changed:Connect(function(property)
-				if property == "Text" then
-					-- Enforce max length
-					if maxLength and maxLength > 0 and string.len(textBox.Text) > maxLength then
-						textBox.Text = string.sub(textBox.Text, 1, maxLength)
-					end
-					
-					currentText = textBox.Text
-					updateCharCounter()
-					
-					-- Call user callback
-					local success, errorMsg = pcall(function()
-						callback(currentText)
-					end)
-					
-					if not success then
-						warn("TextBox callback error:", errorMsg)
-					end
-				end
-			end)
-			
-			-- Focus effects
-			textBox.Focused:Connect(function()
-				textBox.BorderColor3 = Color3.fromRGB(100, 150, 250)
-			end)
-			
-			textBox.FocusLost:Connect(function()
-				textBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
-			end)
+			-- Use centralized TextBox function for tab
+			local textBoxAPI = createTextBox(config, tabContent, tabCurrentY, nil, nil, nil, false)
 			
 			-- Update posisi Y untuk elemen berikutnya
+			local multiline = config.Multiline or false
 			tabCurrentY = tabCurrentY + (multiline and 90 or 40)
 			
 			-- Update canvas size jika tab ini sedang aktif
@@ -1392,30 +1433,7 @@ function EzUI.CreateWindow(config)
 			end
 			
 			-- Return TextBox API
-			return {
-				GetText = function()
-					return currentText
-				end,
-				SetText = function(newText)
-					textBox.Text = tostring(newText or "")
-					currentText = textBox.Text
-					updateCharCounter()
-				end,
-				Clear = function()
-					textBox.Text = ""
-					currentText = ""
-					updateCharCounter()
-				end,
-				SetPlaceholder = function(newPlaceholder)
-					textBox.PlaceholderText = tostring(newPlaceholder or "")
-				end,
-				Focus = function()
-					textBox:CaptureFocus()
-				end,
-				Blur = function()
-					textBox:ReleaseFocus()
-				end
-			}
+			return textBoxAPI
 		end
 
 		function tabAPI:AddNumberBox(config)
@@ -2001,6 +2019,23 @@ function EzUI.CreateWindow(config)
 				-- Return Toggle API
 				return toggleAPI
 			end
+
+			function accordionAPI:AddTextBox(config)
+				-- Use centralized TextBox function for accordion
+				local textBoxAPI = createTextBox(config, accordionContent, accordionCurrentY, updateAccordionSize, animateAccordion, isExpanded, true)
+				
+				-- Update accordion position
+				local multiline = config.Multiline or false
+				accordionCurrentY = accordionCurrentY + (multiline and 70 or 35) -- Compact spacing for accordion
+				updateAccordionSize()
+				
+				if isExpanded then
+					animateAccordion()
+				end
+				
+				-- Return TextBox API
+				return textBoxAPI
+			end
 			
 			-- Initialize with expanded state
 			if isExpanded then
@@ -2070,7 +2105,8 @@ function EzUI.CreateWindow(config)
 				AddButton = accordionAPI.AddButton,
 				AddSelectBox = accordionAPI.AddSelectBox,
 				AddSeparator = accordionAPI.AddSeparator,
-				AddToggle = accordionAPI.AddToggle
+				AddToggle = accordionAPI.AddToggle,
+				AddTextBox = accordionAPI.AddTextBox
 			}
 		end
 
