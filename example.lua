@@ -1,8 +1,8 @@
 -- Import library
--- local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- local EzUILib = require(ReplicatedStorage:WaitForChild("EzUI"))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EzUILib = require(ReplicatedStorage:WaitForChild("EzUI"))
 
-local EzUILib = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
+-- local EzUILib = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
 
 -- Create window and set properties
 local window = EzUILib.CreateWindow({
@@ -12,7 +12,14 @@ local window = EzUILib.CreateWindow({
 })
 
 -- Create tabs and store references
-local inputTab = window:AddTab("Inputs")
+local inputTab = window:AddTab({
+    Name = "Inputs",
+    Icon = "ℹ️",
+    Visible = true,
+    Callback = function(tabName, activated)
+        print("Tab", tabName, activated and "activated" or "deactivated")
+    end
+})
 local selectBoxTab = window:AddTab("Select Box")
 local toggleTab = window:AddTab("Toggles")
 local accordionTab = window:AddTab("Accordions")

@@ -339,18 +339,59 @@ function EzUI.CreateWindow(config)
 			tabCallback = config.Callback or nil
 		end
 		
-		-- Tab button
+		-- Tab button (container)
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Size = UDim2.new(1, -6, 0, 32) -- -6 untuk memberikan ruang scroll bar
 		tabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		tabBtn.Text = (tabIcon and (tabIcon .. " " .. tabName) or tabName)
-		tabBtn.Font = Enum.Font.SourceSansBold
-		tabBtn.TextSize = 15
+		tabBtn.Text = "" -- No text, we'll use separate labels
 		tabBtn.BorderSizePixel = 0
 		tabBtn.ZIndex = 4 -- Above tab panel
 		tabBtn.Visible = tabVisible
 		tabBtn.Parent = tabScrollFrame
+		
+		-- Icon label (left aligned)
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.new(0, 30, 1, 0)
+		iconLabel.Position = UDim2.new(0, 5, 0, 0)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Text = tabIcon or ""
+		iconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		iconLabel.Font = Enum.Font.SourceSansBold
+		iconLabel.TextSize = 15
+		iconLabel.TextXAlignment = Enum.TextXAlignment.Left
+		iconLabel.ZIndex = 5
+		iconLabel.Parent = tabBtn
+		
+		-- Title label (alignment depends on icon presence)
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Text = tabName
+		titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		titleLabel.Font = Enum.Font.SourceSansBold
+		titleLabel.TextSize = 15
+		titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		titleLabel.ZIndex = 5
+		titleLabel.Parent = tabBtn
+		
+		-- Function to update title alignment based on icon presence
+		local function updateTitleAlignment()
+			if tabIcon and tabIcon ~= "" then
+				-- Has icon: title right-aligned, positioned after icon
+				titleLabel.Size = UDim2.new(1, -40, 1, 0) -- Leave space for icon
+				titleLabel.Position = UDim2.new(0, 35, 0, 0)
+				titleLabel.TextXAlignment = Enum.TextXAlignment.Right
+				iconLabel.Visible = true
+			else
+				-- No icon: title left-aligned, full width
+				titleLabel.Size = UDim2.new(1, -10, 1, 0) -- Full width with padding
+				titleLabel.Position = UDim2.new(0, 5, 0, 0)
+				titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+				iconLabel.Visible = false
+			end
+		end
+		
+		-- Initial alignment setup
+		updateTitleAlignment()
 
 		-- Tab content frame
 		local tabContent = Instance.new("Frame")
@@ -2320,8 +2361,87 @@ function EzUI.CreateWindow(config)
 			api:UpdateWindowSize()
 		end
 
-		-- Return tab API object
-		return tabAPI
+		-- Return tab API object with enhanced methods
+		local enhancedTabAPI = {}
+		
+		-- Copy all existing tabAPI methods
+		for key, value in pairs(tabAPI) do
+			enhancedTabAPI[key] = value
+		end
+		
+		-- Add new tab control methods
+		function enhancedTabAPI:SetVisible(visible)
+			tabBtn.Visible = visible
+			tabVisible = visible
+		end
+		
+		function enhancedTabAPI:GetVisible()
+			return tabVisible
+		end
+		
+		function enhancedTabAPI:SetTitle(newTitle)
+			tabName = newTitle
+			titleLabel.Text = newTitle
+		end
+		
+		function enhancedTabAPI:GetTitle()
+			return tabName
+		end
+		
+		function enhancedTabAPI:SetIcon(newIcon)
+			tabIcon = newIcon
+			iconLabel.Text = newIcon or ""
+			updateTitleAlignment()
+		end
+		
+		function enhancedTabAPI:GetIcon()
+			return tabIcon
+		end
+		
+		function enhancedTabAPI:Activate()
+			-- Programmatically activate this tab
+			-- Reset all tab buttons to normal color and hide contents
+			for _, content in pairs(tabContents) do
+				content.Visible = false
+			end
+			for _, btn in pairs(tabScrollFrame:GetChildren()) do
+				if btn:IsA("TextButton") then
+					btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+				end
+			end
+
+			-- Activate this tab
+			tabContent.Visible = true
+			tabBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+			activeTab = tabContent
+			activeTabName = tabName
+			currentTabContent = tabContent
+			currentY = tabCurrentY
+			api:UpdateWindowSize()
+			
+			-- Call user callback if provided
+			if tabCallback then
+				local success, errorMsg = pcall(function()
+					tabCallback(tabName, true)
+				end)
+				
+				if not success then
+					warn("Tab callback error:", errorMsg)
+				end
+			end
+			
+			print("Tab programmatically activated:", tabName)
+		end
+		
+		function enhancedTabAPI:IsActive()
+			return activeTab == tabContent
+		end
+		
+		function enhancedTabAPI:SetCallback(newCallback)
+			tabCallback = newCallback
+		end
+		
+		return enhancedTabAPI
 	end
 
 	return api
