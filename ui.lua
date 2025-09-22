@@ -567,8 +567,8 @@ function EzUI.CreateWindow(config)
 			selectButton.ZIndex = 6
 			selectButton.Parent = selectContainer
 			
-			-- Dropdown arrow
-			local arrow = Instance.new("TextLabel")
+			-- Dropdown arrow (clickable)
+			local arrow = Instance.new("TextButton")
 			arrow.Size = UDim2.new(0, 25, 1, 0)
 			arrow.Position = UDim2.new(1, -25, 0, 0)
 			arrow.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
@@ -715,6 +715,9 @@ function EzUI.CreateWindow(config)
 			local function toggleDropdown()
 				isOpen = not isOpen
 				dropdownFrame.Visible = isOpen
+				
+				-- Update arrow direction
+				arrow.Text = isOpen and "▲" or "▼"
 				
 				-- Debug print
 				print("Dropdown toggled:", isOpen, "Options count:", #options)
@@ -1082,6 +1085,67 @@ function EzUI.CreateWindow(config)
 					print("Dropdown closed - no outside detection needed")
 				end
 				print("=== END SELECTBOX BUTTON CLICK ===")
+			end)
+			
+			-- Arrow click handler (same functionality as selectButton)
+			arrow.MouseButton1Click:Connect(function()
+				print("=== SELECTBOX ARROW CLICKED ===")
+				print("Current isOpen state:", isOpen)
+				print("MultiSelect mode:", multiSelect)
+				toggleDropdown()
+				print("After toggle, isOpen:", isOpen)
+				
+				-- Disconnect any existing outside detection first
+				if outsideConnection then
+					print("Disconnecting existing outside click detection...")
+					outsideConnection:Disconnect()
+					outsideConnection = nil
+				end
+				
+				-- Only enable outside click detection for multi-select when dropdown is open
+				if isOpen and multiSelect then
+					print("Setting up outside click detection for multi-select...")
+					wait(0.1) -- Small delay to prevent immediate closing
+					
+					outsideConnection = UserInputService.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							local target = input.Target
+							print("Outside click detected, target:", target and target.Name or "nil")
+							
+							-- Check if click is outside dropdown area
+							local clickedOnDropdown = false
+							if target then
+								local current = target
+								while current do
+									if current == dropdownFrame or current == selectButton or current == arrow or current == selectContainer then
+										clickedOnDropdown = true
+										print("Click detected on dropdown element:", current.Name)
+										break
+									end
+									current = current.Parent
+								end
+							end
+							
+							if not clickedOnDropdown and not preventAutoClose then
+								print("Click outside dropdown detected - closing dropdown")
+								isOpen = false
+								dropdownFrame.Visible = false
+								arrow.Text = "▼"
+								if outsideConnection then
+									outsideConnection:Disconnect()
+									outsideConnection = nil
+								end
+							else
+								print("Outside click ignored - preventAutoClose is active or dropdown closed")
+							end
+						end
+					end)
+				elseif isOpen and not multiSelect then
+					print("Dropdown opened in single-select mode - no outside detection needed")
+				else
+					print("Dropdown closed - no outside detection needed")
+				end
+				print("=== END SELECTBOX ARROW CLICK ===")
 			end)
 			
 			-- Update posisi Y untuk elemen berikutnya
