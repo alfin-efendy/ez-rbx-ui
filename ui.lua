@@ -7,11 +7,30 @@ function EzUI.CreateWindow(config)
 	-- Clamp opacity between 0.1 and 1.0
 	windowOpacity = math.max(0.1, math.min(1.0, windowOpacity))
 	
-	-- Get viewport size for dynamic scaling
-	local viewportSize = workspace.CurrentCamera.ViewportSize
+	-- Get viewport size for dynamic scaling with proper initialization
+	local function getViewportSize()
+		local camera = workspace.CurrentCamera
+		if not camera then
+			-- Wait for camera to be available
+			camera = workspace:WaitForChild("CurrentCamera", 5)
+		end
+		
+		local viewportSize = camera.ViewportSize
+		
+		-- Check if viewport size is valid (not 1,1)
+		if viewportSize.X <= 1 or viewportSize.Y <= 1 then
+			-- Fallback to default resolution if viewport not ready
+			viewportSize = Vector2.new(1366, 768)
+			warn("EzUI: Using fallback viewport size:", viewportSize)
+		end
+		
+		return viewportSize
+	end
 	
 	-- Calculate dynamic window dimensions based on viewport
 	local function calculateDynamicSize()
+		local viewportSize = getViewportSize()
+
 		local baseWidth = config.Width or (viewportSize.X * 0.7) -- 70% of screen width
 		local baseHeight = config.Height or (viewportSize.Y * 0.4) -- 40% of screen height
 		
@@ -149,7 +168,7 @@ function EzUI.CreateWindow(config)
 		if input == resizeInput and resizeDragging then
 			local delta = input.Position - resizeStartPos
 			-- Calculate dynamic minimum sizes based on current viewport
-			local currentViewport = workspace.CurrentCamera.ViewportSize
+			local currentViewport = getViewportSize()
 			local minWidth = math.max(250, currentViewport.X * 0.15) -- Minimum 15% of screen width
 			local minHeight = math.max(150, currentViewport.Y * 0.2) -- Minimum 20% of screen height
 			local maxWidth = currentViewport.X * 0.9 -- Maximum 90% of screen width
@@ -570,7 +589,7 @@ function EzUI.CreateWindow(config)
 				-- Get absolute position of selectContainer
 				local absolutePos = selectContainer.AbsolutePosition
 				local absoluteSize = selectContainer.AbsoluteSize
-				local viewportSize = workspace.CurrentCamera.ViewportSize
+				local viewportSize = getViewportSize()
 				
 				-- Calculate dropdown dimensions
 				local dropdownHeight = dropdownFrame.Size.Y.Offset
@@ -2233,7 +2252,7 @@ function EzUI.CreateWindow(config)
 	
 	function api:AdaptToViewport()
 		-- Recalculate window size based on current viewport
-		local currentViewport = workspace.CurrentCamera.ViewportSize
+		local currentViewport = getViewportSize()
 		local baseWidth = config.Width or (currentViewport.X * 0.3)
 		local baseHeight = config.Height or (currentViewport.Y * 0.4)
 		
@@ -2259,17 +2278,18 @@ function EzUI.CreateWindow(config)
 	end
 	
 	function api:GetDynamicSize()
+		local currentViewport = getViewportSize()
 		return {
 			Width = frame.Size.X.Offset,
 			Height = frame.Size.Y.Offset,
-			ViewportWidth = workspace.CurrentCamera.ViewportSize.X,
-			ViewportHeight = workspace.CurrentCamera.ViewportSize.Y
+			ViewportWidth = currentViewport.X,
+			ViewportHeight = currentViewport.Y
 		}
 	end
 	
 	-- Set window size programmatically
 	function api:SetSize(width, height)
-		local viewportSize = workspace.CurrentCamera.ViewportSize
+		local viewportSize = getViewportSize()
 		
 		-- Apply constraints
 		width = math.max(300, math.min(width, viewportSize.X * 0.9))
