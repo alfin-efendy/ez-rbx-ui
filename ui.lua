@@ -806,14 +806,31 @@ function EzUI.CreateWindow(config)
 			-- Selected values storage (stores actual values, not display text)
 			local selectedValues = {}
 			
+			-- Helper function to ensure selectedValues is always an array
+			local function ensureArrayType()
+				if type(selectedValues) ~= "table" then
+					selectedValues = selectedValues and {selectedValues} or {}
+				end
+			end
+			
 			-- Set initial values from flag if exists
 			if flag and EzUI.Flags[flag] ~= nil then
 				if multiSelect then
 					-- For multiselect, flag should be an array
-					selectedValues = EzUI.Flags[flag] or {}
+					local flagValue = EzUI.Flags[flag]
+					if type(flagValue) == "table" then
+						selectedValues = flagValue
+					else
+						selectedValues = {flagValue} -- Convert single value to array
+					end
 				else
 					-- For single select, flag should be a single value
-					selectedValues = {EzUI.Flags[flag]}
+					local flagValue = EzUI.Flags[flag]
+					if type(flagValue) == "table" then
+						selectedValues = {flagValue[1]} -- Take first element if array
+					else
+						selectedValues = {flagValue} -- Wrap single value in array
+					end
 				end
 			end
 			
@@ -915,6 +932,11 @@ function EzUI.CreateWindow(config)
 			
 			-- Function to update display text
 			local function updateDisplayText()
+				-- Ensure selectedValues is always an array
+				if type(selectedValues) ~= "table" then
+					selectedValues = {selectedValues}
+				end
+				
 				if #selectedValues == 0 then
 					selectButton.Text = "  " .. placeholder
 					selectButton.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -1022,6 +1044,10 @@ function EzUI.CreateWindow(config)
 					
 					-- Check if this option is already selected
 					local isSelected = false
+					-- Ensure selectedValues is always an array
+					if type(selectedValues) ~= "table" then
+						selectedValues = {selectedValues}
+					end
 					for _, value in ipairs(selectedValues) do
 						if value == option.value then
 							isSelected = true
@@ -1041,6 +1067,10 @@ function EzUI.CreateWindow(config)
 							-- Toggle selection for multi-select
 							local isCurrentlySelected = false
 							local indexToRemove = nil
+							-- Ensure selectedValues is always an array
+							if type(selectedValues) ~= "table" then
+								selectedValues = {selectedValues}
+							end
 							for j, value in ipairs(selectedValues) do
 								if value == option.value then
 									isCurrentlySelected = true
@@ -1097,6 +1127,10 @@ function EzUI.CreateWindow(config)
 					
 					optionButton.MouseLeave:Connect(function()
 						local isCurrentlySelected = false
+						-- Ensure selectedValues is always an array
+						if type(selectedValues) ~= "table" then
+							selectedValues = {selectedValues}
+						end
 						for _, val in ipairs(selectedValues) do
 							if val == option.value then
 								isCurrentlySelected = true
@@ -1257,6 +1291,10 @@ function EzUI.CreateWindow(config)
 							local childCheckmark = child:FindFirstChild("TextLabel")
 							if childCheckmark and childOption then
 								local isSelected = false
+								-- Ensure selectedValues is always an array
+								if type(selectedValues) ~= "table" then
+									selectedValues = {selectedValues}
+								end
 								for _, val in ipairs(selectedValues) do
 									if val == childOption.value then
 										isSelected = true
@@ -1351,6 +1389,10 @@ function EzUI.CreateWindow(config)
 							if multiSelect then
 								local isSelected = false
 								local indexToRemove = nil
+								-- Ensure selectedValues is always an array
+								if type(selectedValues) ~= "table" then
+									selectedValues = {selectedValues}
+								end
 								for j, value in ipairs(selectedValues) do
 									if value == option.value then
 										isSelected = true
@@ -1414,6 +1456,10 @@ function EzUI.CreateWindow(config)
 						
 						optionButton.MouseLeave:Connect(function()
 							local isSelected = false
+							-- Ensure selectedValues is always an array
+							if type(selectedValues) ~= "table" then
+								selectedValues = {selectedValues}
+							end
 							for _, val in ipairs(selectedValues) do
 								if val == option.value then
 									isSelected = true
