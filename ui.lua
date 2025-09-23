@@ -786,6 +786,7 @@ function EzUI.CreateWindow(config)
 			local multiSelect = config.MultiSelect or false
 			local callback = config.Callback or function() end
 			local onDropdownOpen = config.OnDropdownOpen or function() end
+			local onInit = config.OnInit or function() end
 			local flag = config.Flag
 			
 			-- Normalize options to object format {text = "", value = ""}
@@ -1443,6 +1444,28 @@ function EzUI.CreateWindow(config)
 			
 			-- Register component for flag-based updates
 			registerComponent(flag, selectBoxAPI)
+			
+			-- Call onInit callback after component creation to allow initial options update
+			if onInit then
+				onInit(options, function(newOptions)
+					-- Callback function to update options on initialization
+					if newOptions and type(newOptions) == "table" then
+						-- Update options dengan format baru
+						rawOptions = newOptions
+						options = {}
+						for i, option in ipairs(rawOptions) do
+							if type(option) == "string" then
+								table.insert(options, {text = option, value = option})
+							elseif type(option) == "table" and option.text and option.value then
+								table.insert(options, {text = option.text, value = option.value})
+							end
+						end
+						
+						-- Refresh tampilan options
+						refreshOptionsDisplay()
+					end
+				end, selectBoxAPI)
+			end
 			
 			-- Return SelectBox API
 			return selectBoxAPI
