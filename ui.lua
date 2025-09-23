@@ -928,7 +928,7 @@ function EzUI.CreateWindow(config)
 								break
 							end
 						end
-						selectButton.Text = "  " .. displayText
+						selectButton.Text = "  " .. (displayText or "Unknown")
 					elseif #selectedValues == 0 then
 						selectButton.Text = "  None"
 					else
@@ -944,7 +944,7 @@ function EzUI.CreateWindow(config)
 							break
 						end
 					end
-					selectButton.Text = "  " .. displayText
+					selectButton.Text = "  " .. (displayText or "Unknown")
 					selectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 				end
 			end
@@ -998,7 +998,7 @@ function EzUI.CreateWindow(config)
 					optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
 					optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 					optionButton.BorderSizePixel = 0
-					optionButton.Text = "  " .. option.text
+					optionButton.Text = "  " .. (option.text or "Unknown")
 					optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 					optionButton.TextXAlignment = Enum.TextXAlignment.Left
 					optionButton.Font = Enum.Font.SourceSans
@@ -1324,7 +1324,7 @@ function EzUI.CreateWindow(config)
 						optionButton.Position = UDim2.new(0, 5, 0, (i-1) * optionHeight)
 						optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 						optionButton.BorderSizePixel = 0
-						optionButton.Text = "  " .. option.text
+						optionButton.Text = "  " .. (option.text or "Unknown")
 						optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 						optionButton.TextXAlignment = Enum.TextXAlignment.Left
 						optionButton.Font = Enum.Font.SourceSans
