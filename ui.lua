@@ -1001,25 +1001,60 @@ function EzUI.CreateWindow(config)
 				local dropdownHeight = dropdownFrame.Size.Y.Offset
 				local dropdownWidth = absoluteSize.X
 				
-				-- Check if there's enough space below
+				-- Check if there's enough space below and above
 				local spaceBelow = viewportSize.Y - (absolutePos.Y + absoluteSize.Y)
 				local spaceAbove = absolutePos.Y
 				
 				local finalPosition
+				local finalX = absolutePos.X
+				local finalY = absolutePos.Y
 				
-				if spaceBelow >= dropdownHeight + 10 then
-					-- Show dropdown below
-					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y + absoluteSize.Y + 3)
-				elseif spaceAbove >= dropdownHeight + 10 then
-					-- Show dropdown above
-					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y - dropdownHeight - 3)
-				else
-					-- Show below anyway if both spaces are insufficient
-					finalPosition = UDim2.new(0, absolutePos.X, 0, absolutePos.Y + absoluteSize.Y + 3)
+				-- Horizontal positioning - ensure dropdown doesn't go off-screen
+				if finalX + dropdownWidth > viewportSize.X then
+					finalX = viewportSize.X - dropdownWidth - 10
+				end
+				if finalX < 0 then
+					finalX = 10
 				end
 				
+				-- Vertical positioning
+				if spaceBelow >= dropdownHeight + 10 then
+					-- Show dropdown below
+					finalY = absolutePos.Y + absoluteSize.Y + 3
+				elseif spaceAbove >= dropdownHeight + 10 then
+					-- Show dropdown above
+					finalY = absolutePos.Y - dropdownHeight - 3
+				else
+					-- Insufficient space on both sides
+					if spaceBelow > spaceAbove then
+						-- Show below but adjust height if needed
+						finalY = absolutePos.Y + absoluteSize.Y + 3
+						local maxHeight = spaceBelow - 10
+						if dropdownHeight > maxHeight and maxHeight > 100 then
+							dropdownHeight = maxHeight
+							dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, dropdownHeight)
+						end
+					else
+						-- Show above but adjust height if needed  
+						local maxHeight = spaceAbove - 10
+						if dropdownHeight > maxHeight and maxHeight > 100 then
+							dropdownHeight = maxHeight
+							dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, dropdownHeight)
+						end
+						finalY = absolutePos.Y - dropdownHeight - 3
+					end
+				end
+				
+				-- Ensure dropdown doesn't go below viewport
+				if finalY + dropdownHeight > viewportSize.Y then
+					finalY = viewportSize.Y - dropdownHeight - 10
+				end
+				if finalY < 0 then
+					finalY = 10
+				end
+				
+				finalPosition = UDim2.new(0, finalX, 0, finalY)
 				dropdownFrame.Position = finalPosition
-				dropdownFrame.Size = UDim2.new(0, dropdownWidth, 0, dropdownHeight)
 			end
 			
 			-- Function to refresh options display
@@ -1169,12 +1204,81 @@ function EzUI.CreateWindow(config)
 				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight + 30)
 			end
 			
+			-- Position tracking variables
+			local positionConnection = nil
+			local lastKnownPosition = nil
+			local lastKnownSize = nil
+			local lastKnownViewportSize = nil
+			
+			-- Function to update dropdown position dynamically
+			local function updateDropdownPosition()
+				if isOpen and dropdownFrame.Visible then
+					calculateDropdownPosition()
+				end
+			end
+			
+			-- Function to start position tracking
+			local function startPositionTracking()
+				if positionConnection then
+					positionConnection:Disconnect()
+				end
+				
+				-- Track position changes using RunService heartbeat
+				local RunService = game:GetService("RunService")
+				positionConnection = RunService.Heartbeat:Connect(function()
+					if isOpen and dropdownFrame.Visible then
+						local currentPosition = selectContainer.AbsolutePosition
+						local currentSize = selectContainer.AbsoluteSize
+						local currentViewportSize = getViewportSize()
+						
+						-- Check if position, size, or viewport has changed
+						if not lastKnownPosition or 
+						   currentPosition.X ~= lastKnownPosition.X or 
+						   currentPosition.Y ~= lastKnownPosition.Y or
+						   currentSize.X ~= lastKnownSize.X or
+						   currentSize.Y ~= lastKnownSize.Y or
+						   (lastKnownViewportSize and (
+						       currentViewportSize.X ~= lastKnownViewportSize.X or 
+						       currentViewportSize.Y ~= lastKnownViewportSize.Y
+						   )) then
+							
+							lastKnownPosition = currentPosition
+							lastKnownSize = currentSize
+							lastKnownViewportSize = currentViewportSize
+							
+							-- Update dropdown position and size
+							local dropdownHeight = isForAccordion and math.min(#options * 25 + 30, 150) or math.min(#options * 30 + 30, 200)
+							dropdownFrame.Size = UDim2.new(0, currentSize.X, 0, dropdownHeight)
+							updateDropdownPosition()
+						end
+					end
+				end)
+			end
+			
+			-- Function to stop position tracking
+			local function stopPositionTracking()
+				if positionConnection then
+					positionConnection:Disconnect()
+					positionConnection = nil
+				end
+				lastKnownPosition = nil
+				lastKnownSize = nil
+				lastKnownViewportSize = nil
+			end
+
 			local function toggleDropdown()
 				isOpen = not isOpen
 				dropdownFrame.Visible = isOpen
 				
 				-- Update arrow direction
 				arrow.Text = isOpen and "▲" or "▼"
+				
+				-- Start or stop position tracking
+				if isOpen then
+					startPositionTracking()
+				else
+					stopPositionTracking()
+				end
 				
 				-- Call OnDropdownOpen callback when dropdown is opened
 				if isOpen and onDropdownOpen then
@@ -1205,6 +1309,10 @@ function EzUI.CreateWindow(config)
 					
 					-- Calculate optimal position
 					calculateDropdownPosition()
+					
+					-- Store initial position
+					lastKnownPosition = selectContainer.AbsolutePosition
+					lastKnownSize = selectContainer.AbsoluteSize
 					
 					-- Bring dropdown to front
 					dropdownFrame.ZIndex = 25
@@ -1674,6 +1782,31 @@ function EzUI.CreateWindow(config)
 					updateDisplayText()
 				end
 			}
+			
+			-- Add cleanup function to API
+			selectBoxAPI.Cleanup = function()
+				-- Stop position tracking
+				stopPositionTracking()
+				
+				-- Close dropdown if open
+				if isOpen then
+					isOpen = false
+					dropdownFrame.Visible = false
+					arrow.Text = "▼"
+				end
+				
+				-- Cleanup UI elements
+				if selectContainer and selectContainer.Parent then
+					selectContainer:Destroy()
+				end
+			end
+			
+			-- Also add cleanup when container is destroyed
+			selectContainer.AncestryChanged:Connect(function()
+				if not selectContainer.Parent then
+					stopPositionTracking()
+				end
+			end)
 			
 			-- Register component for flag-based updates
 			registerComponent(flag, selectBoxAPI)
