@@ -52,8 +52,17 @@ end
 local function saveConfiguration(fileName)
 	if not fileName then return false end
 	
+	-- Create a copy of flags for saving, preserving explicit nil values as empty strings
+	local flagsToSave = {}
+	local hasData = false
+	
+	for key, value in pairs(EzUI.Flags) do
+		flagsToSave[key] = value
+		hasData = true
+	end
+	
 	-- Check if we have any flags to save
-	if next(EzUI.Flags) == nil then
+	if not hasData then
 		print("EzUI: No configuration data to save")
 		return false
 	end
@@ -81,7 +90,7 @@ local function saveConfiguration(fileName)
 		-- Write configuration file
 		local filePath = dynamicConfigurationFolder .. "/" .. fileName .. ConfigurationExtension
 		local success, result = pcall(function()
-			writefile(filePath, HttpService:JSONEncode(EzUI.Flags))
+			writefile(filePath, HttpService:JSONEncode(flagsToSave))
 		end)
 		
 		if success then
@@ -815,23 +824,28 @@ function EzUI.CreateWindow(config)
 			
 			-- Set initial values from flag if exists
 			if flag and EzUI.Flags[flag] ~= nil then
+				local flagValue = EzUI.Flags[flag]
+				print("SelectBox Debug - Flag:", flag, "Value:", flagValue, "Type:", type(flagValue), "MultiSelect:", multiSelect)
+				
 				if multiSelect then
 					-- For multiselect, flag should be an array
-					local flagValue = EzUI.Flags[flag]
 					if type(flagValue) == "table" then
 						selectedValues = flagValue
 					else
-						selectedValues = {flagValue} -- Convert single value to array
+						selectedValues = flagValue ~= "" and {flagValue} or {} -- Convert single value to array, handle empty string
 					end
 				else
 					-- For single select, flag should be a single value
-					local flagValue = EzUI.Flags[flag]
 					if type(flagValue) == "table" then
 						selectedValues = {flagValue[1]} -- Take first element if array
 					else
-						selectedValues = {flagValue} -- Wrap single value in array
+						selectedValues = flagValue ~= "" and {flagValue} or {} -- Wrap single value in array, handle empty string
 					end
 				end
+				
+				print("SelectBox Debug - Selected values after flag load:", selectedValues)
+			else
+				print("SelectBox Debug - No flag or flag is nil:", flag, EzUI.Flags[flag])
 			end
 			
 			local isOpen = false
@@ -932,14 +946,19 @@ function EzUI.CreateWindow(config)
 			
 			-- Function to update display text
 			local function updateDisplayText()
+				print("SelectBox Debug - updateDisplayText called. Selected values:", selectedValues, "Type:", type(selectedValues))
+				
 				-- Ensure selectedValues is always an array
 				if type(selectedValues) ~= "table" then
 					selectedValues = {selectedValues}
 				end
 				
+				print("SelectBox Debug - After ensuring array. Selected values:", selectedValues, "Length:", #selectedValues)
+				
 				if #selectedValues == 0 then
 					selectButton.Text = "  " .. placeholder
 					selectButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+					print("SelectBox Debug - No values selected, showing placeholder")
 				elseif multiSelect then
 					if #selectedValues == 1 then
 						-- Find the display text for the selected value
@@ -1104,7 +1123,8 @@ function EzUI.CreateWindow(config)
 							if multiSelect then
 								EzUI.Flags[flag] = selectedValues
 							else
-								EzUI.Flags[flag] = selectedValues[1] or nil
+								-- For single select, store the value or empty string (not nil)
+								EzUI.Flags[flag] = selectedValues[1] or ""
 							end
 							if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
 								saveConfiguration(EzUI.Configuration.FileName)
@@ -1259,7 +1279,11 @@ function EzUI.CreateWindow(config)
 					return selectedValues
 				end,
 				SetSelected = function(values)
-					selectedValues = values or {}
+					if values == "" then
+						selectedValues = {} -- Handle empty string as no selection
+					else
+						selectedValues = values or {}
+					end
 					updateDisplayText()
 					
 					-- Save to flag if specified
@@ -1267,7 +1291,8 @@ function EzUI.CreateWindow(config)
 						if multiSelect then
 							EzUI.Flags[flag] = selectedValues
 						else
-							EzUI.Flags[flag] = selectedValues[1] or nil
+							-- For single select, store the value or empty string (not nil)
+							EzUI.Flags[flag] = selectedValues[1] or ""
 						end
 						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
 							saveConfiguration(EzUI.Configuration.FileName)
@@ -1317,7 +1342,7 @@ function EzUI.CreateWindow(config)
 						if multiSelect then
 							EzUI.Flags[flag] = {}
 						else
-							EzUI.Flags[flag] = nil
+							EzUI.Flags[flag] = ""
 						end
 						if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
 							saveConfiguration(EzUI.Configuration.FileName)
@@ -1424,19 +1449,18 @@ function EzUI.CreateWindow(config)
 								callback(selectedValues, option.value)
 							end
 							
-							-- Save to flag if specified
-							if flag then
-								if multiSelect then
-									EzUI.Flags[flag] = selectedValues
-								else
-									EzUI.Flags[flag] = selectedValues[1] or nil
-								end
-								if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
-									saveConfiguration(EzUI.Configuration.FileName)
-								end
-							end
-							
-							if not multiSelect and not preventAutoClose then
+								-- Save to flag if specified
+								if flag then
+									if multiSelect then
+										EzUI.Flags[flag] = selectedValues
+									else
+										-- For single select, store the value or empty string (not nil)
+										EzUI.Flags[flag] = selectedValues[1] or ""
+									end
+									if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+										saveConfiguration(EzUI.Configuration.FileName)
+									end
+								end							if not multiSelect and not preventAutoClose then
 								spawn(function()
 									wait(0.1)
 									isOpen = false
@@ -1483,7 +1507,11 @@ function EzUI.CreateWindow(config)
 				end,
 				-- Set function for configuration loading
 				Set = function(values)
-					selectedValues = values or {}
+					if values == "" then
+						selectedValues = {} -- Handle empty string as no selection
+					else
+						selectedValues = values or {}
+					end
 					updateDisplayText()
 				end
 			}
@@ -1493,6 +1521,10 @@ function EzUI.CreateWindow(config)
 			
 			-- Call onInit callback after component creation to allow initial options update
 			if onInit then
+				-- Preserve selected values before calling onInit
+				local preservedSelectedValues = selectedValues
+				print("SelectBox Debug - Preserving selected values before OnInit:", preservedSelectedValues)
+				
 				onInit(options, function(newOptions)
 					-- Callback function to update options on initialization
 					if newOptions and type(newOptions) == "table" then
@@ -1507,11 +1539,20 @@ function EzUI.CreateWindow(config)
 							end
 						end
 						
+						-- Restore selected values after options update
+						selectedValues = preservedSelectedValues
+						print("SelectBox Debug - Restored selected values after OnInit:", selectedValues)
+						
 						-- Refresh tampilan options
 						refreshOptionsDisplay()
+						-- Update display text after refreshing options
+						updateDisplayText()
 					end
 				end, selectBoxAPI)
 			end
+			
+			-- Initial display update after component creation and flag loading
+			updateDisplayText()
 			
 			-- Return SelectBox API
 			return selectBoxAPI
