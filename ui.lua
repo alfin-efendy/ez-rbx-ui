@@ -1225,16 +1225,82 @@ function EzUI.CreateWindow(config)
 			-- Create dropdown options
 			refreshOptionsDisplay()
 			
-			-- Filter options based on search
+			-- Filter options based on search with improved matching
 			local function filterOptions(searchText)
+				-- Handle empty or nil search text
+				searchText = searchText or ""
+				local originalSearchText = searchText
+				searchText = string.lower(string.gsub(searchText, "^%s*(.-)%s*$", "%1")) -- Trim whitespace
+				
 				local visibleCount = 0
 				local optionHeight = isForAccordion and 25 or 30
-				for i, child in ipairs(optionsContainer:GetChildren()) do
+				local allChildren = optionsContainer:GetChildren()
+				local foundExactMatch = false
+				
+				-- Filter and reposition visible options
+				for i, child in ipairs(allChildren) do
 					if child:IsA("TextButton") then
+						-- Get corresponding option data
 						local option = options[i]
-						if option and string.find(string.lower(option.text), string.lower(searchText), 1, true) then
+						local shouldShow = false
+						local isExactMatch = false
+						
+						if option then
+							local optionText = option.text or ""
+							local optionTextLower = string.lower(optionText)
+							
+							if searchText == "" then
+								-- Show all options when search is empty
+								shouldShow = true
+								child.Text = "  " .. optionText -- Reset text without highlighting
+							else
+								-- Multiple search strategies
+								local searchWords = {}
+								for word in string.gmatch(searchText, "%S+") do
+									table.insert(searchWords, word)
+								end
+								
+								-- Check for matches
+								local hasMatch = false
+								if #searchWords == 1 then
+									-- Single word search - check for substring match
+									hasMatch = string.find(optionTextLower, searchText, 1, true) ~= nil
+									isExactMatch = optionTextLower == searchText
+								else
+									-- Multi-word search - all words must be found
+									hasMatch = true
+									for _, word in ipairs(searchWords) do
+										if not string.find(optionTextLower, word, 1, true) then
+											hasMatch = false
+											break
+										end
+									end
+								end
+								
+								shouldShow = hasMatch
+								
+								-- Highlight matching text (simple approach)
+								if hasMatch and searchText ~= "" then
+									-- For now, just mark that it's a match
+									-- More sophisticated highlighting could be added here
+									if isExactMatch then
+										foundExactMatch = true
+									end
+								end
+							end
+						end
+						
+						if shouldShow then
 							child.Visible = true
 							child.Position = UDim2.new(0, 5, 0, visibleCount * optionHeight)
+							
+							-- Move exact matches to top
+							if isExactMatch then
+								child.Position = UDim2.new(0, 5, 0, 0)
+							elseif foundExactMatch then
+								child.Position = UDim2.new(0, 5, 0, (visibleCount + 1) * optionHeight)
+							end
+							
 							visibleCount = visibleCount + 1
 						else
 							child.Visible = false
@@ -1242,15 +1308,108 @@ function EzUI.CreateWindow(config)
 					end
 				end
 				
-				-- Update canvas size
-				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, visibleCount * optionHeight + 30)
+				-- Update canvas size based on visible items
+				local canvasHeight = math.max(visibleCount * optionHeight + 30, 60) -- Minimum height
+				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
+				
+				-- Reset keyboard navigation index when filtering
+				selectedIndex = 0
+				
+				-- Debug output for search results
+				if searchText ~= "" then
+					if visibleCount == 0 then
+						print("SelectBox Search: No results found for '" .. originalSearchText .. "'")
+					else
+						print("SelectBox Search: Found " .. visibleCount .. " results for '" .. originalSearchText .. "'")
+					end
+				end
 			end
 			
-			-- Search functionality
+			-- Search functionality with debouncing
+			local searchDebounceTime = 0.2 -- 200ms debounce
+			local lastSearchTime = 0
+			
 			searchBox.Changed:Connect(function(property)
 				if property == "Text" then
-					filterOptions(searchBox.Text)
+					local currentTime = tick()
+					lastSearchTime = currentTime
+					
+					-- Debounce search to avoid excessive filtering
+					wait(searchDebounceTime)
+					if lastSearchTime == currentTime then
+						filterOptions(searchBox.Text)
+					end
 				end
+			end)
+			
+			-- Handle keyboard navigation and immediate search
+			local UserInputService = game:GetService("UserInputService")
+			local selectedIndex = 0 -- Track currently highlighted option
+			
+			-- Get visible options for navigation
+			local function getVisibleOptions()
+				local visibleOptions = {}
+				for _, child in ipairs(optionsContainer:GetChildren()) do
+					if child:IsA("TextButton") and child.Visible then
+						table.insert(visibleOptions, child)
+					end
+				end
+				return visibleOptions
+			end
+			
+			-- Update highlight for keyboard navigation
+			local function updateHighlight()
+				local visibleOptions = getVisibleOptions()
+				for i, option in ipairs(visibleOptions) do
+					if i == selectedIndex then
+						option.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Highlight color
+					else
+						-- Reset to normal color or selected color
+						local isSelected = false
+						for _, value in ipairs(selectedValues or {}) do
+							if option.Text:match("(.+)") == value then
+								isSelected = true
+								break
+							end
+						end
+						option.BackgroundColor3 = isSelected and Color3.fromRGB(70, 120, 70) or Color3.fromRGB(50, 50, 50)
+					end
+				end
+			end
+			
+			-- Keyboard navigation for search box
+			searchBox.Focused:Connect(function()
+				local connection
+				connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+					if gameProcessed then return end
+					
+					local visibleOptions = getVisibleOptions()
+					if #visibleOptions == 0 then return end
+					
+					if input.KeyCode == Enum.KeyCode.Down then
+						selectedIndex = math.min(selectedIndex + 1, #visibleOptions)
+						updateHighlight()
+					elseif input.KeyCode == Enum.KeyCode.Up then
+						selectedIndex = math.max(selectedIndex - 1, 1)
+						updateHighlight()
+					elseif input.KeyCode == Enum.KeyCode.Return then
+						if selectedIndex > 0 and selectedIndex <= #visibleOptions then
+							visibleOptions[selectedIndex]:GetPropertyChangedSignal("MouseButton1Click"):Fire()
+						end
+					elseif input.KeyCode == Enum.KeyCode.Escape then
+						searchBox:ReleaseFocus()
+						toggleDropdown()
+					end
+				end)
+				
+				-- Clean up connection when focus is lost
+				searchBox.FocusLost:Connect(function()
+					if connection then
+						connection:Disconnect()
+					end
+					selectedIndex = 0
+					updateHighlight()
+				end)
 			end)
 			
 			-- Wrapper to reset search when dropdown closes
