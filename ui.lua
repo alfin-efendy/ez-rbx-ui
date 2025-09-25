@@ -825,7 +825,6 @@ function EzUI.CreateWindow(config)
 			-- Set initial values from flag if exists
 			if flag and EzUI.Flags[flag] ~= nil then
 				local flagValue = EzUI.Flags[flag]
-				print("SelectBox Debug - Flag:", flag, "Value:", flagValue, "Type:", type(flagValue), "MultiSelect:", multiSelect)
 				
 				if multiSelect then
 					-- For multiselect, flag should be an array
@@ -842,8 +841,6 @@ function EzUI.CreateWindow(config)
 						selectedValues = flagValue ~= "" and {flagValue} or {} -- Wrap single value in array, handle empty string
 					end
 				end
-				
-				print("SelectBox Debug - Selected values after flag load:", selectedValues)
 			else
 				print("SelectBox Debug - No flag or flag is nil:", flag, EzUI.Flags[flag])
 			end
@@ -946,19 +943,14 @@ function EzUI.CreateWindow(config)
 			
 			-- Function to update display text
 			local function updateDisplayText()
-				print("SelectBox Debug - updateDisplayText called. Selected values:", selectedValues, "Type:", type(selectedValues))
-				
 				-- Ensure selectedValues is always an array
 				if type(selectedValues) ~= "table" then
 					selectedValues = {selectedValues}
 				end
 				
-				print("SelectBox Debug - After ensuring array. Selected values:", selectedValues, "Length:", #selectedValues)
-				
 				if #selectedValues == 0 then
 					selectButton.Text = "  " .. placeholder
 					selectButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-					print("SelectBox Debug - No values selected, showing placeholder")
 				elseif multiSelect then
 					if #selectedValues == 1 then
 						-- Find the display text for the selected value
@@ -1082,6 +1074,11 @@ function EzUI.CreateWindow(config)
 					optionButton.ZIndex = 27
 					optionButton.Parent = optionsContainer
 					
+					-- Store option data reference in the button for filtering
+					optionButton:SetAttribute("OptionIndex", i)
+					optionButton:SetAttribute("OptionValue", option.value)
+					optionButton:SetAttribute("OptionText", option.text)
+					
 					-- Checkmark for multi-select
 					local checkmark = Instance.new("TextLabel")
 					checkmark.Size = UDim2.new(0, 20, 1, 0)
@@ -1102,16 +1099,23 @@ function EzUI.CreateWindow(config)
 					if type(selectedValues) ~= "table" then
 						selectedValues = {selectedValues}
 					end
+					
+					-- Use tostring for comparison to handle type differences
+					local optionValue = tostring(option.value)
 					for _, value in ipairs(selectedValues) do
-						if value == option.value then
+						if tostring(value) == optionValue then
 							isSelected = true
 							break
 						end
 					end
 					
+					-- Set initial visual state based on selection
 					if isSelected then
 						checkmark.Text = "✓"
 						optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+					else
+						checkmark.Text = ""
+						optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 					end
 					
 					optionButton.MouseButton1Click:Connect(function()
@@ -1182,12 +1186,13 @@ function EzUI.CreateWindow(config)
 					
 					optionButton.MouseLeave:Connect(function()
 						local isCurrentlySelected = false
+						local optionValue = optionButton:GetAttribute("OptionValue")
 						-- Ensure selectedValues is always an array
 						if type(selectedValues) ~= "table" then
 							selectedValues = {selectedValues}
 						end
 						for _, val in ipairs(selectedValues) do
-							if val == option.value then
+							if tostring(val) == tostring(optionValue) then
 								isCurrentlySelected = true
 								break
 							end
@@ -1202,6 +1207,38 @@ function EzUI.CreateWindow(config)
 				-- Update canvas size
 				local optionHeight = isForAccordion and 25 or 30
 				dropdownFrame.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight + 30)
+				
+				-- Force visual state update after all options are created
+				wait() -- Allow UI to render
+				for _, child in pairs(optionsContainer:GetChildren()) do
+					if child:IsA("TextButton") then
+						local optionValue = child:GetAttribute("OptionValue")
+						local checkmark = child:FindFirstChild("TextLabel")
+						local isCurrentlySelected = false
+						
+						-- Ensure selectedValues is always an array
+						if type(selectedValues) ~= "table" then
+							selectedValues = {selectedValues}
+						end
+						
+						-- Check if this option should be selected
+						for _, value in ipairs(selectedValues) do
+							if tostring(value) == tostring(optionValue) then
+								isCurrentlySelected = true
+								break
+							end
+						end
+						
+						-- Apply correct visual state
+						if isCurrentlySelected then
+							if checkmark then checkmark.Text = "✓" end
+							child.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+						else
+							if checkmark then checkmark.Text = "" end
+							child.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+						end
+					end
+				end
 			end
 			
 			-- Position tracking variables
@@ -1348,13 +1385,13 @@ function EzUI.CreateWindow(config)
 				-- Filter and reposition visible options
 				for i, child in ipairs(allChildren) do
 					if child:IsA("TextButton") then
-						-- Get corresponding option data
-						local option = options[i]
+						-- Get option data from stored attributes
+						local optionText = child:GetAttribute("OptionText") or ""
+						local optionValue = child:GetAttribute("OptionValue") or ""
 						local shouldShow = false
 						local isExactMatch = false
 						
-						if option then
-							local optionText = option.text or ""
+						if optionText ~= "" then
 							local optionTextLower = string.lower(optionText)
 							
 							if searchText == "" then
@@ -1422,15 +1459,6 @@ function EzUI.CreateWindow(config)
 				
 				-- Reset keyboard navigation index when filtering
 				selectedIndex = 0
-				
-				-- Debug output for search results
-				if searchText ~= "" then
-					if visibleCount == 0 then
-						print("SelectBox Search: No results found for '" .. originalSearchText .. "'")
-					else
-						print("SelectBox Search: Found " .. visibleCount .. " results for '" .. originalSearchText .. "'")
-					end
-				end
 			end
 			
 			-- Search functionality with debouncing
@@ -1468,19 +1496,20 @@ function EzUI.CreateWindow(config)
 			-- Update highlight for keyboard navigation
 			local function updateHighlight()
 				local visibleOptions = getVisibleOptions()
-				for i, option in ipairs(visibleOptions) do
+				for i, optionButton in ipairs(visibleOptions) do
 					if i == selectedIndex then
-						option.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Highlight color
+						optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 200) -- Highlight color
 					else
 						-- Reset to normal color or selected color
 						local isSelected = false
+						local optionValue = optionButton:GetAttribute("OptionValue")
 						for _, value in ipairs(selectedValues or {}) do
-							if option.Text:match("(.+)") == value then
+							if tostring(optionValue) == tostring(value) then
 								isSelected = true
 								break
 							end
 						end
-						option.BackgroundColor3 = isSelected and Color3.fromRGB(70, 120, 70) or Color3.fromRGB(50, 50, 50)
+						optionButton.BackgroundColor3 = isSelected and Color3.fromRGB(70, 120, 70) or Color3.fromRGB(50, 50, 50)
 					end
 				end
 			end
@@ -1502,7 +1531,67 @@ function EzUI.CreateWindow(config)
 						updateHighlight()
 					elseif input.KeyCode == Enum.KeyCode.Return then
 						if selectedIndex > 0 and selectedIndex <= #visibleOptions then
-							visibleOptions[selectedIndex]:GetPropertyChangedSignal("MouseButton1Click"):Fire()
+							-- Simulate click on the highlighted option by firing the event
+							local selectedOption = visibleOptions[selectedIndex]
+							local clickedOptionValue = selectedOption:GetAttribute("OptionValue")
+							
+							-- Simulate the click behavior directly
+							preventAutoClose = true
+							
+							if multiSelect then
+								local isSelected = false
+								local indexToRemove = nil
+								if type(selectedValues) ~= "table" then
+									selectedValues = {selectedValues}
+								end
+								for j, value in ipairs(selectedValues) do
+									if value == clickedOptionValue then
+										isSelected = true
+										indexToRemove = j
+										break
+									end
+								end
+								
+								if isSelected then
+									table.remove(selectedValues, indexToRemove)
+									local checkmark = selectedOption:FindFirstChild("TextLabel")
+									if checkmark then checkmark.Text = "" end
+									selectedOption.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+								else
+									table.insert(selectedValues, clickedOptionValue)
+									local checkmark = selectedOption:FindFirstChild("TextLabel")
+									if checkmark then checkmark.Text = "✓" end
+									selectedOption.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+								end
+							else
+								selectedValues = {clickedOptionValue}
+								updateDisplayText()
+								isOpen = false
+								dropdownFrame.Visible = false
+								arrow.Text = "▼"
+								stopPositionTracking()
+								searchBox:ReleaseFocus()
+							end
+							
+							updateDisplayText()
+							
+							if callback then
+								callback(selectedValues, clickedOptionValue)
+							end
+							
+							-- Save to flag if specified
+							if flag then
+								if multiSelect then
+									EzUI.Flags[flag] = selectedValues
+								else
+									EzUI.Flags[flag] = selectedValues[1] or ""
+								end
+								if EzUI.Configuration.Enabled and EzUI.Configuration.AutoSave then
+									saveConfiguration(EzUI.Configuration.FileName)
+								end
+							end
+							
+							preventAutoClose = false
 						end
 					elseif input.KeyCode == Enum.KeyCode.Escape then
 						searchBox:ReleaseFocus()
@@ -1678,6 +1767,10 @@ function EzUI.CreateWindow(config)
 						optionButton.MouseButton1Click:Connect(function()
 							preventAutoClose = true
 							
+							-- Get option data from stored attributes
+							local clickedOptionValue = optionButton:GetAttribute("OptionValue")
+							local clickedOptionText = optionButton:GetAttribute("OptionText")
+							
 							if multiSelect then
 								local isSelected = false
 								local indexToRemove = nil
@@ -1686,7 +1779,7 @@ function EzUI.CreateWindow(config)
 									selectedValues = {selectedValues}
 								end
 								for j, value in ipairs(selectedValues) do
-									if value == option.value then
+									if value == clickedOptionValue then
 										isSelected = true
 										indexToRemove = j
 										break
@@ -1698,22 +1791,23 @@ function EzUI.CreateWindow(config)
 									checkmark.Text = ""
 									optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 								else
-									table.insert(selectedValues, option.value)
+									table.insert(selectedValues, clickedOptionValue)
 									checkmark.Text = "✓"
 									optionButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
 								end
 							else
-								selectedValues = {option.value}
+								selectedValues = {clickedOptionValue}
 								updateDisplayText()
 								isOpen = false
 								dropdownFrame.Visible = false
 								arrow.Text = "▼"
+								stopPositionTracking()
 							end
 							
 							updateDisplayText()
 							
 							if callback then
-								callback(selectedValues, option.value)
+								callback(selectedValues, clickedOptionValue)
 							end
 							
 								-- Save to flag if specified
@@ -1733,6 +1827,7 @@ function EzUI.CreateWindow(config)
 									isOpen = false
 									dropdownFrame.Visible = false
 									arrow.Text = "▼"
+									stopPositionTracking()
 								end)
 							end
 							
@@ -1747,12 +1842,13 @@ function EzUI.CreateWindow(config)
 						
 						optionButton.MouseLeave:Connect(function()
 							local isSelected = false
+							local optionValue = optionButton:GetAttribute("OptionValue")
 							-- Ensure selectedValues is always an array
 							if type(selectedValues) ~= "table" then
 								selectedValues = {selectedValues}
 							end
 							for _, val in ipairs(selectedValues) do
-								if val == option.value then
+								if val == optionValue then
 									isSelected = true
 									break
 								end
@@ -1815,7 +1911,6 @@ function EzUI.CreateWindow(config)
 			if onInit then
 				-- Preserve selected values before calling onInit
 				local preservedSelectedValues = selectedValues
-				print("SelectBox Debug - Preserving selected values before OnInit:", preservedSelectedValues)
 				
 				onInit(options, function(newOptions)
 					-- Callback function to update options on initialization
@@ -1833,7 +1928,6 @@ function EzUI.CreateWindow(config)
 						
 						-- Restore selected values after options update
 						selectedValues = preservedSelectedValues
-						print("SelectBox Debug - Restored selected values after OnInit:", selectedValues)
 						
 						-- Refresh tampilan options
 						refreshOptionsDisplay()
@@ -2617,6 +2711,19 @@ function EzUI.CreateWindow(config)
 				currentY = tabCurrentY
 				api:UpdateWindowSize()
 			end
+			
+			-- Return label API with SetText function
+			return {
+				SetText = function(newText)
+					label.Text = newText
+				end,
+				SetColor = function(color)
+					label.TextColor3 = color
+				end,
+				GetText = function()
+					return label.Text
+				end
+			}
 		end
 
 		function tabAPI:AddButton(text, callback)
@@ -3024,6 +3131,19 @@ function EzUI.CreateWindow(config)
 				if isExpanded then
 					animateAccordion()
 				end
+				
+				-- Return label API with SetText function
+				return {
+					SetText = function(newText)
+						label.Text = newText
+					end,
+					SetColor = function(color)
+						label.TextColor3 = color
+					end,
+					GetText = function()
+						return label.Text
+					end
+				}
 			end
 			
 			function accordionAPI:AddButton(text, buttonCallback)
