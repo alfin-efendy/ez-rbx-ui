@@ -1967,7 +1967,26 @@ function EzUI.CreateWindow(config)
 			label.Font = Enum.Font.SourceSans
 			label.Parent = parentContainer
 			
-			return label
+			-- Create Label API
+			local labelAPI = {}
+			
+			labelAPI.SetText = function(newText)
+				label.Text = newText or ""
+			end
+			
+			labelAPI.GetText = function()
+				return label.Text
+			end
+			
+			labelAPI.SetTextColor = function(color)
+				label.TextColor3 = color
+			end
+			
+			labelAPI.SetTextSize = function(size)
+				label.TextSize = size
+			end
+			
+			return labelAPI
 		end
 
 		-- Centralized Button component that can be used by both tab and accordion APIs
