@@ -1961,17 +1961,37 @@ function EzUI.CreateWindow(config)
 				label:SetAttribute("ComponentStartY", currentY)
 			end
 			label.BackgroundTransparency = 1
-			label.Text = text
+			label.Text = type(text) == "function" and text() or text
 			label.TextColor3 = Color3.fromRGB(255, 255, 255)
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Font = Enum.Font.SourceSans
 			label.Parent = parentContainer
 			
+			-- Store the text source (function or string)
+			local textSource = text
+			local updateConnection = nil
+			
 			-- Create Label API
 			local labelAPI = {}
 			
+			-- Function to update text from source
+			local function updateText()
+				if type(textSource) == "function" then
+					local success, result = pcall(textSource)
+					if success then
+						label.Text = tostring(result)
+					else
+						warn("Label dynamic text error:", result)
+						label.Text = "[Error]"
+					end
+				else
+					label.Text = tostring(textSource or "")
+				end
+			end
+			
 			labelAPI.SetText = function(newText)
-				label.Text = newText or ""
+				textSource = newText
+				updateText()
 			end
 			
 			labelAPI.GetText = function()
@@ -1984,6 +2004,55 @@ function EzUI.CreateWindow(config)
 			
 			labelAPI.SetTextSize = function(size)
 				label.TextSize = size
+			end
+			
+			-- Start auto-update if text is a function
+			labelAPI.StartAutoUpdate = function(interval)
+				interval = interval or 1 -- Default 1 second
+				
+				-- Stop existing connection if any
+				if updateConnection then
+					updateConnection:Disconnect()
+				end
+				
+				-- Only auto-update if textSource is a function
+				if type(textSource) == "function" then
+					local RunService = game:GetService("RunService")
+					local lastUpdate = 0
+					
+					updateConnection = RunService.Heartbeat:Connect(function()
+						local currentTime = tick()
+						if currentTime - lastUpdate >= interval then
+							updateText()
+							lastUpdate = currentTime
+						end
+					end)
+				end
+			end
+			
+			-- Stop auto-update
+			labelAPI.StopAutoUpdate = function()
+				if updateConnection then
+					updateConnection:Disconnect()
+					updateConnection = nil
+				end
+			end
+			
+			-- Manually trigger update
+			labelAPI.Update = function()
+				updateText()
+			end
+			
+			-- Cleanup when label is destroyed
+			label.AncestryChanged:Connect(function()
+				if not label.Parent then
+					labelAPI.StopAutoUpdate()
+				end
+			end)
+			
+			-- If text is a function, start auto-update by default
+			if type(textSource) == "function" then
+				labelAPI.StartAutoUpdate(1)
 			end
 			
 			return labelAPI
