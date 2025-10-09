@@ -129,8 +129,8 @@ function Tab:Create(config)
 	-- Initial alignment setup
 	updateTitleAlignment()
 
-	-- Track current Y position for components
-	local currentY = 10
+	-- Track current Y position for components (reduced top spacing)
+	local currentY = 5
 	
 	-- Helper function to update canvas size after adding components
 	local function updateTabCanvasSize()
@@ -430,8 +430,8 @@ function Tab:Create(config)
 				end
 			end
 			
-			-- Update currentY
-			currentY = maxY + 10
+			-- Update currentY (reduced spacing)
+			currentY = maxY + 5
 			
 			-- Use our unified canvas update function
 			updateTabCanvasSize()
@@ -440,10 +440,10 @@ function Tab:Create(config)
 		-- Create accordion using module
 		local accordionAPI = Accordion:Create(accordionConfig)
 		
-		-- Update currentY for next component based on actual container size
+		-- Update currentY for next component based on actual container size (reduced spacing)
 		task.wait() -- Ensure size is rendered
 		local actualHeight = accordionAPI.Container.AbsoluteSize.Y
-		currentY = currentY + actualHeight + 10
+		currentY = currentY + actualHeight + 5
 		updateTabCanvasSize()
 		
 		return accordionAPI

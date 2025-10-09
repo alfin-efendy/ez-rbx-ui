@@ -4,6 +4,7 @@ local Button = require("menu/button")
 local TextBox = require("menu/textbox")
 local NumberBox = require("menu/numberbox")
 local Toggle = require("menu/toggle")
+local SelectBox = require("menu/selectbox")
 
 local window = EzUI:CreateNew({
     Name = "Example",
@@ -20,3 +21,4 @@ Button:Init(window)
 TextBox:Init(window)
 NumberBox:Init(window)
 Toggle:Init(window)
+SelectBox:Init(window)
