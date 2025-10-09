@@ -1,4 +1,5 @@
 local Config = {}
+local HttpService = game:GetService("HttpService")
 
 function Config:NewConfig(config)
 	-- Support both old style (string, string) and new style (table)
@@ -34,6 +35,8 @@ function Config:NewConfig(config)
 	
 	-- Save function for this custom config
 	local function SaveConfiguration()
+		print("EzUI.CustomConfig: Saving configuration for", configName)
+
 		-- Filter out keys with nil values
 		local dataToSave = {}
 		local hasData = false
@@ -124,6 +127,8 @@ function Config:NewConfig(config)
 		end
 		
 		local success, configData = pcall(function()
+			print("EzUI.CustomConfig: Loading configuration from " .. filePath)
+			-- Decode JSON data
 			return HttpService:JSONDecode(readfile(filePath))
 		end)
 		
@@ -135,6 +140,7 @@ function Config:NewConfig(config)
 		-- Apply loaded data and update components
 		local applied = 0
 		for flagName, flagValue in pairs(configData) do
+			print("EzUI.CustomConfig: Loaded", flagName, "=", flagValue)
 			Flags[flagName] = flagValue
 			applied = applied + 1
 		end
@@ -160,6 +166,8 @@ function Config:NewConfig(config)
 				warn("EzUI.CustomConfig.SetValue: key parameter is required")
 				return false
 			end
+
+			print("EzUI.CustomConfig: Setting", key, "to", value)
 			
 			Flags[key] = value
 			

@@ -479,9 +479,10 @@ function Window:Create(config)
 	local minHeight = config.MinHeight or 200
 	local maxWidth = config.MaxWidth
 	local maxHeight = config.MaxHeight
-	local tabPanelWidth = config.TabPanelWidth or 100
+	local tabPanelWidth = config.TabPanelWidth or 130
 	local minTabPanelWidth = config.MinTabPanelWidth or 80
 	local maxTabPanelWidth = config.MaxTabPanelWidth or 300
+	local settings = config.Settings or {}
 	
 	opacity = math.max(0.1, math.min(1.0, opacity))
 	
@@ -577,8 +578,130 @@ function Window:Create(config)
 		closeBtn.TextColor3 = Colors.Text.Primary
 	end)
 	
-	closeBtn.MouseButton1Click:Connect(function()
+	-- Create confirmation dialog elements (hidden by default)
+	local confirmationOverlay = Instance.new("Frame")
+	confirmationOverlay.Size = UDim2.new(1, 0, 1, 0)
+	confirmationOverlay.Position = UDim2.new(0, 0, 0, 0)
+	confirmationOverlay.BackgroundColor3 = Colors.Special.Overlay
+	confirmationOverlay.BackgroundTransparency = 0.5
+	confirmationOverlay.BorderSizePixel = 0
+	confirmationOverlay.ZIndex = 100
+	confirmationOverlay.Visible = false
+	confirmationOverlay.Parent = frame
+	
+	local confirmationDialog = Instance.new("Frame")
+	confirmationDialog.Size = UDim2.new(0, 300, 0, 130)
+	confirmationDialog.Position = UDim2.new(0.5, -150, 0.5, -65)
+	confirmationDialog.BackgroundColor3 = Colors.Surface.Elevated
+	confirmationDialog.BorderSizePixel = 0
+	confirmationDialog.ZIndex = 101
+	confirmationDialog.Parent = confirmationOverlay
+	
+	local confirmDialogCorner = Instance.new("UICorner")
+	confirmDialogCorner.CornerRadius = UDim.new(0, 8)
+	confirmDialogCorner.Parent = confirmationDialog
+	
+	-- Confirmation dialog title
+	local confirmTitle = Instance.new("TextLabel")
+	confirmTitle.Size = UDim2.new(1, -20, 0, 25)
+	confirmTitle.Position = UDim2.new(0, 10, 0, 8)
+	confirmTitle.BackgroundTransparency = 1
+	confirmTitle.Text = "⚠️ Confirm Close"
+	confirmTitle.TextColor3 = Colors.Text.Primary
+	confirmTitle.TextSize = 14
+	confirmTitle.Font = Enum.Font.GothamBold
+	confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
+	confirmTitle.ZIndex = 102
+	confirmTitle.Parent = confirmationDialog
+	
+	-- Confirmation message
+	local confirmMessage = Instance.new("TextLabel")
+	confirmMessage.Size = UDim2.new(1, -20, 0, 35)
+	confirmMessage.Position = UDim2.new(0, 10, 0, 35)
+	confirmMessage.BackgroundTransparency = 1
+	confirmMessage.Text = "Are you sure you want to close?"
+	confirmMessage.TextColor3 = Colors.Text.Secondary
+	confirmMessage.TextSize = 12
+	confirmMessage.Font = Enum.Font.Gotham
+	confirmMessage.TextWrapped = true
+	confirmMessage.TextXAlignment = Enum.TextXAlignment.Left
+	confirmMessage.TextYAlignment = Enum.TextYAlignment.Top
+	confirmMessage.ZIndex = 102
+	confirmMessage.Parent = confirmationDialog
+	
+	-- Button container
+	local buttonContainer = Instance.new("Frame")
+	buttonContainer.Size = UDim2.new(1, -20, 0, 32)
+	buttonContainer.Position = UDim2.new(0, 10, 1, -40)
+	buttonContainer.BackgroundTransparency = 1
+	buttonContainer.ZIndex = 102
+	buttonContainer.Parent = confirmationDialog
+	
+	-- Cancel button
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = UDim2.new(0, 130, 0, 32)
+	cancelBtn.Position = UDim2.new(0, 0, 0, 0)
+	cancelBtn.BackgroundColor3 = Colors.Button.Secondary
+	cancelBtn.BorderSizePixel = 0
+	cancelBtn.Text = "Cancel"
+	cancelBtn.TextColor3 = Colors.Text.Primary
+	cancelBtn.TextSize = 13
+	cancelBtn.Font = Enum.Font.GothamBold
+	cancelBtn.ZIndex = 103
+	cancelBtn.Parent = buttonContainer
+	
+	local cancelCorner = Instance.new("UICorner")
+	cancelCorner.CornerRadius = UDim.new(0, 6)
+	cancelCorner.Parent = cancelBtn
+	
+	-- Confirm button
+	local confirmBtn = Instance.new("TextButton")
+	confirmBtn.Size = UDim2.new(0, 130, 0, 32)
+	confirmBtn.Position = UDim2.new(1, -130, 0, 0)
+	confirmBtn.BackgroundColor3 = Colors.Button.Danger
+	confirmBtn.BorderSizePixel = 0
+	confirmBtn.Text = "Close"
+	confirmBtn.TextColor3 = Colors.Text.Primary
+	confirmBtn.TextSize = 13
+	confirmBtn.Font = Enum.Font.GothamBold
+	confirmBtn.ZIndex = 103
+	confirmBtn.Parent = buttonContainer
+	
+	local confirmCorner = Instance.new("UICorner")
+	confirmCorner.CornerRadius = UDim.new(0, 6)
+	confirmCorner.Parent = confirmBtn
+	
+	-- Button hover effects
+	cancelBtn.MouseEnter:Connect(function()
+		cancelBtn.BackgroundColor3 = Colors.Button.SecondaryHover
+	end)
+	
+	cancelBtn.MouseLeave:Connect(function()
+		cancelBtn.BackgroundColor3 = Colors.Button.Secondary
+	end)
+	
+	confirmBtn.MouseEnter:Connect(function()
+		confirmBtn.BackgroundColor3 = Colors.Button.DangerHover
+	end)
+	
+	confirmBtn.MouseLeave:Connect(function()
+		confirmBtn.BackgroundColor3 = Colors.Button.Danger
+	end)
+	
+	-- Cancel button action
+	cancelBtn.MouseButton1Click:Connect(function()
+		confirmationOverlay.Visible = false
+	end)
+	
+	-- Confirm button action
+	confirmBtn.MouseButton1Click:Connect(function()
+		confirmationOverlay.Visible = false
 		screenGui:Destroy()
+	end)
+	
+	-- Close button shows confirmation dialog
+	closeBtn.MouseButton1Click:Connect(function()
+		confirmationOverlay.Visible = true
 	end)
 	
 	-- Tab panel (left side)
@@ -617,9 +740,44 @@ function Window:Create(config)
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scrollFrame.ScrollBarThickness = 8
 	scrollFrame.ScrollBarImageColor3 = Colors.Scrollbar.Thumb
-	scrollFrame.ClipsDescendants = false
+	scrollFrame.ClipsDescendants = true
 	scrollFrame.ZIndex = 2
 	scrollFrame.Parent = frame
+	
+	-- Function to update canvas size (USING OLD UI.LUA LOGIC - Line ~692)
+	local updateCanvasSize  -- Forward declaration
+	
+	updateCanvasSize = function()
+		-- Calculate actual content height for the active tab only
+		local maxY = 10
+		
+		-- Find the currently visible tab content frame
+		local activeTabContent = nil
+		for _, child in ipairs(scrollFrame:GetChildren()) do
+			if child:IsA("Frame") and child.Visible then
+				activeTabContent = child
+				break
+			end
+		end
+		
+		if activeTabContent then
+			-- Calculate content height within the active tab
+			for _, child in ipairs(activeTabContent:GetChildren()) do
+				if child:IsA("GuiObject") and child.Visible then
+					local childY = child.Position.Y.Offset
+					local childHeight = child.AbsoluteSize.Y
+					local childBottom = childY + childHeight
+					
+					if childBottom > maxY then
+						maxY = childBottom
+					end
+				end
+			end
+		end
+		
+		-- Set canvas size with padding
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, maxY + 20)
+	end
 	
 	-- Dragging functionality
 	if draggable then
@@ -677,8 +835,15 @@ function Window:Create(config)
 		tabPanelResizer = self:CreateTabPanelResizer(tabPanel, scrollFrame, minTabPanelWidth, maxTabPanelWidth)
 	end
 	
+	-- Monitor frame size changes and update canvas
+	frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		-- Update canvas size when window is resized
+		task.spawn(updateCanvasSize)
+	end)
+	
 	-- Tab management
 	local tabs = {}
+	local tabContents = {}
 	local currentTab = nil
 	local tabCount = 0
 	local originalHeight = windowHeight
@@ -731,166 +896,180 @@ function Window:Create(config)
 		FloatingButton = floatingButton.Frame,
 		ResizeHandle = resizeHandle,
 		TabPanelResizer = tabPanelResizer,
-		
-		Show = function()
-			if minimizeControl.IsMinimized() then
-				minimizeControl.Toggle()
-			else
-				frame.Visible = true
-			end
-		end,
-		
-		Hide = function()
-			if minimizeControl.IsMinimized() then
-				floatingButton.Frame.Visible = false
-			end
-			frame.Visible = false
-		end,
-		
-		Toggle = function()
-			frame.Visible = not frame.Visible
-		end,
-		
-		Minimize = function()
-			if not minimizeControl.IsMinimized() then
-				minimizeControl.Toggle()
-			end
-		end,
-		
-		Restore = function()
-			if minimizeControl.IsMinimized() then
-				minimizeControl.Toggle()
-			end
-		end,
-		
-		ToggleMinimize = function()
-			minimizeControl.Toggle()
-		end,
-		
-		IsMinimized = function()
-			return minimizeControl.IsMinimized()
-		end,
-		
-		Destroy = function()
-			screenGui:Destroy()
-		end,
-		
-		SetTitle = function(newTitle)
-			titleLabel.Text = newTitle
-			title = newTitle
-		end,
-		
-		SetSize = function(newWidth, newHeight)
-			windowWidth = newWidth
-			originalHeight = newHeight
-			frame.Size = UDim2.new(0, newWidth, 0, newHeight)
-		end,
-		
-		SetPosition = function(x, y)
-			frame.Position = UDim2.new(0, x, 0, y)
-		end,
-		
-		Center = function()
-			local viewportSize = Window:GetViewportSize()
-			local size = frame.AbsoluteSize
-			frame.Position = UDim2.new(
-				0, (viewportSize.X - size.X) / 2,
-				0, (viewportSize.Y - size.Y) / 2
-			)
-		end,
-		
-		SetResizable = function(enabled)
-			if resizeHandle then
-				resizeHandle.Visible = enabled
-			end
-		end,
-		
-		GetSize = function()
-			return frame.AbsoluteSize
-		end,
-		
-		SetTabPanelWidth = function(newWidth)
-			newWidth = math.max(minTabPanelWidth, math.min(maxTabPanelWidth, newWidth))
-			tabPanel.Size = UDim2.new(0, newWidth, 1, -30)
-			scrollFrame.Position = UDim2.new(0, newWidth, 0, 30)
-			scrollFrame.Size = UDim2.new(1, -newWidth, 1, -30)
-		end,
-		
-		GetTabPanelWidth = function()
-			return tabPanel.AbsoluteSize.X
-		end,
-		
-		SetTabPanelResizable = function(enabled)
-			if tabPanelResizer then
-				tabPanelResizer.Visible = enabled
-			end
-		end,
-		
-		AddTab = function(config)
-			-- Handle string shortcut
-			if type(config) == "string" then
-				config = {Name = config}
-			end
-			
-			-- Validate config
-			if type(config) ~= "table" then
-				warn("EzUI Window.AddTab: config must be a string or table")
-				return nil
-			end
-			
-			local tabName = config.Name or "Tab " .. (tabCount + 1)
-			local icon = config.Icon or ""
-			
-			-- Create the tab using Tab component
-			local tabConfig = {
-				Name = tabName,
-				Icon = icon,
-				Parent = tabScrollFrame,
-				ContentParent = scrollFrame,
-				ScreenGui = screenGui
-			}
-			
-			local tabAPI = Tab:Create(tabConfig)
-			
-			if not tabAPI then
-				warn("EzUI Window.AddTab: Failed to create tab")
-				return nil
-			end
-			
-			-- Store tab reference
-			tabCount = tabCount + 1
-			tabs[tabCount] = tabAPI
-			
-			-- Auto-select first tab
-			if tabCount == 1 then
-				currentTab = tabAPI
-				tabAPI:Select()
-			end
-			
-			-- Update tab scroll canvas size
-			tabScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tabListLayout.AbsoluteContentSize.Y)
-			
-			return tabAPI
-		end,
-		
-		GetTabs = function()
-			return tabs
-		end,
-		
-		GetCurrentTab = function()
-			return currentTab
-		end,
-		
-		SelectTab = function(index)
-			if tabs[index] then
-				if currentTab then
-					currentTab:Deselect()
-				end
-				currentTab = tabs[index]
-				currentTab:Select()
-			end
-		end
+		UpdateCanvasSize = updateCanvasSize,  -- Expose update function for accordion callbacks
 	}
+	
+	function windowAPI:Show()
+		if minimizeControl.IsMinimized() then
+			minimizeControl.Toggle()
+		else
+			frame.Visible = true
+		end
+	end
+	
+	function windowAPI:Hide()
+		if minimizeControl.IsMinimized() then
+			floatingButton.Frame.Visible = false
+		end
+		frame.Visible = false
+	end
+	
+	function windowAPI:Toggle()
+		frame.Visible = not frame.Visible
+	end
+	
+	function windowAPI:Minimize()
+		if not minimizeControl.IsMinimized() then
+			minimizeControl.Toggle()
+		end
+	end
+	
+	function windowAPI:Restore()
+		if minimizeControl.IsMinimized() then
+			minimizeControl.Toggle()
+		end
+	end
+	
+	function windowAPI:ToggleMinimize()
+		minimizeControl.Toggle()
+	end
+	
+	function windowAPI:IsMinimized()
+		return minimizeControl.IsMinimized()
+	end
+	
+	function windowAPI:Destroy()
+		screenGui:Destroy()
+	end
+	
+	function windowAPI:SetTitle(newTitle)
+		titleLabel.Text = newTitle
+		title = newTitle
+	end
+	
+	function windowAPI:SetSize(newWidth, newHeight)
+		windowWidth = newWidth
+		originalHeight = newHeight
+		frame.Size = UDim2.new(0, newWidth, 0, newHeight)
+	end
+	
+	function windowAPI:SetPosition(x, y)
+		frame.Position = UDim2.new(0, x, 0, y)
+	end
+	
+	function windowAPI:Center()
+		local viewportSize = Window:GetViewportSize()
+		local size = frame.AbsoluteSize
+		frame.Position = UDim2.new(
+			0, (viewportSize.X - size.X) / 2,
+			0, (viewportSize.Y - size.Y) / 2
+		)
+	end
+	
+	function windowAPI:SetResizable(enabled)
+		if resizeHandle then
+			resizeHandle.Visible = enabled
+		end
+	end
+	
+	function windowAPI:GetSize()
+		return frame.AbsoluteSize
+	end
+	
+	function windowAPI:SetTabPanelWidth(newWidth)
+		newWidth = math.max(minTabPanelWidth, math.min(maxTabPanelWidth, newWidth))
+		tabPanel.Size = UDim2.new(0, newWidth, 1, -30)
+		scrollFrame.Position = UDim2.new(0, newWidth, 0, 30)
+		scrollFrame.Size = UDim2.new(1, -newWidth, 1, -30)
+	end
+	
+	function windowAPI:GetTabPanelWidth()
+		return tabPanel.AbsoluteSize.X
+	end
+	
+	function windowAPI:SetTabPanelResizable(enabled)
+		if tabPanelResizer then
+			tabPanelResizer.Visible = enabled
+		end
+	end
+	
+	function windowAPI:GetTabs()
+		return tabs
+	end
+	
+	function windowAPI:GetCurrentTab()
+		return currentTab
+	end
+	
+	function windowAPI:SelectTab(index)
+		if tabs[index] then
+			if currentTab then
+				currentTab:Deselect()
+			end
+			currentTab = tabs[index]
+			currentTab:Select()
+		end
+	end
+
+	function windowAPI:AddTab(config)
+		-- Handle string shortcut
+		if type(config) == "string" then
+			config = {Name = config}
+		end
+		
+		-- Validate config
+		if type(config) ~= "table" then
+			warn("EzUI Window.AddTab: config must be a string or table")
+			return nil
+		end
+		
+		local tabName = config.Name or "Tab " .. (tabCount + 1)
+		local icon = config.Icon or ""
+		
+		-- Create the tab using Tab component
+		local tabConfig = {
+			Name = tabName,
+			Icon = icon,
+			TabScrollFrame = tabScrollFrame,
+			TabContents = tabContents,
+			ScrollFrame = scrollFrame,
+			ScreenGui = screenGui,
+			WindowAPI = windowAPI,  -- Pass window API reference for accordion canvas updates
+			UpdateCanvasSize = updateCanvasSize,  -- Pass canvas update function
+			Settings = settings  -- Optional settings for the tab
+		}
+	
+		local tabAPI = Tab:Create(tabConfig)
+		
+		if not tabAPI then
+			warn("EzUI Window.AddTab: Failed to create tab")
+			return nil
+		end
+		
+		-- Add click handler to switch tabs
+		tabAPI.Button.MouseButton1Click:Connect(function()
+			if currentTab and currentTab ~= tabAPI then
+				currentTab:Deselect()
+			end
+			currentTab = tabAPI
+			tabAPI:Select()
+		end)
+		
+		-- Store tab reference
+		tabCount = tabCount + 1
+		tabs[tabCount] = tabAPI
+		
+		-- Auto-select first tab
+		if tabCount == 1 then
+			currentTab = tabAPI
+			tabAPI:Select()
+		end
+		
+		-- Update tab scroll canvas size
+		tabScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tabListLayout.AbsoluteContentSize.Y)
+		
+		return tabAPI
+	end
 	
 	return windowAPI
 end

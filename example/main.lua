@@ -1,8 +1,18 @@
-local EzUI = require("../output/bundle.lua")
+local EzUI = require("../output/bundle")
+local Label = require("menu/label")
+local Button = require("menu/button")
+local TextBox = require("menu/textbox")
 
-local window = EzUI:CreateWindow({
-    Name = "My First Window",
-    Size = { Width = 800, Height = 600 },
-    Opacity = 0.95,
+local window = EzUI:CreateNew({
+    Name = "Example",
+    Width = 750,
+    Height = 400,
+    Opacity = 0.9,
     AutoShow = true,
+    FolderName = "EzUIExample",
+    FileName = "ExampleConfig",
 })
+
+Label:Init(window)
+Button:Init(window)
+TextBox:Init(window)
