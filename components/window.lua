@@ -11,18 +11,20 @@ local Accordion
 local Button
 local Label
 local NumberBox
+local Notification
 local SelectBox
 local Separator
 local Tab
 local TextBox
 local Toggle
 
-function Window:Init(_colors, _accordion, _button, _label, _numberbox, _selectbox, _separator, _tab, _textbox, _toggle)
+function Window:Init(_colors, _accordion, _button, _label, _numberbox, _notification, _selectbox, _separator, _tab, _textbox, _toggle)
     Colors = _colors
     Accordion = _accordion
     Button = _button
     Label = _label
     NumberBox = _numberbox
+    Notification = _notification
     SelectBox = _selectbox
     Separator = _separator
     Tab = _tab
@@ -885,6 +887,11 @@ function Window:Create(config)
 		end
 	end)
 	
+	-- Initialize Notification component
+	if Notification then
+		Notification:Init(Colors)
+	end
+	
 	-- Window API
 	local windowAPI = {
 		ScreenGui = screenGui,
@@ -897,6 +904,7 @@ function Window:Create(config)
 		ResizeHandle = resizeHandle,
 		TabPanelResizer = tabPanelResizer,
 		UpdateCanvasSize = updateCanvasSize,  -- Expose update function for accordion callbacks
+		Notification = Notification, -- Expose notification component
 	}
 	
 	function windowAPI:Show()
@@ -1069,6 +1077,69 @@ function Window:Create(config)
 		tabScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tabListLayout.AbsoluteContentSize.Y)
 		
 		return tabAPI
+	end
+	
+	-- Notification methods
+	function windowAPI:ShowNotification(config)
+		if not Notification then
+			warn("Notification component not initialized")
+			return nil
+		end
+		config = config or {}
+		config.ScreenGui = screenGui
+		return Notification:Create(config)
+	end
+	
+	function windowAPI:ShowSuccess(title, message, duration, action)
+		return self:ShowNotification({
+			Type = "success",
+			Title = title,
+			Message = message,
+			Duration = duration,
+			Action = action
+		})
+	end
+	
+	function windowAPI:ShowWarning(title, message, duration, action)
+		return self:ShowNotification({
+			Type = "warning",
+			Title = title,
+			Message = message,
+			Duration = duration,
+			Action = action
+		})
+	end
+	
+	function windowAPI:ShowError(title, message, duration, action)
+		return self:ShowNotification({
+			Type = "error",
+			Title = title,
+			Message = message,
+			Duration = duration,
+			Action = action
+		})
+	end
+	
+	function windowAPI:ShowInfo(title, message, duration, action)
+		return self:ShowNotification({
+			Type = "info",
+			Title = title,
+			Message = message,
+			Duration = duration,
+			Action = action
+		})
+	end
+	
+	function windowAPI:DismissNotification(id)
+		if Notification then
+			Notification:Dismiss(id)
+		end
+	end
+	
+	function windowAPI:ClearNotifications()
+		if Notification then
+			Notification:Clear()
+		end
 	end
 	
 	return windowAPI
