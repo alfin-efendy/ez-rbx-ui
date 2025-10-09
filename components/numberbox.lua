@@ -27,7 +27,35 @@ function NumberBox:Create(config)
 	local EzUI = config.EzUI
 	local saveConfiguration = config.SaveConfiguration
 	local registerComponent = config.RegisterComponent
-	local EzUIConfig = config.EzUIConfig
+	local settings = config.Settings
+	
+	-- Handle case where Parent might be a component API object instead of Instance
+	if parentContainer and type(parentContainer) == "table" then
+		-- Look for common GUI object properties in component APIs
+		if parentContainer.Frame then
+			parentContainer = parentContainer.Frame
+		elseif parentContainer.Button then
+			parentContainer = parentContainer.Button
+		elseif parentContainer.Label then
+			parentContainer = parentContainer.Label
+		elseif parentContainer.Container then
+			parentContainer = parentContainer.Container
+		else
+			-- List available keys for debugging
+			local keys = {}
+			for k, v in pairs(parentContainer) do
+				table.insert(keys, tostring(k))
+			end
+			warn("NumberBox:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
+			parentContainer = nil
+		end
+	end
+	
+	-- Validate parent is an Instance
+	if parentContainer and not typeof(parentContainer) == "Instance" then
+		warn("NumberBox:Create - Parent must be an Instance, got:", typeof(parentContainer))
+		parentContainer = nil
+	end
 	
 	-- NumberBox state
 	local currentValue = defaultValue
@@ -37,11 +65,8 @@ function NumberBox:Create(config)
 		local flagValue = nil
 		
 		-- Check if using custom config object
-		if EzUIConfig and type(EzUIConfig.GetValue) == "function" then
-			flagValue = EzUIConfig.GetValue(flag)
-		-- Fallback to EzUI.Flags
-		elseif EzUI and EzUI.Flags then
-			flagValue = EzUI.Flags[flag]
+		if settings and type(settings.GetValue) == "function" then
+			flagValue = settings.GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -54,7 +79,7 @@ function NumberBox:Create(config)
 	local numberBoxContainer = Instance.new("Frame")
 	if isForAccordion then
 		numberBoxContainer.Size = UDim2.new(1, -10, 0, 25)
-		numberBoxContainer.Position = UDim2.new(0, 5, 0, currentY)
+		-- Don't set Position for accordion numberboxes - let UIListLayout handle it
 		numberBoxContainer.ZIndex = 6
 	else
 		numberBoxContainer.Size = UDim2.new(1, -20, 0, 30)
@@ -63,6 +88,7 @@ function NumberBox:Create(config)
 		numberBoxContainer:SetAttribute("ComponentStartY", currentY)
 	end
 	numberBoxContainer.BackgroundTransparency = 1
+	numberBoxContainer.ClipsDescendants = true -- Ensure text doesn't overflow container
 	numberBoxContainer.Parent = parentContainer
 	
 	-- Number input box
@@ -87,8 +113,16 @@ function NumberBox:Create(config)
 	numberBox.Font = Enum.Font.SourceSans
 	numberBox.TextXAlignment = Enum.TextXAlignment.Center
 	numberBox.TextYAlignment = Enum.TextYAlignment.Center
+	numberBox.TextScaled = false -- Prevent text from scaling down automatically
+	numberBox.ClipsDescendants = true -- Clip text that overflows the TextBox
 	numberBox.ClearTextOnFocus = false
 	numberBox.Parent = numberBoxContainer
+	
+	-- Add padding to NumberBox
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 8)
+	padding.PaddingRight = UDim.new(0, 8)
+	padding.Parent = numberBox
 	
 	-- Round corners for number box
 	local numberCorner = Instance.new("UICorner")
@@ -151,29 +185,21 @@ function NumberBox:Create(config)
 		end
 		
 		currentValue = newValue
-		
 	
-	-- Update text box display
-	if decimals > 0 then
-		numberBox.Text = string.format("%." .. decimals .. "f", newValue)
-	else
-		numberBox.Text = tostring(newValue)
-	end
-	
-	-- Save to configuration
-	if flag then
-		-- Check if using custom config object
-		if EzUIConfig and type(EzUIConfig.SetValue) == "function" then
-			EzUIConfig.SetValue(flag, currentValue)
-		-- Fallback to EzUI.Flags
-		elseif EzUI and EzUI.Flags then
-			EzUI.Flags[flag] = currentValue
-			-- Auto-save if enabled
-			if EzUI.Configuration and EzUI.Configuration.AutoSave and saveConfiguration then
-				saveConfiguration(EzUI.Configuration.FileName)
-			end
+		-- Update text box display
+		if decimals > 0 then
+			numberBox.Text = string.format("%." .. decimals .. "f", newValue)
+		else
+			numberBox.Text = tostring(newValue)
 		end
-	end		-- Call user callback
+		
+		-- Save to configuration
+		if flag then
+			-- Check if using custom config object
+			if settings and type(settings.SetValue) == "function" then
+				settings.SetValue(flag, currentValue)
+			end
+		end		-- Call user callback
 		local success, errorMsg = pcall(function()
 			callback(currentValue)
 		end)
@@ -183,7 +209,7 @@ function NumberBox:Create(config)
 		end
 		
 		return newValue
-	end
+	end 
 	
 	-- Text change handler with validation
 	numberBox.FocusLost:Connect(function()
@@ -240,47 +266,58 @@ function NumberBox:Create(config)
 	
 	-- Return NumberBox API
 	local numberBoxAPI = {
-		GetValue = function()
-			return currentValue
-		end,
-		SetValue = function(newValue)
-			local numValue = tonumber(newValue)
-			if numValue then
-				updateValue(numValue)
-			else
-				warn("NumberBox SetValue: Expected number, got " .. type(newValue))
-			end
-		end,
-		SetMin = function(newMin)
-			minValue = tonumber(newMin) or -math.huge
-			updateValue(currentValue)
-		end,
-		SetMax = function(newMax)
-			maxValue = tonumber(newMax) or math.huge
-			updateValue(currentValue)
-		end,
-		SetIncrement = function(newIncrement)
-			increment = tonumber(newIncrement) or 1
-		end,
-		Clear = function()
-			updateValue(0)
-		end,
-		Focus = function()
-			numberBox:CaptureFocus()
-		end,
-		Blur = function()
-			numberBox:ReleaseFocus()
-		end,
-		SetCallback = function(newCallback)
-			callback = newCallback or function() end
-		end,
-		Set = function(newValue)
-			local numValue = tonumber(newValue)
-			if numValue then
-				updateValue(numValue)
-			end
-		end
+		NumberBox = numberBoxContainer
 	}
+	
+	function numberBoxAPI:GetValue()
+		return currentValue
+	end
+	
+	function numberBoxAPI:SetValue(newValue)
+		local numValue = tonumber(newValue)
+		if numValue then
+			updateValue(numValue)
+		else
+			warn("NumberBox SetValue: Expected number, got " .. type(newValue))
+		end
+	end
+	
+	function numberBoxAPI:SetMin(newMin)
+		minValue = tonumber(newMin) or -math.huge
+		updateValue(currentValue)
+	end
+	
+	function numberBoxAPI:SetMax(newMax)
+		maxValue = tonumber(newMax) or math.huge
+		updateValue(currentValue)
+	end
+	
+	function numberBoxAPI:SetIncrement(newIncrement)
+		increment = tonumber(newIncrement) or 1
+	end
+	
+	function numberBoxAPI:Clear()
+		updateValue(0)
+	end
+	
+	function numberBoxAPI:Focus()
+		numberBox:CaptureFocus()
+	end
+	
+	function numberBoxAPI:Blur()
+		numberBox:ReleaseFocus()
+	end
+	
+	function numberBoxAPI:SetCallback(newCallback)
+		callback = newCallback or function() end
+	end
+	
+	function numberBoxAPI:Set(newValue)
+		local numValue = tonumber(newValue)
+		if numValue then
+			updateValue(numValue)
+		end
+	end
 	
 	-- Register component for flag-based updates
 	if registerComponent then

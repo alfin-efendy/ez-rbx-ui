@@ -27,7 +27,35 @@ function SelectBox:Create(config)
 	local EzUI = config.EzUI
 	local saveConfiguration = config.SaveConfiguration
 	local registerComponent = config.RegisterComponent
-	local EzUIConfig = config.EzUIConfig
+	local settings = config.Settings
+	
+	-- Handle case where Parent might be a component API object instead of Instance
+	if parentContainer and type(parentContainer) == "table" then
+		-- Look for common GUI object properties in component APIs
+		if parentContainer.Frame then
+			parentContainer = parentContainer.Frame
+		elseif parentContainer.Button then
+			parentContainer = parentContainer.Button
+		elseif parentContainer.Label then
+			parentContainer = parentContainer.Label
+		elseif parentContainer.Container then
+			parentContainer = parentContainer.Container
+		else
+			-- List available keys for debugging
+			local keys = {}
+			for k, v in pairs(parentContainer) do
+				table.insert(keys, tostring(k))
+			end
+			warn("SelectBox:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
+			parentContainer = nil
+		end
+	end
+	
+	-- Validate parent is an Instance
+	if parentContainer and not typeof(parentContainer) == "Instance" then
+		warn("SelectBox:Create - Parent must be an Instance, got:", typeof(parentContainer))
+		parentContainer = nil
+	end
 	
 	-- Normalize options to {text, value} format
 	local options = {}
@@ -47,11 +75,8 @@ function SelectBox:Create(config)
 		local flagValue = nil
 		
 		-- Check if using custom config object
-		if EzUIConfig and type(EzUIConfig.GetValue) == "function" then
-			flagValue = EzUIConfig.GetValue(flag)
-		-- Fallback to EzUI.Flags
-		elseif EzUI and EzUI.Flags then
-			flagValue = EzUI.Flags[flag]
+		if settings and type(settings.GetValue) == "function" then
+			flagValue = settings.GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -67,7 +92,7 @@ function SelectBox:Create(config)
 	local selectContainer = Instance.new("Frame")
 	if isForAccordion then
 		selectContainer.Size = UDim2.new(1, 0, 0, 25)
-		selectContainer.Position = UDim2.new(0, 0, 0, currentY)
+		-- Don't set Position for accordion selectboxes - let UIListLayout handle it
 		selectContainer.ZIndex = 6
 	else
 		selectContainer.Size = UDim2.new(1, -20, 0, 25)
@@ -91,6 +116,8 @@ function SelectBox:Create(config)
 	selectButton.TextXAlignment = Enum.TextXAlignment.Left
 	selectButton.Font = Enum.Font.SourceSans
 	selectButton.TextSize = isForAccordion and 12 or 14
+	selectButton.TextScaled = false -- Prevent text from scaling down automatically
+	selectButton.ClipsDescendants = true -- Clip text that overflows the button
 	selectButton.ZIndex = isForAccordion and 7 or 4
 	selectButton.Parent = selectContainer
 	
@@ -258,15 +285,8 @@ function SelectBox:Create(config)
 					local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
 					
 					-- Check if using custom config object
-					if EzUIConfig and type(EzUIConfig.SetValue) == "function" then
-						EzUIConfig.SetValue(flag, valueToSave)
-					-- Fallback to EzUI.Flags
-					elseif EzUI and EzUI.Flags then
-						EzUI.Flags[flag] = valueToSave
-						-- Auto-save if enabled
-						if EzUI.Configuration and EzUI.Configuration.AutoSave and saveConfiguration then
-							saveConfiguration(EzUI.Configuration.FileName)
-						end
+					if settings and type(settings.SetValue) == "function" then
+						settings.SetValue(flag, valueToSave)
 					end
 				end
 				
@@ -320,46 +340,53 @@ function SelectBox:Create(config)
 	
 	-- SelectBox API
 	local selectBoxAPI = {
-		GetSelected = function()
-			return selectedValues
-		end,
-		SetSelected = function(values)
-			selectedValues = type(values) == "table" and values or (values ~= "" and {values} or {})
-			refreshOptions()
-			updateDisplayText()
-		end,
-		Clear = function()
-			selectedValues = {}
-			refreshOptions()
-			updateDisplayText()
-		end,
-		Refresh = function(newOptions)
-			rawOptions = newOptions
-			options = {}
-			for i, option in ipairs(rawOptions) do
-				if type(option) == "string" then
-					table.insert(options, {text = option, value = option})
-				elseif type(option) == "table" and option.text and option.value then
-					table.insert(options, option)
-				end
-			end
-			selectedValues = {}
-			refreshOptions()
-			updateDisplayText()
-		end,
-		Set = function(values)
-			selectedValues = type(values) == "table" and values or (values ~= "" and {values} or {})
-			updateDisplayText()
-		end,
-		Cleanup = function()
-			if dropdownFrame then
-				dropdownFrame:Destroy()
-			end
-			if selectContainer then
-				selectContainer:Destroy()
+		SelectBox = selectContainer
+	}
+	
+	function selectBoxAPI:GetSelected()
+		return selectedValues
+	end
+	
+	function selectBoxAPI:SetSelected(values)
+		selectedValues = type(values) == "table" and values or (values ~= "" and {values} or {})
+		refreshOptions()
+		updateDisplayText()
+	end
+	
+	function selectBoxAPI:Clear()
+		selectedValues = {}
+		refreshOptions()
+		updateDisplayText()
+	end
+	
+	function selectBoxAPI:Refresh(newOptions)
+		rawOptions = newOptions
+		options = {}
+		for i, option in ipairs(rawOptions) do
+			if type(option) == "string" then
+				table.insert(options, {text = option, value = option})
+			elseif type(option) == "table" and option.text and option.value then
+				table.insert(options, option)
 			end
 		end
-	}
+		selectedValues = {}
+		refreshOptions()
+		updateDisplayText()
+	end
+	
+	function selectBoxAPI:Set(values)
+		selectedValues = type(values) == "table" and values or (values ~= "" and {values} or {})
+		updateDisplayText()
+	end
+	
+	function selectBoxAPI:Cleanup()
+		if dropdownFrame then
+			dropdownFrame:Destroy()
+		end
+		if selectContainer then
+			selectContainer:Destroy()
+		end
+	end
 	
 	-- Register component
 	if registerComponent then

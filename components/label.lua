@@ -17,25 +17,66 @@ function Label:Create(config)
 	local parentContainer = config.Parent
 	local currentY = config.Y or 0
 	local isForAccordion = config.IsForAccordion or false
+	local textSize = config.Size or config.TextSize -- Support both Size and TextSize
+	local textColor = config.Color or config.TextColor -- Support both Color and TextColor
+	
+	-- Handle case where Parent might be a component API object instead of Instance
+	if parentContainer and type(parentContainer) == "table" then
+		-- Look for common GUI object properties in component APIs
+		if parentContainer.Frame then
+			parentContainer = parentContainer.Frame
+		elseif parentContainer.Button then
+			parentContainer = parentContainer.Button
+		elseif parentContainer.Label then
+			parentContainer = parentContainer.Label
+		elseif parentContainer.Container then
+			parentContainer = parentContainer.Container
+		else
+			-- List available keys for debugging
+			local keys = {}
+			for k, v in pairs(parentContainer) do
+				table.insert(keys, tostring(k))
+			end
+			warn("Label:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
+			parentContainer = nil
+		end
+	end
+	
+	-- Validate parent is an Instance
+	if parentContainer and not typeof(parentContainer) == "Instance" then
+		warn("Label:Create - Parent must be an Instance, got:", typeof(parentContainer))
+		parentContainer = nil
+	end
 	
 	local label = Instance.new("TextLabel")
 	if isForAccordion then
-		label.Size = UDim2.new(1, 0, 0, 25)
-		label.Position = UDim2.new(0, 0, 0, currentY)
-		label.TextSize = 14
+		-- Calculate height based on text size with some padding
+		local calculatedTextSize = textSize or 14
+		local labelHeight = math.max(calculatedTextSize + 8, 20) -- Minimum 20px height
+		label.Size = UDim2.new(1, 0, 0, labelHeight)
+		-- Don't set Position for accordion labels - let UIListLayout handle it
+		label.TextSize = calculatedTextSize
 		label.ZIndex = 5
+		-- No debug background needed
 	else
 		label.Size = UDim2.new(1, -20, 0, 30)
 		label.Position = UDim2.new(0, 10, 0, currentY)
-		label.TextSize = 16
+		label.TextSize = textSize or 16
 		label.ZIndex = 3
 		label:SetAttribute("ComponentStartY", currentY)
 	end
 	label.BackgroundTransparency = 1
-	label.Text = type(text) == "function" and text() or text
-	label.TextColor3 = Colors.Text.Primary
+	local labelText = type(text) == "function" and text() or text
+	label.Text = tostring(labelText or "")
+	label.TextColor3 = textColor or Colors.Text.Primary
+	
+	-- Debug: Ensure text is visible by using a contrasting color for accordion labels
+	if isForAccordion and not textColor then
+		label.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text for accordion labels
+	end
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Font = Enum.Font.SourceSans
+	label.Visible = true -- Ensure label is visible
 	label.Parent = parentContainer
 	
 	-- Store the text source (function or string)
@@ -43,7 +84,9 @@ function Label:Create(config)
 	local updateConnection = nil
 	
 	-- Create Label API
-	local labelAPI = {}
+	local labelAPI = {
+		Label = label
+	}
 	
 	-- Function to update text from source
 	local function updateText()
@@ -60,25 +103,34 @@ function Label:Create(config)
 		end
 	end
 	
-	labelAPI.SetText = function(newText)
+	function labelAPI:SetText(newText)
 		textSource = newText
 		updateText()
 	end
 	
-	labelAPI.GetText = function()
+	function labelAPI:GetText()
 		return label.Text
 	end
 	
-	labelAPI.SetTextColor = function(color)
+	function labelAPI:SetTextColor(color)
 		label.TextColor3 = color
 	end
 	
-	labelAPI.SetTextSize = function(size)
+	function labelAPI:SetTextSize(size)
 		label.TextSize = size
+		-- Update label height if in accordion
+		if isForAccordion then
+			local labelHeight = math.max(size + 8, 20)
+			label.Size = UDim2.new(1, 0, 0, labelHeight)
+		end
+	end
+	
+	function labelAPI:GetHeight()
+		return label.AbsoluteSize.Y
 	end
 	
 	-- Start auto-update if text is a function
-	labelAPI.StartAutoUpdate = function(interval)
+	function labelAPI:StartAutoUpdate(interval)
 		interval = interval or 1
 		
 		if updateConnection then
@@ -99,27 +151,27 @@ function Label:Create(config)
 		end
 	end
 	
-	labelAPI.StopAutoUpdate = function()
+	function labelAPI:StopAutoUpdate()
 		if updateConnection then
 			updateConnection:Disconnect()
 			updateConnection = nil
 		end
 	end
 	
-	labelAPI.Update = function()
+	function labelAPI:Update()
 		updateText()
 	end
 	
 	-- Cleanup when label is destroyed
 	label.AncestryChanged:Connect(function()
 		if not label.Parent then
-			labelAPI.StopAutoUpdate()
+			labelAPI:StopAutoUpdate()
 		end
 	end)
 	
 	-- If text is a function, start auto-update by default
 	if type(textSource) == "function" then
-		labelAPI.StartAutoUpdate(1)
+		labelAPI:StartAutoUpdate(1)
 	end
 	
 	return labelAPI

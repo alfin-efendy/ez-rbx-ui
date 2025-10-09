@@ -73,7 +73,7 @@ Window:Init(ColorsModule, Accordion, Button, Label, NumberBox, SelectBox, Separa
 print("✅ All components initialized")
 
 -- Main Window Creation Function
-function EzUI:CreateWindow(config)
+function EzUI:CreateNew(config)
 	print("🪟 Creating window...")
 	
 	-- Pass all required modules and config to Window component
@@ -94,8 +94,13 @@ function EzUI:CreateWindow(config)
 		FileName = config.FileName or "Settings",
 	})
 
+	configSystem:Load()
+
+	local allKeys = configSystem:GetAllKeys()
+	print("EzUI:CreateNew - Loaded config keys:", table.concat(allKeys, ", "))
+
 	-- Store config in EzUI for global access
-	EzUI.Config = configSystem
+	windowSetup.Settings = configSystem
 
 	return Window:Create(windowSetup)
 end

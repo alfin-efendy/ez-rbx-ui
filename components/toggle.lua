@@ -23,7 +23,35 @@ function Toggle:Create(config)
 	local EzUI = config.EzUI
 	local saveConfiguration = config.SaveConfiguration
 	local registerComponent = config.RegisterComponent
-	local EzUIConfig = config.EzUIConfig
+	local settings = config.Settings
+	
+	-- Handle case where Parent might be a component API object instead of Instance
+	if parentContainer and type(parentContainer) == "table" then
+		-- Look for common GUI object properties in component APIs
+		if parentContainer.Frame then
+			parentContainer = parentContainer.Frame
+		elseif parentContainer.Button then
+			parentContainer = parentContainer.Button
+		elseif parentContainer.Label then
+			parentContainer = parentContainer.Label
+		elseif parentContainer.Container then
+			parentContainer = parentContainer.Container
+		else
+			-- List available keys for debugging
+			local keys = {}
+			for k, v in pairs(parentContainer) do
+				table.insert(keys, tostring(k))
+			end
+			warn("Toggle:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
+			parentContainer = nil
+		end
+	end
+	
+	-- Validate parent is an Instance
+	if parentContainer and not typeof(parentContainer) == "Instance" then
+		warn("Toggle:Create - Parent must be an Instance, got:", typeof(parentContainer))
+		parentContainer = nil
+	end
 	
 	-- Toggle state
 	local isToggled = defaultValue
@@ -33,11 +61,8 @@ function Toggle:Create(config)
 		local flagValue = nil
 		
 		-- Check if using custom config object
-		if EzUIConfig and type(EzUIConfig.GetValue) == "function" then
-			flagValue = EzUIConfig.GetValue(flag)
-		-- Fallback to EzUI.Flags
-		elseif EzUI and EzUI.Flags then
-			flagValue = EzUI.Flags[flag]
+		if settings and type(settings.GetValue) == "function" then
+			flagValue = settings.GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -49,7 +74,7 @@ function Toggle:Create(config)
 	local toggleContainer = Instance.new("Frame")
 	if isForAccordion then
 		toggleContainer.Size = UDim2.new(1, -10, 0, 25)
-		toggleContainer.Position = UDim2.new(0, 5, 0, currentY)
+		-- Don't set Position for accordion toggles - let UIListLayout handle it
 		toggleContainer.ZIndex = 6
 	else
 		toggleContainer.Size = UDim2.new(1, -20, 0, 30)
@@ -156,15 +181,8 @@ function Toggle:Create(config)
 		-- Save to configuration
 		if flag then
 			-- Check if using custom config object
-			if EzUIConfig and type(EzUIConfig.SetValue) == "function" then
-				EzUIConfig.SetValue(flag, isToggled)
-			-- Fallback to EzUI.Flags
-			elseif EzUI and EzUI.Flags then
-				EzUI.Flags[flag] = isToggled
-				-- Auto-save if enabled
-				if EzUI.Configuration and EzUI.Configuration.AutoSave and saveConfiguration then
-					saveConfiguration(EzUI.Configuration.FileName)
-				end
+			if settings and type(settings.SetValue) == "function" then
+				settings.SetValue(flag, isToggled)
 			end
 		end
 		
@@ -197,40 +215,39 @@ function Toggle:Create(config)
 	end)
 	
 	-- Return Toggle API
-	local toggleAPI = {}
-	
-	toggleAPI.SetValue = function(newValue)
-		if type(newValue) == "boolean" and newValue ~= isToggled then
-			isToggled = newValue
-			updateToggleAppearance()
-			
-			-- Save to configuration
-			if flag then
-				-- Check if using custom config object
-				if EzUIConfig and type(EzUIConfig.SetValue) == "function" then
-					EzUIConfig.SetValue(flag, isToggled)
-				-- Fallback to EzUI.Flags
-				elseif EzUI and EzUI.Flags then
-					EzUI.Flags[flag] = isToggled
-					-- Auto-save if enabled
-					if EzUI.Configuration and EzUI.Configuration.AutoSave and saveConfiguration then
-						saveConfiguration(EzUI.Configuration.FileName)
-					end
-				end
-			end
+	local toggleAPI = {
+		Toggle = toggleContainer
+	}
+
+	function toggleAPI:SetValue(newValue)
+		if type(newValue) ~= "boolean" and newValue == isToggled then
+			return
+		end
+
+		isToggled = newValue
+		updateToggleAppearance()
+		
+		-- Save to configuration
+		if not flag then
+			return
+		end
+		
+		-- Check if using custom config object
+		if settings and type(settings.SetValue) == "function" then
+			settings.SetValue(flag, isToggled)
 		end
 	end
 	
-	toggleAPI.GetValue = function()
+	function toggleAPI:GetValue()
 		return isToggled
 	end
 	
-	toggleAPI.SetText = function(newText)
+	function toggleAPI:SetText(newText)
 		text = newText
 		toggleLabel.Text = newText
 	end
 	
-	toggleAPI.SetCallback = function(newCallback)
+	function toggleAPI:SetCallback(newCallback)
 		callback = newCallback or function() end
 	end
 	
