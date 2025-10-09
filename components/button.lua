@@ -13,7 +13,7 @@ function Button:Init(_colors)
 end
 
 function Button:Create(config)
-	local text = config.Text or "Button"
+	local text = config.Text or config.Label or config.Title or config.Name or "Button"
 	local callback = config.Callback or function() end
 	local variant = config.Variant or "primary"
 	local parentContainer = config.Parent
