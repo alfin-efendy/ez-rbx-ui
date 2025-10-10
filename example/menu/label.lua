@@ -142,10 +142,6 @@ function Label:AddSectionStatistics(tab)
         local heartbeat = stats:GetTotalMemoryUsageMb()
         return "💓 Heartbeat: Active"
     end)
-    
-    accordion:AddLabel(function()
-        return "🖥️ Platform: " .. game:GetService("UserInputService"):GetPlatform().Name
-    end)
 end
 
 function Label:AddSectionPlayerInfo(tab)
