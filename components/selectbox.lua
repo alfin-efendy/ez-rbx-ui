@@ -22,6 +22,7 @@ function SelectBox:Create(config)
 	local callback = config.Callback or function() end
 	local onDropdownOpen = config.OnDropdownOpen or function() end
 	local onInit = config.OnInit or function() end
+	local bottomSheetMaxHeight = config.BottomSheetHeight or config.MaxHeight or 320
 	local flag = config.Flag
 	local parentContainer = config.Parent
 	local currentY = config.Y or 0
@@ -85,7 +86,7 @@ function SelectBox:Create(config)
 		
 		-- Check if using custom config object
 		if settings and type(settings.GetValue) == "function" then
-			flagValue = settings.GetValue(flag)
+			flagValue = settings:GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -234,8 +235,8 @@ function SelectBox:Create(config)
 	bottomSheetOverlay.ZIndex = 100
 	bottomSheetOverlay.Parent = windowFrame or screenGui or selectContainer.Parent
 	
-	-- Bottom sheet container (more compact)
-	local bottomSheetHeight = math.min(#options * 35 + 90, 320)
+	-- Bottom sheet container (customizable height)
+	local bottomSheetHeight = math.min(#options * 35 + 90, bottomSheetMaxHeight)
 	local bottomSheet = Instance.new("Frame")
 	bottomSheet.Size = UDim2.new(1, -40, 0, bottomSheetHeight)
 	bottomSheet.Position = UDim2.new(0, 20, 1, 0) -- Start below window
@@ -466,8 +467,8 @@ function SelectBox:Create(config)
 		-- Save to configuration
 		if flag then
 			local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
-			if settings and type(settings.SetValue) == "function" then
-				settings.SetValue(flag, valueToSave)
+			if settings and type(settings:SetValue) == "function" then
+				settings:SetValue(flag, valueToSave)
 			end
 		end
 		
@@ -566,6 +567,13 @@ function SelectBox:Create(config)
 		local totalHeight = #options * 35
 		optionsContainer.Size = UDim2.new(1, 0, 0, totalHeight)
 		optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+		
+		-- Update bottom sheet height based on current options count
+		local newBottomSheetHeight = math.min(#options * 35 + 90, bottomSheetMaxHeight)
+		if newBottomSheetHeight ~= bottomSheetHeight then
+			bottomSheetHeight = newBottomSheetHeight
+			bottomSheet.Size = UDim2.new(1, -40, 0, bottomSheetHeight)
+		end
 		
 		for i, option in ipairs(options) do
 			-- Modern option button (smaller)
@@ -677,8 +685,8 @@ function SelectBox:Create(config)
 					local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
 					
 					-- Check if using custom config object
-					if settings and type(settings.SetValue) == "function" then
-						settings.SetValue(flag, valueToSave)
+					if settings and type(settings:SetValue) == "function" then
+						settings:SetValue(flag, valueToSave)
 					end
 				end
 				

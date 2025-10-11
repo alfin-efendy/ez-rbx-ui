@@ -1177,11 +1177,11 @@ function Window:Create(config)
 	end
 
 	function windowAPI:GetConfigValue(key)
-		return settings.GetValue(key)
+		return settings:GetValue(key)
 	end
 
 	function windowAPI:SetConfigValue(key, value)
-		settings.SetValue(key, value)
+		settings:SetValue(key, value)
 	end
 	
 	-- Viewport adaptation methods
