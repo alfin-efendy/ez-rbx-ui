@@ -199,7 +199,8 @@ function NumberBox:Create(config)
 			if settings and type(settings.SetValue) == "function" then
 				settings.SetValue(flag, currentValue)
 			end
-		end		-- Call user callback
+		end
+		-- Call user callback
 		local success, errorMsg = pcall(function()
 			callback(currentValue)
 		end)
