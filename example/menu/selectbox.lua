@@ -28,6 +28,9 @@ function SelectBox:Init(_window)
     -- Accordion: Interactive Examples
     self:AddSectionInteractive(tab)
     
+    -- Accordion: Callback Examples
+    self:AddSectionCallbacks(tab)
+    
     -- Accordion: Usage Tips
     self:AddSectionTips(tab)
 end
@@ -402,6 +405,153 @@ function SelectBox:AddSectionInteractive(tab)
     
     accordion:AddLabel("Interactive SelectBoxes with dynamic behavior:")
     accordion:AddSeparator()
+    
+    -- OnInit callback example
+    accordion:AddLabel("📋 OnInit Callback - Dynamic Options Loading:")
+    accordion:AddSelectBox({
+        Name = "Dynamic Load on Init",
+        Placeholder = "Options loaded dynamically...",
+        Options = {"Loading..."}, -- Initial placeholder options
+        OnInit = function(api, optionsData)
+            print("🚀 SelectBox initialized! Loading fresh options...")
+            
+            -- Simulate loading options from external source
+            local loadedOptions = {
+                "🌟 Dynamically Loaded Option 1",
+                "⚡ Dynamically Loaded Option 2", 
+                "🎯 Dynamically Loaded Option 3",
+                "💫 Dynamically Loaded Option 4"
+            }
+            
+            -- Update options using the callback
+            optionsData.updateOptions(loadedOptions)
+            
+            -- Set a default selection
+            api:SetSelected({"🌟 Dynamically Loaded Option 1"})
+            
+            print("✅ Options loaded and default selected!")
+        end,
+        Callback = function(selectedValue)
+            print("🎯 OnInit example selected:", selectedValue)
+        end
+    })
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("🔄 OnDropdownOpen Callback - Fresh Options on Open:")
+    accordion:AddSelectBox({
+        Name = "Fresh Options on Open",
+        Placeholder = "Options refresh when opened...",
+        Options = {"Initial Option 1", "Initial Option 2"},
+        OnDropdownOpen = function(currentOptions, updateCallback)
+            print("📂 Dropdown opened! Refreshing options...")
+            
+            -- Simulate fetching fresh data when dropdown opens
+            local currentTime = os.date("%H:%M:%S")
+            local freshOptions = {
+                "🕐 Option updated at " .. currentTime,
+                "📊 Fresh Data Item 1",
+                "🔄 Fresh Data Item 2", 
+                "⚡ Live Option " .. math.random(1, 100)
+            }
+            
+            -- Update with fresh options
+            updateCallback(freshOptions)
+            print("✨ Options refreshed with live data!")
+        end,
+        Callback = function(selectedValue)
+            print("🔄 OnDropdownOpen example selected:", selectedValue)
+        end
+    })
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("🎯 Combined OnInit + OnDropdownOpen:")
+    accordion:AddSelectBox({
+        Name = "Combined Callbacks",
+        Placeholder = "Init + Live Refresh...",
+        Options = {},
+        MultiSelect = true,
+        OnInit = function(api, optionsData)
+            print("🚀 Combined example: Initial setup...")
+            
+            -- Load initial options
+            local initialOptions = {
+                "📋 Initial Setup Option 1",
+                "⚙️ Initial Setup Option 2"
+            }
+            optionsData.updateOptions(initialOptions)
+            
+            print("✅ Initial options loaded via OnInit")
+        end,
+        OnDropdownOpen = function(currentOptions, updateCallback)
+            print("📂 Combined example: Refreshing on open...")
+            
+            -- Add live options when opened
+            local liveOptions = {
+                "📋 Initial Setup Option 1",
+                "⚙️ Initial Setup Option 2",
+                "🔴 Live Status: Online",
+                "📊 Current Users: " .. math.random(10, 50),
+                "⏰ Last Update: " .. os.date("%H:%M")
+            }
+            
+            updateCallback(liveOptions)
+            print("🔄 Live options added on dropdown open!")
+        end,
+        Callback = function(selectedValues)
+            if type(selectedValues) == "table" then
+                print("🎯 Combined example selected (" .. #selectedValues .. "):", table.concat(selectedValues, ", "))
+            else
+                print("🎯 Combined example selected:", selectedValues)
+            end
+        end
+    })
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("🌐 Conditional OnInit - User-Based Options:")
+    accordion:AddSelectBox({
+        Name = "User Role Based Options",
+        Placeholder = "Options based on user level...",
+        Options = {"Checking permissions..."},
+        OnInit = function(api, optionsData)
+            print("👤 Checking user permissions...")
+            
+            -- Simulate user role check
+            local userRole = {"admin", "user", "guest"}[math.random(1, 3)]
+            print("🔍 User role detected:", userRole)
+            
+            local roleBasedOptions = {}
+            if userRole == "admin" then
+                roleBasedOptions = {
+                    "🔑 Admin Dashboard",
+                    "⚙️ System Settings", 
+                    "👥 User Management",
+                    "📊 Analytics",
+                    "🛡️ Security Panel"
+                }
+            elseif userRole == "user" then
+                roleBasedOptions = {
+                    "📋 My Profile",
+                    "📊 My Data",
+                    "⚙️ Preferences",
+                    "📞 Support"
+                }
+            else
+                roleBasedOptions = {
+                    "👋 Welcome",
+                    "📝 Register",
+                    "💡 Learn More"
+                }
+            end
+            
+            optionsData.updateOptions(roleBasedOptions)
+            print("✅ Options loaded for role:", userRole)
+        end,
+        Callback = function(selectedValue)
+            print("👤 Role-based selected:", selectedValue)
+        end
+    })
+    
+    accordion:AddSeparator()
 
     -- Country/State selection (simulated dependency)
     accordion:AddSelectBox({
@@ -476,6 +626,150 @@ function SelectBox:AddSectionInteractive(tab)
     })
 end
 
+function SelectBox:AddSectionCallbacks(tab)
+    local accordion = tab:AddAccordion({
+        Name = "Callback Examples",
+        Icon = "🔔",
+    })
+    
+    accordion:AddLabel("Advanced callback usage with OnInit and OnDropdownOpen:")
+    accordion:AddSeparator()
+    
+    accordion:AddLabel("💡 OnInit Use Cases:")
+    accordion:AddLabel("• Load options from external sources")
+    accordion:AddLabel("• Set default selections based on user data")
+    accordion:AddLabel("• Configure options based on app state")
+    accordion:AddLabel("• Initialize with user permissions")
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("🎯 Real-world OnInit Example:")
+    accordion:AddSelectBox({
+        Name = "Server Region (Auto-detect)",
+        Placeholder = "Detecting best region...",
+        Options = {"Detecting location..."},
+        OnInit = function(api, optionsData)
+            print("🌍 Auto-detecting best server region...")
+            
+            -- Simulate geolocation and server latency check
+            wait(1) -- Simulate API call delay
+            
+            local detectedRegion = {"us-east", "eu-west", "asia-pacific"}[math.random(1, 3)]
+            local allRegions = {
+                {text = "🇺🇸 US East (Best - 45ms)", value = "us-east"},
+                {text = "🇪🇺 EU West (Good - 120ms)", value = "eu-west"}, 
+                {text = "🇦🇺 Asia Pacific (Fair - 180ms)", value = "asia-pacific"},
+                {text = "🇯🇵 Japan (Slow - 250ms)", value = "japan"}
+            }
+            
+            -- Update with detected regions
+            optionsData.updateOptions(allRegions)
+            
+            -- Auto-select the best region
+            api:SetSelected({detectedRegion})
+            
+            print("✅ Best region auto-selected:", detectedRegion)
+        end,
+        Callback = function(selectedValue)
+            print("🌐 Server region changed to:", selectedValue)
+        end
+    })
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("🔄 OnDropdownOpen Use Cases:")
+    accordion:AddLabel("• Refresh live data when user opens dropdown")
+    accordion:AddLabel("• Load fresh content from APIs")
+    accordion:AddLabel("• Update with real-time information")
+    accordion:AddLabel("• Fetch dependent options dynamically")
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("📊 Real-world OnDropdownOpen Example:")
+    accordion:AddSelectBox({
+        Name = "Active Players (Live)",
+        Placeholder = "Select active player...",
+        Options = {"Click to load active players..."},
+        OnDropdownOpen = function(currentOptions, updateCallback)
+            print("👥 Loading active players...")
+            
+            -- Simulate fetching active players from game server
+            local activePlayer = {"Player_Alpha", "Player_Beta", "Player_Gamma", "Player_Delta", "Player_Echo"}
+            local onlinePlayers = {}
+            
+            -- Randomly simulate online/offline players
+            for i, player in ipairs(activePlayer) do
+                if math.random() > 0.3 then -- 70% chance online
+                    local status = math.random() > 0.5 and "🟢 Online" or "🟡 Away"
+                    table.insert(onlinePlayers, {
+                        text = player .. " (" .. status .. ")",
+                        value = player
+                    })
+                end
+            end
+            
+            if #onlinePlayers == 0 then
+                onlinePlayers = {{text = "❌ No players online", value = ""}}
+            end
+            
+            updateCallback(onlinePlayers)
+            print("📊 Active players loaded:", #onlinePlayers)
+        end,
+        Callback = function(selectedValue)
+            if selectedValue ~= "" then
+                print("👤 Selected active player:", selectedValue)
+            end
+        end
+    })
+    
+    accordion:AddSeparator()
+    accordion:AddLabel("⚙️ Advanced Combined Example:")
+    accordion:AddSelectBox({
+        Name = "Smart Config Loader",
+        Placeholder = "Loading configuration...",
+        Options = {},
+        MultiSelect = true,
+        OnInit = function(api, optionsData)
+            print("⚙️ Loading saved configuration...")
+            
+            -- Simulate loading saved config
+            local savedConfig = {
+                "🔐 Security Mode: Enabled",
+                "📊 Analytics: Enabled", 
+                "🔔 Notifications: Enabled"
+            }
+            
+            optionsData.updateOptions(savedConfig)
+            api:SetSelected(savedConfig) -- Select all saved settings
+            
+            print("💾 Saved configuration restored")
+        end,
+        OnDropdownOpen = function(currentOptions, updateCallback)
+            print("🔄 Checking for configuration updates...")
+            
+            -- Simulate checking for new configuration options
+            local currentTime = os.date("%M")
+            local hasUpdates = math.random() > 0.5
+            
+            local configOptions = {
+                "🔐 Security Mode: Enabled",
+                "📊 Analytics: Enabled", 
+                "🔔 Notifications: Enabled"
+            }
+            
+            if hasUpdates then
+                table.insert(configOptions, "🆕 New Feature: Beta Access")
+                table.insert(configOptions, "✨ New Feature: Dark Mode Pro")
+                print("🎉 New configuration options available!")
+            end
+            
+            updateCallback(configOptions)
+        end,
+        Callback = function(selectedValues)
+            if type(selectedValues) == "table" then
+                print("⚙️ Configuration updated (" .. #selectedValues .. " enabled):", table.concat(selectedValues, ", "))
+            end
+        end
+    })
+end
+
 function SelectBox:AddSectionTips(tab)
     local accordion = tab:AddAccordion({
         Name = "Usage Tips & Best Practices",
@@ -489,6 +783,8 @@ function SelectBox:AddSectionTips(tab)
     accordion:AddLabel("• Use Flag parameter for persistent selections")
     accordion:AddLabel("• Provide clear Placeholder text")
     accordion:AddLabel("• Handle both single values and arrays in callbacks")
+    accordion:AddLabel("• Use OnInit for dynamic option loading on creation")
+    accordion:AddLabel("• Use OnDropdownOpen for live data refreshing")
     
     accordion:AddSeparator()
     accordion:AddLabel("🎯 Option Format Tips:")
@@ -523,12 +819,25 @@ function SelectBox:AddSectionTips(tab)
     accordion:AddLabel("• Use consistent option naming patterns")
     
     accordion:AddSeparator()
+    accordion:AddLabel("🔔 Callback Features:")
+    accordion:AddLabel("• OnInit: Runs after component creation")
+    accordion:AddLabel("  - Access to API and options update function")
+    accordion:AddLabel("  - Perfect for loading external data")
+    accordion:AddLabel("  - Set default selections programmatically")
+    accordion:AddLabel("• OnDropdownOpen: Runs when dropdown opens")
+    accordion:AddLabel("  - Refresh options with live data")
+    accordion:AddLabel("  - Update from APIs or external sources")
+    accordion:AddLabel("  - Maintain selections during updates")
+    
+    accordion:AddSeparator()
     accordion:AddLabel("⚙️ Advanced Features:")
     accordion:AddLabel("• Dynamic options based on other selections")
     accordion:AddLabel("• Validation of selection limits")
     accordion:AddLabel("• Search functionality for large option lists")
     accordion:AddLabel("• Dependent SelectBoxes (country/state)")
     accordion:AddLabel("• Custom formatting in callback functions")
+    accordion:AddLabel("• Live data loading with OnInit/OnDropdownOpen")
+    accordion:AddLabel("• User-specific options with role-based filtering")
 end
 
 return SelectBox
