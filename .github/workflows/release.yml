@@ -1,0 +1,181 @@
+name: Automatic Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install lua-bundler
+        run: |
+          curl -fsSL https://alfin-efendy.github.io/lua-bundler/install.sh | sudo bash
+          lua-bundler --version
+          
+      - name: Create release directory
+        run: mkdir -p release
+        
+      - name: Bundle main library
+        run: |
+          lua-bundler \
+            --entry ./main.lua \
+            --output ./release/ez-rbx-ui.lua \
+            --mode production \
+            --release
+            
+      - name: Create README for release
+        run: |
+          cat > release/README.md << 'EOF'
+          # EzUI Library - Release Files
+
+          This release contains the bundled of EzUI Library.
+
+          ## Quick Installation
+
+          ```lua
+          -- Load EzUI
+          local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
+
+          -- Create a window
+          local window = EzUI.CreateWindow({
+              Name = "My UI",
+              Size = {Width = 500, Height = 400}
+          })
+
+          -- Add components
+          local tab = window:AddTab({Name = "Home", Icon = "🏠"})
+          tab:AddLabel("Welcome to EzUI!")
+          tab:AddButton("Click Me", function() print("Hello!") end)
+
+          -- Show notifications
+          window:ShowSuccess({
+              Title = "Ready!",
+              Message = "EzUI is loaded and ready to use"
+          })
+          ```
+
+          For complete documentation, visit: https://github.com/alfin-efendy/ez-rbx-ui
+          EOF
+
+      - name: Create release info
+        run: |
+          cat > release/RELEASE_INFO.txt << EOF
+          EzUI Library Release
+          Generated: $(date)
+          Version: ${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}
+          Commit: ${GITHUB_SHA}
+          Branch: ${GITHUB_REF_NAME}
+
+          Files included:
+          - ez-rbx-ui.lua (Complete library)
+
+          Installation:
+          loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
+          EOF
+
+      - name: Create ZIP archive
+        run: |
+          cd release
+          zip -r ../ez-rbx-ui-release.zip .
+          cd ..
+          
+      - name: Get release version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: EzUI ${{ steps.get_version.outputs.version }}
+          body: |
+            # EzUI Library ${{ steps.get_version.outputs.version }}
+            
+            🎉 **New Release of EzUI - Modern Roblox UI Library**
+            
+            ## 📦 What's Included
+            - Complete bundled library (`ez-rbx-ui.lua`)
+            - Individual components for advanced users
+            - Utility modules (Colors, Config)
+            - Usage examples and documentation
+            
+            ## 🚀 Quick Start
+            ```lua
+            local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
+            ```
+            
+            ## ✨ Features
+            - 🎨 Dark mode design with 12 components
+            - 🔔 Toast notification system (Sonner-style)
+            - 💾 Configuration system with auto-save
+            - ⚡ Smooth animations and responsive design
+            - 🧩 Modular architecture
+            
+            ## 📚 Documentation
+            Visit the [repository](https://github.com/alfin-efendy/ez-rbx-ui) for complete documentation and examples.
+            
+            ---
+            **Generated:** $(date)  
+            **Commit:** ${{ github.sha }}
+          draft: false
+          prerelease: false
+          
+      - name: Upload Complete Library
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/ez-rbx-ui.lua
+          asset_name: ez-rbx-ui.lua
+          asset_content_type: text/plain
+          
+      - name: Upload Auto-installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/install.lua
+          asset_name: install.lua
+          asset_content_type: text/plain
+          
+      - name: Upload ZIP Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ez-rbx-ui-release.zip
+          asset_name: ez-rbx-ui-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
+          
+      - name: Upload Release Info
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/RELEASE_INFO.txt
+          asset_name: RELEASE_INFO.txt
+          asset_content_type: text/plain
