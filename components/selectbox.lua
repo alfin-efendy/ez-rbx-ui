@@ -20,6 +20,8 @@ function SelectBox:Create(config)
 	local placeholder = config.Placeholder or "Select option..."
 	local multiSelect = config.MultiSelect or false
 	local callback = config.Callback or function() end
+	local onDropdownOpen = config.OnDropdownOpen or function() end
+	local onInit = config.OnInit or function() end
 	local flag = config.Flag
 	local parentContainer = config.Parent
 	local currentY = config.Y or 0
@@ -478,6 +480,28 @@ function SelectBox:Create(config)
 	local function showBottomSheet()
 		bottomSheetOverlay.Visible = true
 		
+		-- Call OnDropdownOpen callback when dropdown is opened
+		if onDropdownOpen then
+			onDropdownOpen(options, function(newOptions)
+				-- Callback function to update options
+				if newOptions and type(newOptions) == "table" then
+					-- Update options with new data
+					rawOptions = newOptions
+					options = {}
+					for i, option in ipairs(rawOptions) do
+						if type(option) == "string" then
+							table.insert(options, {text = option, value = option})
+						elseif type(option) == "table" and option.text and option.value then
+							table.insert(options, option)
+						end
+					end
+					
+					-- Refresh the options display
+					refreshOptions()
+				end
+			end)
+		end
+		
 		-- Animate overlay fade in
 		local overlayTween = TweenService:Create(bottomSheetOverlay, 
 			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
@@ -778,6 +802,41 @@ function SelectBox:Create(config)
 	-- Register component
 	if registerComponent then
 		registerComponent(flag, selectBoxAPI)
+	end
+	
+	-- Call OnInit callback after component creation to allow initial options update
+	if onInit then
+		-- Preserve selected values before calling onInit
+		local preservedSelectedValues = selectedValues
+		
+		onInit(options, function(newOptions)
+			-- Callback function to update options on initialization
+			if newOptions and type(newOptions) == "table" then
+				-- Update options with new data
+				rawOptions = newOptions
+				options = {}
+				for i, option in ipairs(rawOptions) do
+					if type(option) == "string" then
+						table.insert(options, {text = option, value = option})
+					elseif type(option) == "table" and option.text and option.value then
+						table.insert(options, option)
+					end
+				end
+				
+				-- Restore selected values after options update
+				selectedValues = preservedSelectedValues
+				
+				-- Refresh the options display
+				refreshOptions()
+				-- Update display text after refreshing options
+				updateDisplayText()
+			end
+		end, selectBoxAPI)
+	end
+	
+	-- Execute OnInit callback after component is fully created
+	if onInit and type(onInit) == "function" then
+		onInit(selectBoxAPI)
 	end
 	
 	return selectBoxAPI
