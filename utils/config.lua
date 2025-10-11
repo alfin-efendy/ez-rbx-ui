@@ -148,107 +148,109 @@ function Config:NewConfig(config)
 		print("EzUI.CustomConfig: " .. configName .. " loaded (" .. applied .. " settings applied)")
 		return true
 	end
-	
-	-- Return custom configuration object
-	return {
-		-- Get value by key
-		GetValue = function(key)
-			if not key then
-				warn("EzUI.CustomConfig.GetValue: key parameter is required")
-				return nil
-			end
-			return Flags[key]
-		end,
-		
-		-- Set value by key and update associated components
-		SetValue = function(key, value)
-			if not key then
-				warn("EzUI.CustomConfig.SetValue: key parameter is required")
-				return false
-			end
 
-			print("EzUI.CustomConfig: Setting", key, "to", value)
-			
-			Flags[key] = value
+	local configAPI = {}
+
+	-- Get value by key
+	function configAPI:GetValue(key)
+		if not key then
+			warn("EzUI.CustomConfig.GetValue: key parameter is required")
+			return nil
+		end
+		return Flags[key]
+	end
+	
+	-- Set value by key and update associated components
+	function configAPI:SetValue(key, value)
+		if not key then
+			warn("EzUI.CustomConfig.SetValue: key parameter is required")
+			return false
+		end
+
+		print("EzUI.CustomConfig: Setting", key, "to", value)
+		
+		Flags[key] = value
+		
+		SaveConfiguration()
+		return true
+	end
+
+	-- Get all key-value pairs
+	function configAPI:GetAll()
+		local result = {}
+		for key, value in pairs(Flags) do
+			if value ~= nil then
+				result[key] = value
+			end
+		end
+		return result
+	end
+
+	-- Get All Keys
+	function configAPI:GetAllKeys()
+		local keys = {}
+		for key, value in pairs(Flags) do
+			if value ~= nil then
+				table.insert(keys, key)
+			end
+		end
+		return keys
+	end
+
+	-- Delete a specific key
+	function configAPI:DeleteKey(key)
+		if not key then
+			warn("EzUI.CustomConfig.DeleteKey: key parameter is required")
+			return false
+		end
+		
+		if Flags[key] ~= nil then
+			Flags[key] = nil
 			
 			SaveConfiguration()
 			return true
-		end,
-
-		-- Get all key-value pairs
-		GetAll = function()
-			local result = {}
-			for key, value in pairs(Flags) do
-				if value ~= nil then
-					result[key] = value
-				end
-			end
-			return result
-		end,
-
-		-- Get All Keys
-		GetAllKeys = function()
-			local keys = {}
-			for key, value in pairs(Flags) do
-				if value ~= nil then
-					table.insert(keys, key)
-				end
-			end
-			return keys
-		end,
-
-		-- Delete a specific key
-		DeleteKey = function(key)
-			if not key then
-				warn("EzUI.CustomConfig.DeleteKey: key parameter is required")
-				return false
-			end
-			
-			if Flags[key] ~= nil then
-				Flags[key] = nil
-				
-				SaveConfiguration()
-				return true
-			else
-				warn("EzUI.CustomConfig.DeleteKey: key '" .. key .. "' not found")
-				return false
-			end
-		end,
-		
-		-- Get configuration info
-		GetInfo = function()
-			local folderName, configFolder, filePath
-			
-			if customDirectory then
-				folderName = customDirectory
-				configFolder = customDirectory
-				filePath = customDirectory .. "/" .. configName .. ".json"
-			else
-				folderName = EzUI.Configuration.FolderName or "EzUI"
-				configFolder = folderName .. "/Configurations"
-				filePath = configFolder .. "/" .. configName .. ".json"
-			end
-			
-			return {
-				ConfigName = configName,
-				CustomDirectory = customDirectory,
-				FolderName = folderName,
-				ConfigFolder = configFolder,
-				FilePath = filePath,
-				IsCustomDirectory = customDirectory ~= nil
-			}
-		end,
-		
-		-- Manual save
-		Save = function()
-			return SaveConfiguration()
-		end,
-		
-		-- Manual load
-		Load = function()
-			return LoadConfiguration()
+		else
+			warn("EzUI.CustomConfig.DeleteKey: key '" .. key .. "' not found")
+			return false
 		end
-	}
+	end
+	
+	-- Get configuration info
+	function configAPI:GetInfo()
+		local folderName, configFolder, filePath
+		
+		if customDirectory then
+			folderName = customDirectory
+			configFolder = customDirectory
+			filePath = customDirectory .. "/" .. configName .. ".json"
+		else
+			folderName = EzUI.Configuration.FolderName or "EzUI"
+			configFolder = folderName .. "/Configurations"
+			filePath = configFolder .. "/" .. configName .. ".json"
+		end
+		
+		return {
+			ConfigName = configName,
+			CustomDirectory = customDirectory,
+			FolderName = folderName,
+			ConfigFolder = configFolder,
+			FilePath = filePath,
+			IsCustomDirectory = customDirectory ~= nil
+		}
+	end
+	
+	-- Manual save
+	function configAPI:Save()
+		return SaveConfiguration()
+	end
+	
+	-- Manual load
+	function configAPI:Load()
+		return LoadConfiguration()
+	end
+	
+	-- Return custom configuration object
+	return configAPI
 end
 
 return Config
