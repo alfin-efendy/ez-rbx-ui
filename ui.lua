@@ -1,4 +1,4 @@
--- EzUI
+-- EzUI Legacy UI Library (Will be deprecated in future versions)
 local EzUI = {}
 
 -- Configuration System
