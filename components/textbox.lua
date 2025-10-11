@@ -70,7 +70,7 @@ function TextBox:Create(config)
 		-- Check if using custom config object
 		if settings and type(settings.GetValue) == "function" then
 			print("Loading TextBox value for flag:", flag)
-			flagValue = settings.GetValue(flag)
+			flagValue = settings:GetValue(flag)
 		else
 			warn("No settings object to load TextBox value.", flag)
 		end
@@ -278,9 +278,9 @@ function TextBox:Create(config)
 			if flag then
 				print("Saving TextBox value for flag:", flag, "Value:", currentText)
 				-- Check if using custom config object
-				if settings and type(settings.SetValue) == "function" then
+				if settings and type(settings:SetValue) == "function" then
 					print("Using custom settings to save value.")
-					settings.SetValue(flag, currentText)
+					settings:SetValue(flag, currentText)
 				else
 					warn("No settings object to save TextBox value.")
 				end
@@ -323,8 +323,8 @@ function TextBox:Create(config)
 		-- Save to configuration
 		if flag then
 			-- Check if using custom config object
-			if settings and type(settings.SetValue) == "function" then
-				settings.SetValue(flag, currentText)
+			if settings and type(settings:SetValue) == "function" then
+				settings:SetValue(flag, currentText)
 			end
 		end
 	end

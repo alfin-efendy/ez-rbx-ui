@@ -62,7 +62,7 @@ function Toggle:Create(config)
 		
 		-- Check if using custom config object
 		if settings and type(settings.GetValue) == "function" then
-			flagValue = settings.GetValue(flag)
+			flagValue = settings:GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -181,8 +181,8 @@ function Toggle:Create(config)
 		-- Save to configuration
 		if flag then
 			-- Check if using custom config object
-			if settings and type(settings.SetValue) == "function" then
-				settings.SetValue(flag, isToggled)
+			if settings and type(settings:SetValue) == "function" then
+				settings:SetValue(flag, isToggled)
 			end
 		end
 		
@@ -233,8 +233,8 @@ function Toggle:Create(config)
 		end
 		
 		-- Check if using custom config object
-		if settings and type(settings.SetValue) == "function" then
-			settings.SetValue(flag, isToggled)
+		if settings and type(settings:SetValue) == "function" then
+			settings:SetValue(flag, isToggled)
 		end
 	end
 	

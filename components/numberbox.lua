@@ -66,7 +66,7 @@ function NumberBox:Create(config)
 		
 		-- Check if using custom config object
 		if settings and type(settings.GetValue) == "function" then
-			flagValue = settings.GetValue(flag)
+			flagValue = settings:GetValue(flag)
 		end
 		
 		if flagValue ~= nil then
@@ -196,8 +196,8 @@ function NumberBox:Create(config)
 		-- Save to configuration
 		if flag then
 			-- Check if using custom config object
-			if settings and type(settings.SetValue) == "function" then
-				settings.SetValue(flag, currentValue)
+			if settings and type(settings:SetValue) == "function" then
+				settings:SetValue(flag, currentValue)
 			end
 		end
 		-- Call user callback
