@@ -1141,6 +1141,14 @@ function Window:Create(config)
 			Notification:Clear()
 		end
 	end
+
+	function windowAPI:GetConfigValue(key)
+		return settings.GetValue(key)
+	end
+
+	function windowAPI:SetConfigValue(key, value)
+		settings.SetValue(key, value)
+	end
 	
 	return windowAPI
 end

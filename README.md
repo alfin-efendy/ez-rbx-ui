@@ -74,7 +74,7 @@ local EzUI = require(game.ReplicatedStorage.main)
 
 **Method 2: Loadstring (for executor)**
 ```lua
-local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/refactor/modular-ui/main.lua'))()
+local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
 ```
 
 ### Basic Usage
