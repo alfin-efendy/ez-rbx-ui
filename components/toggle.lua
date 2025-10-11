@@ -180,10 +180,7 @@ function Toggle:Create(config)
 		
 		-- Save to configuration
 		if flag then
-			-- Check if using custom config object
-			if settings and type(settings:SetValue) == "function" then
-				settings:SetValue(flag, isToggled)
-			end
+			settings:SetValue(flag, isToggled)
 		end
 		
 		-- Call user callback
@@ -232,10 +229,7 @@ function Toggle:Create(config)
 			return
 		end
 		
-		-- Check if using custom config object
-		if settings and type(settings:SetValue) == "function" then
-			settings:SetValue(flag, isToggled)
-		end
+		settings:SetValue(flag, isToggled)
 	end
 	
 	function toggleAPI:GetValue()

@@ -467,9 +467,7 @@ function SelectBox:Create(config)
 		-- Save to configuration
 		if flag then
 			local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
-			if settings and type(settings:SetValue) == "function" then
-				settings:SetValue(flag, valueToSave)
-			end
+			settings:SetValue(flag, valueToSave)
 		end
 		
 		callback(selectedValues, value)
@@ -683,11 +681,7 @@ function SelectBox:Create(config)
 				-- Save to configuration
 				if flag then
 					local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
-					
-					-- Check if using custom config object
-					if settings and type(settings:SetValue) == "function" then
-						settings:SetValue(flag, valueToSave)
-					end
+					settings:SetValue(flag, valueToSave)
 				end
 				
 				callback(selectedValues, option.value)
