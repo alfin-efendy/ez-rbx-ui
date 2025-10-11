@@ -40,6 +40,7 @@ function Accordion:Create(config)
 	
 	-- Accordion state
 	local isExpanded = expanded
+	local callback = config.Callback -- function dipanggil saat expand/collapse/toggle
 	local accordionContentHeight = 0
 	
 	-- Main accordion container
@@ -324,6 +325,7 @@ function Accordion:Create(config)
 		if not isExpanded then
 			isExpanded = true
 			animateAccordion()
+			if callback then callback(true) end -- true = dibuka
 		end
 	end
 	
@@ -331,13 +333,15 @@ function Accordion:Create(config)
 		if isExpanded then
 			isExpanded = false
 			animateAccordion()
+			if callback then callback(false) end -- false = ditutup
 		end
 	end
 	
 	function accordionAPI:Toggle()
-		isExpanded = not isExpanded
-		animateAccordion()
-		return isExpanded
+	isExpanded = not isExpanded
+	animateAccordion()
+	if callback then callback(isExpanded) end -- true/false
+	return isExpanded
 	end
 	
 	function accordionAPI:IsExpanded()
