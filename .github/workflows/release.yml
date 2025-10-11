@@ -32,7 +32,6 @@ jobs:
           lua-bundler \
             --entry ./main.lua \
             --output ./release/ez-rbx-ui.lua \
-            --mode production \
             --release
             
       - name: Create README for release
