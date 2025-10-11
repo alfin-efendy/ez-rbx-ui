@@ -75,6 +75,11 @@ print("✅ All components initialized")
 
 -- Main Window Creation Function
 function EzUI:CreateNew(config)
+	if not config or type(config) ~= "table" then
+		config = {}
+		warn("EzUI:CreateNew - Config table is required, using defaults")
+	end
+
 	print("🪟 Creating window...")
 	
 	-- Pass all required modules and config to Window component
@@ -84,6 +89,7 @@ function EzUI:CreateNew(config)
 		Height = config.Height or (config.Size and config.Size.Height) or 400,
 		Opacity = config.Opacity or 0.9,
 		AutoShow = config.AutoShow or true,
+		AutoAdapt = config.AutoAdapt or true,
 		Draggable = config.Draggable,
 		BackgroundColor = config.BackgroundColor,
 		CornerRadius = config.CornerRadius,

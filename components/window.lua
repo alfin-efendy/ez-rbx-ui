@@ -78,15 +78,15 @@ function Window:CalculateDynamicSize(width, height)
 	return finalWidth, finalHeight
 end
 
-function Window:CreateFloatingButton(screenGui, frame, toggleMinimizeCallback)
-	-- Create floating button (hidden by default)
+function Window:CreateFloatingButton(screenGui, frame, toggleMinimizeCallback, autoShow)
+	-- Create floating button (visibility based on AutoShow parameter)
 	local floatingButton = Instance.new("Frame")
 	floatingButton.Size = UDim2.new(0, 50, 0, 50)
 	floatingButton.Position = UDim2.new(0, 0, 0.5, -25) -- Middle left by default
 	floatingButton.BackgroundColor3 = Colors.Background.Primary
 	floatingButton.BorderSizePixel = 0
 	floatingButton.ZIndex = 100
-	floatingButton.Visible = false
+	floatingButton.Visible = not autoShow -- Show floating button if window starts hidden
 	floatingButton.Active = true
 	floatingButton.Parent = screenGui
 	
@@ -485,6 +485,10 @@ function Window:Create(config)
 	local minTabPanelWidth = config.MinTabPanelWidth or 80
 	local maxTabPanelWidth = config.MaxTabPanelWidth or 300
 	local settings = config.Settings or {}
+	local autoAdapt = config.AutoAdapt ~= nil and config.AutoAdapt or true
+	
+	-- Close callback functionality
+	local onCloseCallback = config.OnClose or nil
 	
 	opacity = math.max(0.1, math.min(1.0, opacity))
 	
@@ -698,6 +702,18 @@ function Window:Create(config)
 	-- Confirm button action
 	confirmBtn.MouseButton1Click:Connect(function()
 		confirmationOverlay.Visible = false
+		
+		-- Call user close callback before destroying
+		if onCloseCallback then
+			local success, errorMsg = pcall(function()
+				onCloseCallback()
+			end)
+			
+			if not success then
+				warn("Close callback error:", errorMsg)
+			end
+		end
+		
 		screenGui:Destroy()
 	end)
 	
@@ -862,7 +878,7 @@ function Window:Create(config)
 		if minimizeControl.Toggle then
 			minimizeControl.Toggle()
 		end
-	end)
+	end, autoShow)
 	
 	-- Now create the actual minimize control
 	local actualMinimizeControl = self:SetupMinimizeToggle(frame, floatingButton, originalPosition)
@@ -908,22 +924,40 @@ function Window:Create(config)
 	}
 	
 	function windowAPI:Show()
+		-- Show the window
+		frame.Visible = true
+		-- Hide the floating button when window is shown
+		floatingButton.Frame.Visible = false
+		-- If window was minimized, restore it
 		if minimizeControl.IsMinimized() then
 			minimizeControl.Toggle()
-		else
-			frame.Visible = true
 		end
 	end
 	
 	function windowAPI:Hide()
-		if minimizeControl.IsMinimized() then
-			floatingButton.Frame.Visible = false
-		end
+		-- Hide the window
 		frame.Visible = false
+		-- Show the floating button when window is hidden
+		floatingButton.Frame.Visible = true
+	end
+	
+	function windowAPI:IsVisible()
+		-- Check if the window is currently visible (not minimized)
+		return frame.Visible and not minimizeControl.IsMinimized()
+	end
+	
+	function windowAPI:ToggleVisibility()
+		-- Toggle window visibility
+		if self:IsVisible() then
+			self:Hide()
+		else
+			self:Show()
+		end
+		return self:IsVisible()
 	end
 	
 	function windowAPI:Toggle()
-		frame.Visible = not frame.Visible
+		return self:ToggleVisibility()
 	end
 	
 	function windowAPI:Minimize()
@@ -1148,6 +1182,87 @@ function Window:Create(config)
 
 	function windowAPI:SetConfigValue(key, value)
 		settings.SetValue(key, value)
+	end
+	
+	-- Viewport adaptation methods
+	function windowAPI:AdaptToViewport()
+		-- Recalculate window size based on current viewport
+		local currentViewport = self:GetViewportSize()
+		local baseWidth = config.Width or (currentViewport.X * 0.3)
+		local baseHeight = config.Height or (currentViewport.Y * 0.4)
+		
+		-- Apply resolution-based scaling
+		local scaleMultiplier = 1
+		if currentViewport.X >= 1920 then -- 1080p+
+			scaleMultiplier = 1.2
+		elseif currentViewport.X >= 1366 then -- 720p-1080p
+			scaleMultiplier = 1.0
+		elseif currentViewport.X >= 1024 then -- Tablet size
+			scaleMultiplier = 0.9
+		else -- Mobile/small screens
+			scaleMultiplier = 0.8
+		end
+		
+		-- Calculate new size with limits
+		local newWidth = math.max(250, math.min(currentViewport.X * 0.8, baseWidth * scaleMultiplier))
+		local newHeight = math.max(150, math.min(currentViewport.Y * 0.8, baseHeight * scaleMultiplier))
+		
+		-- Apply new size and center the window
+		frame.Size = UDim2.new(0, newWidth, 0, newHeight)
+		frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
+	end
+	
+	function windowAPI:GetDynamicSize()
+		local currentViewport = self:GetViewportSize()
+		return {
+			Width = frame.Size.X.Offset,
+			Height = frame.Size.Y.Offset,
+			ViewportWidth = currentViewport.X,
+			ViewportHeight = currentViewport.Y
+		}
+	end
+	
+	function windowAPI:SetSize(width, height)
+		local viewportSize = self:GetViewportSize()
+		
+		-- Apply constraints
+		width = math.max(300, math.min(width, viewportSize.X * 0.9))
+		height = math.max(200, math.min(height, viewportSize.Y * 0.9))
+		
+		frame.Size = UDim2.new(0, width, 0, height)
+		
+		return {Width = width, Height = height}
+	end
+	
+	-- Close callback functionality
+	function windowAPI:SetCloseCallback(callback)
+		onCloseCallback = callback
+	end
+	
+	function windowAPI:Close()
+		-- Call user callback before destroying
+		if onCloseCallback then
+			local success, errorMsg = pcall(function()
+				onCloseCallback()
+			end)
+			
+			if not success then
+				warn("Close callback error:", errorMsg)
+			end
+		end
+		
+		-- Destroy the UI
+		if screenGui then
+			screenGui:Destroy()
+		end
+	end
+	
+	-- Auto-adapt to viewport changes (optional)
+	if autoAdapt then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			task.wait(0.1) -- Small delay to ensure viewport is stable
+			windowAPI:AdaptToViewport()
+		end)
 	end
 	
 	return windowAPI
