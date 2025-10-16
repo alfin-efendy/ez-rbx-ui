@@ -207,7 +207,7 @@ function Window:CreateFloatingButton(screenGui, frame, toggleMinimizeCallback, a
 				if input.UserInputState == Enum.UserInputState.End then
 					floatingDragging = false
 					-- Snap to nearest side when drag ends
-					pcall(snapFloatingButton())
+					pcall(snapFloatingButton)
 				end
 			end)
 		end
