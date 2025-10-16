@@ -550,9 +550,33 @@ function SelectBox:Create(config)
 			bottomSheetOverlay.Visible = false
 		end)
 	end
+
+	local function searchOptions(query)
+		local searchText = query:lower()
+		local visibleCount = 0
+		for _, child in pairs(optionsContainer:GetChildren()) do
+			if child:IsA("TextButton") then
+				local optionTextLabel = child:FindFirstChild("TextLabel")
+				if optionTextLabel then
+					local optionText = string.lower(optionTextLabel.Text)
+					local isVisible = searchText == "" or string.find(optionText, searchText, 1, true) ~= nil
+					child.Visible = isVisible
+					if isVisible then
+						visibleCount = visibleCount + 1
+					end
+				end
+			end
+		end
+		-- Update scroll canvas size based on visible items
+		local visibleHeight = visibleCount * 50
+		optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, visibleHeight)
+	end
 	
 	-- Create options
 	function refreshOptions()
+		-- Save current search text
+		local searchTextBefore = searchBox and searchBox.Text or ""
+
 		for _, child in pairs(optionsContainer:GetChildren()) do
 			if child:IsA("TextButton") or child:IsA("UIListLayout") then
 				if child:IsA("TextButton") then
@@ -700,6 +724,11 @@ function SelectBox:Create(config)
 				end
 			end)
 		end
+
+		-- Restore value search after refresh
+		if searchBox then
+			searchOptions(searchTextBefore)
+		end
 	end
 	
 	-- Toggle bottom sheet
@@ -725,26 +754,7 @@ function SelectBox:Create(config)
 	
 	-- Search filter
 	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-		local searchText = string.lower(searchBox.Text)
-		local visibleCount = 0
-		
-		for _, child in pairs(optionsContainer:GetChildren()) do
-			if child:IsA("TextButton") then
-				local optionTextLabel = child:FindFirstChild("TextLabel")
-				if optionTextLabel then
-					local optionText = string.lower(optionTextLabel.Text)
-					local isVisible = searchText == "" or string.find(optionText, searchText, 1, true) ~= nil
-					child.Visible = isVisible
-					if isVisible then
-						visibleCount = visibleCount + 1
-					end
-				end
-			end
-		end
-		
-		-- Update scroll canvas size based on visible items
-		local visibleHeight = visibleCount * 50
-		optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, visibleHeight)
+		searchOptions(searchBox.Text)
 	end)
 	
 	-- Initial setup
