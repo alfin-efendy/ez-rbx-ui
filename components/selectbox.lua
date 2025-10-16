@@ -553,6 +553,9 @@ function SelectBox:Create(config)
 	
 	-- Create options
 	function refreshOptions()
+		-- Simpan nilai search sebelum refresh
+		local searchTextBefore = searchBox and searchBox.Text or ""
+
 		for _, child in pairs(optionsContainer:GetChildren()) do
 			if child:IsA("TextButton") or child:IsA("UIListLayout") then
 				if child:IsA("TextButton") then
@@ -699,6 +702,11 @@ function SelectBox:Create(config)
 					optionButton.BackgroundColor3 = Colors.Dropdown.Option
 				end
 			end)
+		end
+
+		-- Restore value search after refresh
+		if searchBox then
+			searchBox.Text = searchTextBefore
 		end
 	end
 	
