@@ -95,30 +95,21 @@ function EzUI:CreateNew(config)
 		CornerRadius = config.CornerRadius,
 	}
 
-	-- Create DEFAULT config system (automatically loaded)
+	-- Create config system
 	local configSystem = ConfigModule:NewConfig({
-		ConfigName = config.FileName or "Settings",
-		Directory = config.Directory or ((config.FolderName or "EzUI") .. "/Configurations")
+		FolderName = config.FolderName or "EzUI",
+		FileName = config.FileName or "Settings",
 	})
 
 	configSystem:Load()
 
 	local allKeys = configSystem:GetAllKeys()
-	print("EzUI:CreateNew - Default config loaded with keys:", table.concat(allKeys, ", "))
-	print("EzUI:CreateNew - Default config location:", configSystem:GetInfo().FilePath)
+	print("EzUI:CreateNew - Loaded config keys:", table.concat(allKeys, ", "))
 
 	-- Store config in EzUI for global access
 	windowSetup.Settings = configSystem
 
-	local window = Window:Create(windowSetup)
-	
-	-- Add EzUI reference and NewConfig function to window API
-	window.EzUI = EzUI
-	window.NewConfig = function(config)
-		return EzUI:NewConfig(config)
-	end
-
-	return window
+	return Window:Create(windowSetup)
 end
 
 -- Expose version info
