@@ -516,7 +516,8 @@ function SelectBox:AddSectionInteractive(tab)
             print("👤 Checking user permissions...")
             
             -- Simulate user role check
-            local userRole = {"admin", "user", "guest"}[math.random(1, 3)]
+            local roles = {"admin", "user", "guest"}
+            local userRole = roles[math.random(1, 3)]
             print("🔍 User role detected:", userRole)
             
             local roleBasedOptions = {}
@@ -653,7 +654,8 @@ function SelectBox:AddSectionCallbacks(tab)
             -- Simulate geolocation and server latency check
             wait(1) -- Simulate API call delay
             
-            local detectedRegion = {"us-east", "eu-west", "asia-pacific"}[math.random(1, 3)]
+            local regions = {"us-east", "eu-west", "asia-pacific"}
+            local detectedRegion = regions[math.random(1, 3)]
             local allRegions = {
                 {text = "🇺🇸 US East (Best - 45ms)", value = "us-east"},
                 {text = "🇪🇺 EU West (Good - 120ms)", value = "eu-west"}, 
