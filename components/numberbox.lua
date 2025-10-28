@@ -13,6 +13,7 @@ function NumberBox:Init(_colors)
 end
 
 function NumberBox:Create(config)
+	local name = config.Name or ""
 	local placeholder = config.Placeholder or "Enter number..."
 	local defaultValue = config.Default or 0
 	local callback = config.Callback or function() end
@@ -171,6 +172,20 @@ function NumberBox:Create(config)
 	decrementBtn.Font = Enum.Font.SourceSans
 	decrementBtn.Parent = numberBoxContainer
 	
+	-- Title label (if name is provided)
+	if name ~= "" then
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.Size = UDim2.new(1, 0, 0, 18)
+		titleLabel.Position = UDim2.new(0, 0, 0, -20)
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Text = name
+		titleLabel.TextColor3 = Colors.Text.Primary
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Font = Enum.Font.SourceSans
+		titleLabel.TextSize = 14
+		titleLabel.Parent = numberBoxContainer
+	end
+
 	-- Function to validate and update value
 	local function updateValue(newValue)
 		-- Clamp to min/max
