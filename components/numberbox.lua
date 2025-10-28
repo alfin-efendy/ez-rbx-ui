@@ -200,10 +200,16 @@ function NumberBox:Create(config)
 		titleLabel.Parent = numberBoxContainer
 	end
 
-	-- Adjust numberBox position if title exists
+	-- Adjust numberBox position and size
 	if hasTitle then
-		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 2)
+		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 4) -- Add spacing below title
+	else
+		numberBox.Position = UDim2.new(0, 0, 0, 0)
 	end
+
+	-- Adjust increment and decrement button positions
+	incrementBtn.Position = UDim2.new(1, -30, 0.5, -10) -- Center vertically relative to numberBox
+	decrementBtn.Position = UDim2.new(1, -30, 0.5, 10) -- Center vertically relative to numberBox
 
 	-- Function to validate and update value
 	local function updateValue(newValue)
