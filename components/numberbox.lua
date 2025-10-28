@@ -13,7 +13,7 @@ function NumberBox:Init(_colors)
 end
 
 function NumberBox:Create(config)
-	local name = config.Name or ""
+	local name = config.Name or config.Title or ""
 	local placeholder = config.Placeholder or "Enter number..."
 	local defaultValue = config.Default or 0
 	local callback = config.Callback or function() end
@@ -172,18 +172,37 @@ function NumberBox:Create(config)
 	decrementBtn.Font = Enum.Font.SourceSans
 	decrementBtn.Parent = numberBoxContainer
 	
+	-- Calculate heights based on whether we have a title label
+	local hasTitle = name and name ~= ""
+	local labelHeight = hasTitle and 18 or 0
+	local inputHeight = isForAccordion and 25 or 30
+	local totalHeight = labelHeight + inputHeight + (hasTitle and 2 or 0) -- 2px spacing between label and input
+
+	-- Adjust container size
+	if isForAccordion then
+		numberBoxContainer.Size = UDim2.new(1, -10, 0, totalHeight)
+	else
+		numberBoxContainer.Size = UDim2.new(1, -20, 0, totalHeight)
+	end
+
 	-- Title label (if name is provided)
-	if name ~= "" then
+	if hasTitle then
 		local titleLabel = Instance.new("TextLabel")
-		titleLabel.Size = UDim2.new(1, 0, 0, 18)
-		titleLabel.Position = UDim2.new(0, 0, 0, -20)
+		titleLabel.Size = UDim2.new(1, 0, 0, labelHeight)
+		titleLabel.Position = UDim2.new(0, 0, 0, 0)
 		titleLabel.BackgroundTransparency = 1
 		titleLabel.Text = name
 		titleLabel.TextColor3 = Colors.Text.Primary
 		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 		titleLabel.Font = Enum.Font.SourceSans
-		titleLabel.TextSize = 14
+		titleLabel.TextSize = isForAccordion and 12 or 14
+		titleLabel.ZIndex = isForAccordion and 7 or 4
 		titleLabel.Parent = numberBoxContainer
+	end
+
+	-- Adjust numberBox position if title exists
+	if hasTitle then
+		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 2)
 	end
 
 	-- Function to validate and update value
