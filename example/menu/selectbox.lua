@@ -1,7 +1,11 @@
 local SelectBox = {}
 
+local Window
+
 function SelectBox:Init(_window)
-    local tab = _window:AddTab({
+    Window = _window
+
+    local tab = Window:AddTab({
         Name = "SelectBox",
         Icon = "📋"
     })
@@ -119,6 +123,33 @@ function SelectBox:AddSectionMultiSelect(tab)
                 print("Hobbies selected:", table.concat(selectedValues, ", "))
             else
                 print("Hobbies selected:", selectedValues)
+            end
+        end
+    })
+
+    accordion:AddButton({
+        Name = "Remove First Hobby",
+        Callback = function()
+            local currentHobbies = Window:GetConfigValue("Hobbies") or {}
+            if type(currentHobbies) ~= "table" then
+                currentHobbies = {currentHobbies}
+            end
+
+            if #currentHobbies > 0 then
+                local removedHobby = currentHobbies[1]
+                table.remove(currentHobbies, 1)
+                Window:SetConfigValue("Hobbies", currentHobbies)
+                Window:ShowInfo(
+                    "Hobby Removed",
+                    "Removed hobby: " .. removedHobby,
+                    3000
+                )
+            else
+                Window:ShowWarning(
+                    "No Hobbies",
+                    "There are no hobbies to remove.",
+                    3000
+                )
             end
         end
     })
