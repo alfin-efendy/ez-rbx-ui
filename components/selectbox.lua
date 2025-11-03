@@ -521,6 +521,8 @@ function SelectBox:Create(config)
 			{Rotation = 180}
 		)
 		arrowTween:Play()
+		refreshOptions()
+		updateDisplayText()
 	end
 	
 	local function hideBottomSheet()
@@ -549,6 +551,8 @@ function SelectBox:Create(config)
 		overlayTween.Completed:Connect(function()
 			bottomSheetOverlay.Visible = false
 		end)
+		refreshOptions()
+		updateDisplayText()
 	end
 
 	local function searchOptions(query)
@@ -694,21 +698,39 @@ function SelectBox:Create(config)
 					end
 					
 					refreshOptions()
+					updateDisplayText()
+					
+					-- Save to configuration (for multi-select)
+					if flag then
+						local valueToSave = selectedValues
+						settings:SetValue(flag, valueToSave)
+					end
+					
+					callback(selectedValues, option.value)
 				else
+					-- Single select mode - update selected values
 					selectedValues = {option.value}
+					
+					-- Refresh all options to update checkmarks (remove old, show new)
+					refreshOptions()
+					
+					-- Update display text
+					updateDisplayText()
+					
+					-- Save to configuration
+					if flag then
+						local valueToSave = selectedValues[1] or ""
+						settings:SetValue(flag, valueToSave)
+					end
+					
+					-- Call callback
+					callback(selectedValues, option.value)
+					
+					-- Close dropdown with slight delay to show selection feedback
+					task.wait(0.15)
 					isOpen = false
 					hideBottomSheet()
 				end
-				
-				updateDisplayText()
-				
-				-- Save to configuration
-				if flag then
-					local valueToSave = multiSelect and selectedValues or (selectedValues[1] or "")
-					settings:SetValue(flag, valueToSave)
-				end
-				
-				callback(selectedValues, option.value)
 			end)
 			
 			-- Hover effects
