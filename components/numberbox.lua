@@ -123,6 +123,8 @@ function NumberBox:Create(config)
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 8)
 	padding.PaddingRight = UDim.new(0, 8)
+	padding.PaddingTop = UDim.new(0, 0)
+	padding.PaddingBottom = UDim.new(0, 0)
 	padding.Parent = numberBox
 	
 	-- Round corners for number box
@@ -202,14 +204,33 @@ function NumberBox:Create(config)
 
 	-- Adjust numberBox position and size
 	if hasTitle then
-		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 4) -- Add spacing below title
+		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 2) -- Add spacing below title
+		numberBox.Size = UDim2.new(1, -60, 0, inputHeight)
 	else
 		numberBox.Position = UDim2.new(0, 0, 0, 0)
 	end
 
 	-- Adjust increment and decrement button positions
-	incrementBtn.Position = UDim2.new(1, -30, 0.5, -10) -- Center vertically relative to numberBox
-	decrementBtn.Position = UDim2.new(1, -30, 0.5, 10) -- Center vertically relative to numberBox
+	if hasTitle then
+		-- Position buttons relative to numberBox when title exists
+		local buttonY = labelHeight + 2
+		if isForAccordion then
+			incrementBtn.Position = UDim2.new(1, -22, 0, buttonY + 1)
+			decrementBtn.Position = UDim2.new(1, -22, 0, buttonY + 13)
+		else
+			incrementBtn.Position = UDim2.new(1, -30, 0, buttonY + 1)
+			decrementBtn.Position = UDim2.new(1, -30, 0, buttonY + 15)
+		end
+	else
+		-- Keep original positions when no title
+		if isForAccordion then
+			incrementBtn.Position = UDim2.new(1, -22, 0, 1)
+			decrementBtn.Position = UDim2.new(1, -22, 0, 13)
+		else
+			incrementBtn.Position = UDim2.new(1, -30, 0, 1)
+			decrementBtn.Position = UDim2.new(1, -30, 0, 15)
+		end
+	end
 
 	-- Function to validate and update value
 	local function updateValue(newValue)

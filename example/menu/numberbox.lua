@@ -43,6 +43,7 @@ function NumberBox:AddSectionBasic(tab)
 
     -- Simple NumberBox
     accordion:AddNumberBox({
+        Name = "Basic NumberBox",
         Placeholder = "Enter a number...",
         Default = 0,
         Callback = function(value)
@@ -52,6 +53,7 @@ function NumberBox:AddSectionBasic(tab)
 
     -- NumberBox with default value
     accordion:AddNumberBox({
+        Name = "Default Value Box",
         Placeholder = "Starting value: 10",
         Default = 10,
         Flag = "BasicDefault",
@@ -62,6 +64,7 @@ function NumberBox:AddSectionBasic(tab)
 
     -- NumberBox with custom placeholder
     accordion:AddNumberBox({
+        Name = "Custom Placeholder Box",
         Placeholder = "🎯 Enter your score...",
         Default = 100,
         Flag = "Score",
@@ -72,6 +75,7 @@ function NumberBox:AddSectionBasic(tab)
 
     -- Simple integer input
     accordion:AddNumberBox({
+        Name = "Age Input",
         Placeholder = "Age (integer only)",
         Default = 25,
         Min = 0,
@@ -94,6 +98,7 @@ function NumberBox:AddSectionRange(tab)
 
     -- Limited range NumberBox
     accordion:AddNumberBox({
+        Name = "Limited Range Box",
         Placeholder = "1-10 only",
         Default = 5,
         Min = 1,
@@ -106,6 +111,7 @@ function NumberBox:AddSectionRange(tab)
 
     -- Percentage input (0-100)
     accordion:AddNumberBox({
+        Name = "Percentage Input",
         Placeholder = "Percentage (0-100%)",
         Default = 50,
         Min = 0,
@@ -118,6 +124,7 @@ function NumberBox:AddSectionRange(tab)
 
     -- Positive numbers only
     accordion:AddNumberBox({
+        Name = "Positive Numbers Only",
         Placeholder = "Positive numbers only",
         Default = 1,
         Min = 0,
@@ -129,6 +136,7 @@ function NumberBox:AddSectionRange(tab)
 
     -- Temperature range (-50 to 50)
     accordion:AddNumberBox({
+        Name = "Temperature Input",
         Placeholder = "Temperature (-50°C to 50°C)",
         Default = 20,
         Min = -50,
@@ -141,6 +149,7 @@ function NumberBox:AddSectionRange(tab)
 
     -- No maximum limit
     accordion:AddNumberBox({
+        Name = "Min Only Box",
         Placeholder = "Min: 100, no max limit",
         Default = 100,
         Min = 100,
@@ -162,6 +171,7 @@ function NumberBox:AddSectionDecimals(tab)
 
     -- 1 decimal place
     accordion:AddNumberBox({
+        Name = "One Decimal Box",
         Placeholder = "1 decimal place",
         Default = 5.5,
         Decimals = 1,
@@ -173,6 +183,7 @@ function NumberBox:AddSectionDecimals(tab)
 
     -- 2 decimal places (money)
     accordion:AddNumberBox({
+        Name = "Price Input",
         Placeholder = "Price ($0.00)",
         Default = 19.99,
         Min = 0,
@@ -185,6 +196,7 @@ function NumberBox:AddSectionDecimals(tab)
 
     -- 3 decimal places (precision)
     accordion:AddNumberBox({
+        Name = "Precision Input",
         Placeholder = "High precision (3 decimals)",
         Default = 3.141,
         Decimals = 3,
@@ -196,6 +208,7 @@ function NumberBox:AddSectionDecimals(tab)
 
     -- Weight with 2 decimals
     accordion:AddNumberBox({
+        Name = "Weight Input",
         Placeholder = "Weight (kg)",
         Default = 70.5,
         Min = 0,
@@ -209,6 +222,7 @@ function NumberBox:AddSectionDecimals(tab)
 
     -- Percentage with decimals
     accordion:AddNumberBox({
+        Name = "Precise Percentage Box",
         Placeholder = "Precise percentage",
         Default = 85.75,
         Min = 0,
@@ -232,6 +246,7 @@ function NumberBox:AddSectionIncrement(tab)
 
     -- Step by 5
     accordion:AddNumberBox({
+        Name = "Step by 5",
         Placeholder = "Increments by 5",
         Default = 10,
         Increment = 5,
@@ -243,6 +258,7 @@ function NumberBox:AddSectionIncrement(tab)
 
     -- Step by 10
     accordion:AddNumberBox({
+        Name = "Step by 10",
         Placeholder = "Increments by 10",
         Default = 50,
         Min = 0,
@@ -256,6 +272,7 @@ function NumberBox:AddSectionIncrement(tab)
 
     -- Small decimal increments
     accordion:AddNumberBox({
+        Name = "Small Step Box",
         Placeholder = "Increments by 0.1",
         Default = 1.0,
         Increment = 0.1,
@@ -268,6 +285,7 @@ function NumberBox:AddSectionIncrement(tab)
 
     -- Large increments
     accordion:AddNumberBox({
+        Name = "Large Step Box",
         Placeholder = "Increments by 100",
         Default = 1000,
         Min = 0,
@@ -280,6 +298,7 @@ function NumberBox:AddSectionIncrement(tab)
 
     -- Fractional increments
     accordion:AddNumberBox({
+        Name = "Fractional Step Box",
         Placeholder = "Increments by 0.25",
         Default = 2.5,
         Increment = 0.25,
@@ -304,6 +323,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- Volume control
     accordion:AddNumberBox({
+        Name = "Volume Control",
         Placeholder = "Volume (0-100)",
         Default = 75,
         Min = 0,
@@ -317,6 +337,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- FOV setting
     accordion:AddNumberBox({
+        Name = "Field of View",
         Placeholder = "Field of View (60-120)",
         Default = 90,
         Min = 60,
@@ -333,6 +354,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- Money input
     accordion:AddNumberBox({
+        Name = "Money Input",
         Placeholder = "Amount ($)",
         Default = 100.00,
         Min = 0,
@@ -346,6 +368,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- Interest rate
     accordion:AddNumberBox({
+        Name = "Interest Rate",
         Placeholder = "Interest Rate (%)",
         Default = 5.25,
         Min = 0,
@@ -363,6 +386,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- Speed setting
     accordion:AddNumberBox({
+        Name = "Speed Multiplier",
         Placeholder = "Speed multiplier",
         Default = 1.0,
         Min = 0.1,
@@ -377,6 +401,7 @@ function NumberBox:AddSectionPractical(tab)
 
     -- Resolution width
     accordion:AddNumberBox({
+        Name = "Screen Width",
         Placeholder = "Screen Width",
         Default = 1920,
         Min = 640,
@@ -400,6 +425,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Large number handling
     accordion:AddNumberBox({
+        Name = "Large Number Input",
         Placeholder = "Large numbers",
         Default = 1000000,
         Min = 0,
@@ -414,6 +440,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Scientific/Engineering values
     accordion:AddNumberBox({
+        Name = "Scientific Value",
         Placeholder = "Scientific value",
         Default = 9.81,
         Decimals = 3,
@@ -426,6 +453,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Coordinate input (X)
     accordion:AddNumberBox({
+        Name = "X Coordinate",
         Placeholder = "X Coordinate",
         Default = 0,
         Min = -1000,
@@ -439,6 +467,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Coordinate input (Y)
     accordion:AddNumberBox({
+        Name = "Y Coordinate",
         Placeholder = "Y Coordinate", 
         Default = 0,
         Min = -1000,
@@ -452,6 +481,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Angle input (0-360)
     accordion:AddNumberBox({
+        Name = "Angle Input",
         Placeholder = "Angle (0-360°)",
         Default = 0,
         Min = 0,
@@ -465,6 +495,7 @@ function NumberBox:AddSectionAdvanced(tab)
 
     -- Timer/Duration input
     accordion:AddNumberBox({
+        Name = "Duration Input",
         Placeholder = "Duration (seconds)",
         Default = 60,
         Min = 1,
