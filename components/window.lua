@@ -1183,6 +1183,14 @@ function Window:Create(config)
 	function windowAPI:SetConfigValue(key, value)
 		settings:SetValue(key, value)
 	end
+
+	function WindowAPI:GetAllConfigKeys()
+		return settings:GetAllKeys()
+	end
+
+	function WindowAPI:DeleteKey(key)
+		return settings:DeleteKey(key)
+	end
 	
 	-- Viewport adaptation methods
 	function windowAPI:AdaptToViewport()
