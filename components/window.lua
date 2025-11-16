@@ -1184,11 +1184,11 @@ function Window:Create(config)
 		settings:SetValue(key, value)
 	end
 
-	function WindowAPI:GetAllConfigKeys()
+	function windowAPI:GetAllConfigKeys()
 		return settings:GetAllKeys()
 	end
 
-	function WindowAPI:DeleteKey(key)
+	function windowAPI:DeleteConfigKey(key)
 		return settings:DeleteKey(key)
 	end
 	
