@@ -67,8 +67,11 @@ function Tab.new(opts)
 
   function api:Select()
     selected = true
+    -- slide up + fade in (visible tab-switch transition)
+    content.GroupTransparency = 1
+    content.Position = UDim2.new(0, 0, 0, 10)
     content.Visible = true
-    Animate.to(content, "fast", { GroupTransparency = 0 })
+    Animate.to(content, "base", { GroupTransparency = 0, Position = UDim2.new(0, 0, 0, 0) })
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
@@ -95,6 +98,7 @@ function Tab.new(opts)
   -- AddNumberBox/AddSelectBox are provided by the Host mixin (below).
   Host.attach(api, {
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
+    registerSearchable = opts.RegisterSearchable,
     nextOrder = function() order = order + 1; return order end,
   })
 
@@ -106,6 +110,7 @@ function Tab.new(opts)
     accOpts.Theme = theme
     accOpts.Config = opts.Config
     accOpts.Window = opts.Window
+    accOpts.RegisterSearchable = opts.RegisterSearchable
     return Accordion.new(accOpts)
   end
 

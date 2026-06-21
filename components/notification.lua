@@ -10,6 +10,7 @@ function Notification.Init(R)
 end
 
 local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive" }
+local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert" }
 
 local function ensureContainer()
   if container and container.Parent ~= nil then return container end
@@ -44,11 +45,12 @@ function Notification.show(opts)
   -- and blow the toast up to full height). Colored dot indicates the toast type.
   local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
-  Create("Frame", { Name = "Dot", BackgroundColor3 = accent, BorderSizePixel = 0,
-    Size = UDim2.new(0, 8, 0, 8), Position = UDim2.new(0, 0, 0.5, -4), Parent = titleRow, Create.corner(4) })
+  local tIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
+    Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 0, 0.5, -8), Parent = titleRow })
+  Icons.apply(tIcon, TYPE_ICON[opts.Type or "info"] or "info", accent)
   Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -16, 1, 0), Position = UDim2.new(0, 16, 0, 0), Parent = titleRow })
+    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
   if opts.Message then
     Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
       TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,

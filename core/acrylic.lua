@@ -4,27 +4,26 @@ local Create
 
 function Acrylic.Init(R) Create = R.Create end
 
+-- An OPAQUE dark panel with a subtle vertical color sheen + 1px stroke. Earlier this used
+-- a Transparency gradient (0.85->1.0) which multiplied the frame's bg transparency and made
+-- the whole panel see-through over the game. The "acrylic" feel now comes from the color
+-- sheen + stroke, NOT see-through — readable over any background.
 function Acrylic.decorate(frame, theme, opts)
   opts = opts or {}
   frame.BackgroundColor3 = theme.Colors.card
-  -- Near-opaque by default: over a busy game a heavily translucent panel is
-  -- unreadable (the game bleeds through). Keep just a hint of acrylic.
-  frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.04)
+  frame.BackgroundTransparency = opts.transparency or 0
 
-  -- stroke (idempotent)
   if not frame:FindFirstChildOfClass("UIStroke") then
-    Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.4, Parent = frame })
+    Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = frame })
   end
 
-  -- sheen gradient (skip for solid)
   if not opts.solid and not frame:FindFirstChildOfClass("UIGradient") then
     Create("UIGradient", {
       Rotation = 90,
-      Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.85),
-        NumberSequenceKeypoint.new(1, 1),
+      Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, theme.Colors.surface), -- slightly lighter at top
+        ColorSequenceKeypoint.new(1, theme.Colors.card),
       }),
-      Color = ColorSequence.new(Color3.fromRGB(255, 255, 255)),
       Parent = frame,
     })
   end

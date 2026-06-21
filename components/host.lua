@@ -43,6 +43,9 @@ function Host.attach(api, ctx)
       if opts.Tooltip and ctx.R.Tooltip and control and control.Frame then
         ctx.R.Tooltip.attach(control.Frame, opts.Tooltip, ctx.theme)
       end
+      if ctx.registerSearchable and control and control.Frame then
+        ctx.registerSearchable(control.Frame, opts.Text or opts.Title or opts.Name or "")
+      end
       return control
     end
   end

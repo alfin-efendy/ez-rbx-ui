@@ -132,24 +132,32 @@ function Window.new(config)
 
   local tabEntries = {}
   local groups = {}
+  local searchIndex = {} -- { entry = tabEntry, frame = controlFrame, text = lowercased }
   local sidebarOrder = 0
   local function nextSidebarOrder() sidebarOrder = sidebarOrder + 1; return sidebarOrder end
 
   local function addTab(tabOpts)
     tabOpts = tabOpts or {}
+    local entry = { name = tabOpts.Name or "Tab" }
     tabOpts.SidebarParent = sidebar
     tabOpts.ContentParent = contentScroll
     tabOpts.Theme = theme
     tabOpts.Config = cfg
     tabOpts.Window = api
+    -- controls register their searchable text here (full-text search across components)
+    tabOpts.RegisterSearchable = function(frame, text)
+      searchIndex[#searchIndex + 1] = { entry = entry, frame = frame, text = (text or ""):lower() }
+    end
     tabOpts.OnActivate = function(selectedTab)
       for _, t in ipairs(tabs) do
         if t == selectedTab then t:Select() else t:Deselect() end
       end
     end
     local tab = Tab.new(tabOpts)
+    entry.tab = tab
+    entry.button = tab.Button
     tabs[#tabs + 1] = tab
-    tabEntries[#tabEntries + 1] = { tab = tab, button = tab.Button, name = tabOpts.Name or "Tab" }
+    tabEntries[#tabEntries + 1] = entry
     if #tabs == 1 then tab:Select() end
     return tab
   end
@@ -181,9 +189,21 @@ function Window.new(config)
 
   function api:SearchTabs(query)
     query = (query or ""):lower()
-    for _, e in ipairs(tabEntries) do
-      e.button.Visible = (query == "" or e.name:lower():find(query, 1, true) ~= nil)
+    -- 1) component-level (full text): show only matching control rows
+    for _, s in ipairs(searchIndex) do
+      s.frame.Visible = (query == "" or (s.text ~= "" and s.text:find(query, 1, true) ~= nil))
     end
+    -- 2) tab buttons: visible if the tab name matches OR any of its components match
+    for _, e in ipairs(tabEntries) do
+      local match = (query == "" or e.name:lower():find(query, 1, true) ~= nil)
+      if not match then
+        for _, s in ipairs(searchIndex) do
+          if s.entry == e and s.frame.Visible then match = true break end
+        end
+      end
+      e.button.Visible = match
+    end
+    -- 3) group headers: visible if any grouped tab is visible
     for _, g in ipairs(groups) do
       local anyVisible = false
       for _, e in ipairs(g._entries) do if e.button.Visible then anyVisible = true break end end
@@ -198,7 +218,6 @@ function Window.new(config)
   function api:IsVisible() return visible end
   function api:Show()
     visible = true; main.Visible = true
-    Animate.to(main, "fast", { BackgroundTransparency = config.Acrylic == false and 0 or 0.18 })
   end
   function api:Hide() visible = false; main.Visible = false end
   function api:Toggle() if visible then api:Hide() else api:Show() end end
