@@ -34,7 +34,8 @@ local ok, EzUI = pcall(chunk)
 assert(ok, "bundle runtime error: " .. tostring(EzUI))
 
 local screen = _G.Instance.new("ScreenGui")
-local w = EzUI:CreateWindow({ Title = "Verify", Parent = screen })
+local w = EzUI:CreateWindow({ Title = "Verify", Parent = screen, FloatingToggle = true,
+  Config = { FileName = "Verify", AutoSave = false } })
 assert(type(w.AddTab) == "function", "no AddTab")
 local t = w:AddTab({ Name = "Home", Icon = "home" })
 assert(t:IsSelected(), "first tab not auto-selected")
@@ -61,4 +62,13 @@ local acc = t:AddAccordion({ Title = "Adv" })
 acc:Toggle()
 assert(acc:IsExpanded(), "accordion did not expand")
 
-print("VERIFY-BUNDLE OK: faithful require+Color3; all controls construct; window/tab/accordion work")
+-- Plan 5 surfaces: notifications, reset, tab groups, search, dialog
+w:ShowSuccess({ Title = "Saved", Message = "ok", Duration = 0 })
+w:Notify({ Title = "Info", Duration = 100 })
+w:ResetConfiguration({ Confirm = false })
+local g = w:AddTabGroup("Group")
+g:AddTab({ Name = "Grouped" })
+w:SearchTabs("grouped"); w:SearchTabs("")
+w:Dialog({ Title = "Q", Message = "m", Buttons = { { Text = "OK" } } })
+
+print("VERIFY-BUNDLE OK: faithful require+Color3; controls + notify/reset/groups/search/dialog work")
