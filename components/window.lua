@@ -12,6 +12,7 @@ end
 
 local TITLE_H = 40
 local SIDEBAR_W = 150
+local MIN_W, MIN_H = 380, 260
 
 function Window.new(config)
   config = config or {}
@@ -79,6 +80,11 @@ function Window.new(config)
     Parent = titleBar,
   })
   Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
+  local minBtn = Create("ImageButton", {
+    Name = "Minimize", AutoButtonColor = false, BackgroundTransparency = 1,
+    Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -44, 0.5, -9), Parent = titleBar,
+  })
+  Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
 
   -- body: sidebar + content
   local body = Create("Frame", {
@@ -253,16 +259,18 @@ function Window.new(config)
 
   local minimized = false
   function api:Minimize()
+    Overlay.closeAll()
     minimized = not minimized
     body.Visible = not minimized
     Animate.to(main, "base", { Size = UDim2.new(0, width, 0, minimized and TITLE_H or height) })
   end
+  maid:Give(minBtn.MouseButton1Click:Connect(function() api:Minimize() end))
 
   -- drag by title bar
   local dragging, dragStart, startPos
   maid:Give(titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      dragging = true; dragStart = input.Position; startPos = main.Position
+      dragging = true; dragStart = input.Position; startPos = main.Position; Overlay.closeAll()
     end
   end))
   maid:Give(UserInputService.InputChanged:Connect(function(input)
@@ -273,6 +281,33 @@ function Window.new(config)
   end))
   maid:Give(titleBar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+  end))
+
+  -- resize via bottom-right grip
+  local grip = Create("ImageButton", {
+    Name = "ResizeGrip", AutoButtonColor = false, BackgroundTransparency = 1,
+    AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -2, 1, -2),
+    ZIndex = 50, Parent = main,
+  })
+  local resizing, rStart, rSize
+  maid:Give(grip.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+      resizing = true; rStart = input.Position; rSize = { X = width, Y = height }; Overlay.closeAll()
+    end
+  end))
+  maid:Give(UserInputService.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+      width = math.max(MIN_W, rSize.X + (input.Position.X - rStart.X))
+      height = math.max(MIN_H, rSize.Y + (input.Position.Y - rStart.Y))
+      local cam = workspace and workspace.CurrentCamera
+      if cam and cam.ViewportSize then
+        width = math.min(width, cam.ViewportSize.X); height = math.min(height, cam.ViewportSize.Y)
+      end
+      main.Size = UDim2.new(0, width, 0, height)
+    end
+  end))
+  maid:Give(grip.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then resizing = false end
   end))
 
   -- toggle key
