@@ -1,5 +1,6 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local Window = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer
@@ -26,6 +27,7 @@ function Window.new(config)
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
+  local fab, fabFullSize, fabSnap, fabMaid, showFab, hideFab
   local sidebarW = SIDEBAR_W
   local closed = false
   local closeCallback
@@ -290,8 +292,13 @@ function Window.new(config)
   function api:Show()
     if closed then return end
     visible = true; main.Visible = true
+    if hideFab then hideFab() end
   end
-  function api:Hide() if closed then return end; visible = false; main.Visible = false end
+  function api:Hide()
+    if closed then return end
+    visible = false; main.Visible = false
+    if showFab then showFab() end
+  end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
   function api:SetTitle(s) titleLabel.Text = s end
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
@@ -406,119 +413,136 @@ function Window.new(config)
     if noise then noise.ImageTransparency = (theme.Mode == "light") and 0.97 or 0.92 end
   end)
 
-  local fab
   local fabOpts = (type(config.FloatingToggle) == "table") and config.FloatingToggle or {}
   local function ensureFab()
     if fab then return fab end
+    if fabMaid then fabMaid:DoCleanup() end
+    fabMaid = Maid.new(); maid:Give(fabMaid)
     local kind = fabOpts.Type or "simple"
     local resolved = Asset.image(fabOpts.Image)
-    local fabSnap
+    local chev, chevDir = nil, "chevron-right"
     fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundTransparency = 0,
-      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
+      Visible = false, Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
     fab:SetAttribute("FabType", kind)
     if kind == "square" then
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
       Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
-      local img = Create("ImageLabel", { BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+      local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
         Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3), Parent = fab, Create.corner(theme.Radius.md) })
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.foreground) end
     elseif kind == "circle" then
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
-      local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
+      local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
-    else -- simple: reference-style 50x50 icon square with a shadow + edge-snap
+    else -- simple: reference 50x50 chevron square
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = fab })
-      local chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
+      chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       Icons.apply(chev, "chevron-right", theme.Colors.primaryForeground)
-      local shadow = Create("Frame", { Name = "FloatingToggleShadow", BackgroundColor3 = theme.Colors.background,
-        BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1699, Active = false,
-        AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 56, 0, 56), Parent = Overlay.get(gui), Create.corner(12) })
-      local function trackShadow()
-        shadow.Position = UDim2.new(fab.Position.X.Scale, fab.Position.X.Offset + 25, fab.Position.Y.Scale, fab.Position.Y.Offset + 25)
-      end
-      maid:Give(fab:GetPropertyChangedSignal("Position"):Connect(trackShadow))
-      trackShadow()
-      maid:Give(shadow)
-      fabSnap = function()
-        local vp = Overlay.get(gui).AbsoluteSize
-        if not vp or vp.X <= 0 then return end
-        local ap = fab.AbsolutePosition
-        local cx = (ap and ap.X or 0) + 25
-        local peek = 15
-        if cx < vp.X / 2 then
-          Icons.apply(chev, "chevron-right", theme.Colors.primaryForeground)
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
-        else
-          Icons.apply(chev, "chevron-left", theme.Colors.primaryForeground)
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - 50 + peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
-        end
-      end
     end
     -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
     if fabOpts.Size then
       if type(fabOpts.Size) == "table" and type(fabOpts.Size.Width) == "number" then
         fab.Size = UDim2.new(0, fabOpts.Size.Width, 0, fabOpts.Size.Height or 44)
-      else
-        fab.Size = fabOpts.Size
-      end
+      else fab.Size = fabOpts.Size end
     end
     if fabOpts.Position then
       if type(fabOpts.Position) == "table" and type(fabOpts.Position.X) == "number" then
         fab.Position = UDim2.new(0, fabOpts.Position.X, 1, fabOpts.Position.Y or -60)
+      else fab.Position = fabOpts.Position end
+    end
+    fabFullSize = fab.Size
+
+    fabSnap = function()
+      local vp = Overlay.get(gui).AbsoluteSize
+      if not vp or vp.X <= 0 then return end
+      local w2 = (fab.AbsoluteSize and fab.AbsoluteSize.X) or (fabFullSize and fabFullSize.X.Offset) or 50
+      local ap = fab.AbsolutePosition
+      local cx = (ap and ap.X or 0) + w2 / 2
+      local peek = 15
+      if cx < vp.X / 2 then
+        chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+        Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
       else
-        fab.Position = fabOpts.Position
+        chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+        Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
       end
     end
 
-    -- a click toggles; a drag (>6px) moves the FAB and suppresses that click's toggle
     local moved = false
     if fabOpts.Draggable ~= false then
       local dragging, startPos, fabStart
-      maid:Give(fab.InputBegan:Connect(function(input)
+      fabMaid:Give(fab.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
           dragging = true; moved = false; startPos = input.Position; fabStart = fab.Position
         end
       end))
-      maid:Give(UserInputService.InputChanged:Connect(function(input)
+      fabMaid:Give(UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
           local dx, dy = input.Position.X - startPos.X, input.Position.Y - startPos.Y
           if math.abs(dx) > 6 or math.abs(dy) > 6 then moved = true end
           fab.Position = UDim2.new(fabStart.X.Scale, fabStart.X.Offset + dx, fabStart.Y.Scale, fabStart.Y.Offset + dy)
         end
       end))
-      maid:Give(fab.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+      fabMaid:Give(UserInputService.InputEnded:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
           dragging = false
           if moved and fabSnap then fabSnap() end
         end
       end))
     end
-    maid:Give(fab.MouseButton1Click:Connect(function()
+    fabMaid:Give(fab.MouseButton1Click:Connect(function()
       if moved then moved = false; return end
-      api:Toggle()
+      api:Show()
     end))
+    fabMaid:Give(themer.register(function()
+      if kind == "square" then
+        fab.BackgroundColor3 = theme.Colors.surface
+        local st = fab:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+      else
+        fab.BackgroundColor3 = theme.Colors.primary
+        if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+      end
+    end))
+    fabMaid:Give(fab)
     return fab
   end
+
+  showFab = function()
+    ensureFab()
+    fab.Visible = true
+    local target = fabFullSize or fab.Size
+    fab.Size = UDim2.new(target.X.Scale, 0, target.Y.Scale, target.Y.Offset)
+    local tw = Animate.to(fab, 0.3, { Size = target }, Enum.EasingStyle.Quad)
+    tw.Completed:Connect(function() if fabSnap then fabSnap() end end)
+  end
+  hideFab = function()
+    if not fab or not fab.Visible then return end
+    local target = fabFullSize or fab.Size
+    -- connect BEFORE Play so the Completed handler runs even under the synchronous test mock
+    local tw = TweenService:Create(fab, Animate.info(0.3, Enum.EasingStyle.Quad),
+      { Size = UDim2.new(target.X.Scale, 0, target.Y.Scale, target.Y.Offset) })
+    tw.Completed:Connect(function() fab.Visible = false; fab.Size = target end)
+    tw:Play()
+  end
+
   function api:SetFloatingToggle(opts)
-    local wasVisible = fab and fab.Visible
+    local wasHidden = not visible
     if fab then fab:Destroy(); fab = nil end
     fabOpts = opts or {}
     ensureFab()
-    fab.Visible = wasVisible ~= false
+    if wasHidden then showFab() end
   end
 
   function api:Minimize()
     Overlay.closeAll()
-    visible = false
-    main.Visible = false
-    ensureFab().Visible = true
+    api:Hide()
   end
   maid:Give(minBtn.MouseButton1Click:Connect(function() api:Minimize() end))
 
@@ -590,8 +614,8 @@ function Window.new(config)
   if config.AutoAdapt ~= false then api:AdaptToViewport() end
 
   -- mobile/touch floating toggle button
-  if config.FloatingToggle or UserInputService.TouchEnabled then ensureFab() end
-  function api:SetFloatingToggleVisible(b) ensureFab().Visible = b end
+  ensureFab() -- always available as the reopen button; hidden until the window hides
+  function api:SetFloatingToggleVisible(b) if b then showFab() else hideFab() end end
 
   maid:Give(gui)
 
