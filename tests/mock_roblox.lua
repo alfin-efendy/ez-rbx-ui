@@ -144,8 +144,14 @@ function M.jsonEncode(t)
 end
 
 function M.jsonDecode(s)
-  -- delegate to a Lua chunk eval after converting JSON to Lua table literal (test-only, trusted input)
-  local lua = s:gsub('"([^"]-)"%s*:', '["%1"]='):gsub("%[", "{"):gsub("%]", "}"):gsub("null", "nil")
+  -- delegate to a Lua chunk eval after converting JSON to a Lua table literal (test-only, trusted input).
+  -- ORDER MATTERS: convert array brackets [ ] -> { } FIRST, otherwise the [ ] we introduce for
+  -- string keys (`"k":` -> `["k"]=`) get clobbered by the array substitution.
+  local lua = s
+    :gsub("%[", "{")
+    :gsub("%]", "}")
+    :gsub('"([^"]-)"%s*:', '["%1"]=')
+    :gsub("null", "nil")
   local loadstr = loadstring or load -- 5.1 uses loadstring; 5.2+/LuaJIT accept string via load
   local f = loadstr("return " .. lua)
   return f and f() or {}
