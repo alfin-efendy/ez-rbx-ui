@@ -2,12 +2,12 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
-  Notif = R.Notification; Asset = R.Asset
+  Notif = R.Notification; Asset = R.Asset; Themer = R.Themer
 end
 
 local TITLE_H = 40
@@ -28,6 +28,7 @@ function Window.new(config)
   local sidebarW = SIDEBAR_W
   local closed = false
   local closeCallback
+  local themer = Themer.new()
 
   -- optional config persistence (controls register their flags against this)
   local cfg = nil
@@ -196,6 +197,7 @@ function Window.new(config)
     tabOpts.Theme = theme
     tabOpts.Config = cfg
     tabOpts.Window = api
+    tabOpts.AccentThemer = themer
     -- controls register their searchable text here (full-text search across components)
     tabOpts.RegisterSearchable = function(frame, text)
       searchIndex[#searchIndex + 1] = { entry = entry, frame = frame, text = (text or ""):lower() }
@@ -302,6 +304,16 @@ function Window.new(config)
         { Text = "Reset", Variant = "destructive", Callback = doReset },
       } })
     end
+  end
+
+  function api:GetThemer() return themer end
+  function api:SetAccent(nameOrColor)
+    local a = Themer.accent(nameOrColor)
+    if not a and typeof(nameOrColor) == "Color3" then a = { Primary = nameOrColor, Foreground = theme.Colors.primaryForeground } end
+    if not a then return end
+    theme.Colors.primary = a.Primary
+    theme.Colors.primaryForeground = a.Foreground
+    themer.setAccent(a.Primary, a.Foreground)
   end
 
   local fab

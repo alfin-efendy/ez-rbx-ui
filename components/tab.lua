@@ -98,7 +98,7 @@ function Tab.new(opts)
   -- AddNumberBox/AddSelectBox are provided by the Host mixin (below).
   Host.attach(api, {
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
-    registerSearchable = opts.RegisterSearchable,
+    registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
     nextOrder = function() order = order + 1; return order end,
   })
 
@@ -111,6 +111,7 @@ function Tab.new(opts)
     accOpts.Config = opts.Config
     accOpts.Window = opts.Window
     accOpts.RegisterSearchable = opts.RegisterSearchable
+    accOpts.AccentThemer = opts.AccentThemer
     return Accordion.new(accOpts)
   end
 

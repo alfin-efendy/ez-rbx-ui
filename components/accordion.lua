@@ -130,7 +130,7 @@ function Accordion.new(opts)
   -- AddX control methods (Label/Button/Toggle/TextBox/NumberBox/SelectBox/...)
   Host.attach(api, {
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
-    registerSearchable = opts.RegisterSearchable,
+    registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
     nextOrder = function() order = order + 1; return order end,
   })
 

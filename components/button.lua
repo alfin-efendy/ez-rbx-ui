@@ -64,6 +64,15 @@ function Button.new(opts)
   end))
   maid:Give(btn)
 
+  if variant == "default" and opts.AccentReg then
+    maid:Give(opts.AccentReg(function()
+      local nbg, nfg = palette(theme, variant)
+      btn.BackgroundColor3 = nbg
+      label.TextColor3 = nfg
+      if hasIcon then Icons.apply(btn:FindFirstChild("Icon"), opts.Icon, nfg) end
+    end))
+  end
+
   return {
     Frame = btn,
     SetText = function(s) label.Text = s end,
