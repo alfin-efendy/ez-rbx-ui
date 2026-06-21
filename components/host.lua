@@ -12,6 +12,13 @@ local SIMPLE = {
   AddTextBox = { mod = "TextBox" },
   AddNumberBox = { mod = "NumberBox" },
   AddSelectBox = { mod = "SelectBox" },
+  AddSlider = { mod = "Slider" },
+  AddKeybind = { mod = "Keybind" },
+  AddColorPicker = { mod = "ColorPicker" },
+  AddImage = { mod = "Image" },
+  AddTable = { mod = "Table" },
+  AddPlayerSelector = { mod = "PlayerSelector" },
+  AddProgressBar = { mod = "ProgressBar" },
 }
 
 -- ctx = { R, content, theme, config, window, nextOrder }
@@ -32,7 +39,11 @@ function Host.attach(api, ctx)
       opts.Theme = ctx.theme
       opts.Config = ctx.config
       opts.Window = ctx.window
-      return ctx.R[spec.mod].new(opts)
+      local control = ctx.R[spec.mod].new(opts)
+      if opts.Tooltip and ctx.R.Tooltip and control and control.Frame then
+        ctx.R.Tooltip.attach(control.Frame, opts.Tooltip, ctx.theme)
+      end
+      return control
     end
   end
 end
