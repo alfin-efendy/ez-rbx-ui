@@ -4,8 +4,15 @@ local Create, DefaultTheme, Maid, Flag
 local UserInputService = game:GetService("UserInputService")
 function Keybind.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Flag = R.Flag end
 
+-- A real Enum.KeyCode is an EnumItem (userdata), NOT a table — so type(k)=="table"
+-- is false in Roblox and the key would always read as "Unknown". Read .Name directly
+-- (works for EnumItem userdata, the mock's enum tables, and plain strings).
 local function keyName(k)
-  if type(k) == "string" then return k elseif type(k) == "table" and k.Name then return k.Name end
+  if type(k) == "string" then return k end
+  if k ~= nil then
+    local ok, name = pcall(function() return k.Name end)
+    if ok and type(name) == "string" then return name end
+  end
   return "Unknown"
 end
 
