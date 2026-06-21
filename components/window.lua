@@ -324,6 +324,28 @@ function Window.new(config)
   function api:GetThemer() return themer end
   function api:LockAll() for _, c in ipairs(lockables) do if c.SetLocked then c.SetLocked(true) end end end
   function api:UnlockAll() for _, c in ipairs(lockables) do if c.SetLocked then c.SetLocked(false) end end end
+
+  local tagX = 70 -- offset from the right, left of the min/close buttons
+  function api:Tag(o)
+    o = o or {}
+    local hasIcon = o.Icon ~= nil
+    local width = (hasIcon and 22 or 8) + (#tostring(o.Text or "") * 7) + 8
+    local pill = Create("Frame", { Name = "Tag", BackgroundColor3 = o.Color or theme.Colors.surface, BorderSizePixel = 0,
+      AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -tagX, 0.5, 0), Size = UDim2.new(0, width, 0, 20),
+      Parent = titleBar, Create.corner(theme.Radius.sm), Create.padding({ left = 6, right = 6 }) })
+    Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = pill })
+    if hasIcon then
+      local ic = Create("ImageLabel", { Name = "TagIcon", BackgroundTransparency = 1, Size = UDim2.new(0, 12, 0, 12),
+        Position = UDim2.new(0, 0, 0.5, -6), Parent = pill })
+      Icons.apply(ic, o.Icon, theme.Colors.mutedForeground)
+    end
+    local txt = Create("TextLabel", { Name = "TagText", BackgroundTransparency = 1, Text = o.Text or "",
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size,
+      Font = Enum.Font.BuilderSans, Size = UDim2.new(1, hasIcon and -16 or 0, 1, 0),
+      Position = UDim2.new(0, hasIcon and 16 or 0, 0, 0), Parent = pill })
+    tagX = tagX + width + 8
+    return { SetText = function(s) txt.Text = s end, Destroy = function() pill:Destroy() end }
+  end
   function api:SetAccent(nameOrColor)
     local a = Themer.accent(nameOrColor)
     if not a and typeof(nameOrColor) == "Color3" then a = { Primary = nameOrColor, Foreground = theme.Colors.primaryForeground } end
