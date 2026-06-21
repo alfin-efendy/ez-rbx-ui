@@ -180,6 +180,7 @@ moon
 mountain
 mouse-pointer
 move
+move-diagonal-2
 music
 navigation
 network

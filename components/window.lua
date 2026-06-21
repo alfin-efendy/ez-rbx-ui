@@ -591,9 +591,9 @@ function Window.new(config)
     AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -2, 1, -2),
     ZIndex = 50, Parent = main,
   })
-  Icons.apply(grip, "grip", theme.Colors.mutedForeground)
-  maid:Give(grip.MouseEnter:Connect(function() Icons.apply(grip, "grip", theme.Colors.foreground) end))
-  maid:Give(grip.MouseLeave:Connect(function() Icons.apply(grip, "grip", theme.Colors.mutedForeground) end))
+  Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground)
+  maid:Give(grip.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
+  maid:Give(grip.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
   local resizing, rStart, rSize
   maid:Give(grip.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
