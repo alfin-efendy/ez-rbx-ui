@@ -23,8 +23,9 @@ function NumberBox.new(opts)
     return n
   end
 
-  local root = Create("Frame", { Name = "NumberBoxRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
+  local root = Create("Frame", { Name = "NumberBoxRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
+    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
   if hasLabel then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
@@ -43,6 +44,7 @@ function NumberBox.new(opts)
     Position = hasLabel and UDim2.new(0.5, 4, 0.5, -15) or UDim2.new(0, 0, 0, 0),
     Size = hasLabel and UDim2.new(0.5, -4, 0, 30) or UDim2.new(1, 0, 0, 30),
     Parent = root, Create.corner(theme.Radius.md) })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = box })
   local function stepBtn(name, icon, x)
     local b = Create("ImageButton", { Name = name, AutoButtonColor = false, BackgroundColor3 = theme.Colors.surface,
       Size = UDim2.new(0, 26, 1, -6), Position = x, Parent = box, Create.corner(theme.Radius.sm) })
@@ -68,7 +70,9 @@ function NumberBox.new(opts)
   maid:Give(root)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    root.BackgroundColor3 = theme.Colors.surface
     box.BackgroundColor3 = theme.Colors.input
+    local bs = box:FindFirstChildOfClass("UIStroke"); if bs then bs.Color = theme.Colors.border end
     input.TextColor3 = theme.Colors.foreground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end

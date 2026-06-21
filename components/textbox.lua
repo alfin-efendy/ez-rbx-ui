@@ -15,9 +15,10 @@ function TextBox.new(opts)
   local rowH = (not hasLabel) and 30 or (hasDesc and 56 or 46)
 
   local root = Create("Frame", {
-    Name = "TextBoxRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0,
-    Parent = opts.Parent,
+    Name = "TextBoxRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
+    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Create.corner(theme.Radius.md),
+    Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
   if hasLabel then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
@@ -40,6 +41,7 @@ function TextBox.new(opts)
     Parent = root, Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = box })
   local input = Create("TextBox", {
     Name = "Input", BackgroundTransparency = 1, Text = opts.Default or "",
     PlaceholderText = opts.Placeholder or "", PlaceholderColor3 = theme.Colors.mutedForeground,
@@ -69,7 +71,9 @@ function TextBox.new(opts)
   maid:Give(root)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    root.BackgroundColor3 = theme.Colors.surface
     box.BackgroundColor3 = theme.Colors.input
+    local bs = box:FindFirstChildOfClass("UIStroke"); if bs then bs.Color = theme.Colors.border end
     input.TextColor3 = theme.Colors.foreground; input.PlaceholderColor3 = theme.Colors.mutedForeground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
