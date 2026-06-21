@@ -86,12 +86,26 @@ function Window.new(config)
     Size = UDim2.new(1, 0, 1, -TITLE_H),
     Parent = main,
   })
+  -- sidebar search box (pinned above the tab list)
+  local searchBox = Create("Frame", {
+    Name = "Search", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
+    Position = UDim2.new(0, 8, 0, 6), Size = UDim2.new(0, SIDEBAR_W - 16, 0, 24), Parent = body,
+    Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }),
+  })
+  local searchInput = Create("TextBox", {
+    Name = "SearchInput", BackgroundTransparency = 1, Text = "", PlaceholderText = "Search…",
+    PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
+    TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+    ClearTextOnFocus = false, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox,
+  })
+
   local sidebar = Create("ScrollingFrame", {
     Name = "Sidebar",
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     ScrollBarThickness = 0,
-    Size = UDim2.new(0, SIDEBAR_W, 1, 0),
+    Position = UDim2.new(0, 0, 0, 36),
+    Size = UDim2.new(0, SIDEBAR_W, 1, -36),
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0, 0, 0, 0),
     Parent = body,
@@ -116,14 +130,18 @@ function Window.new(config)
 
   local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
 
-  function api:AddTab(tabOpts)
+  local tabEntries = {}
+  local groups = {}
+  local sidebarOrder = 0
+  local function nextSidebarOrder() sidebarOrder = sidebarOrder + 1; return sidebarOrder end
+
+  local function addTab(tabOpts)
     tabOpts = tabOpts or {}
     tabOpts.SidebarParent = sidebar
     tabOpts.ContentParent = contentScroll
     tabOpts.Theme = theme
     tabOpts.Config = cfg
     tabOpts.Window = api
-    tabOpts.LayoutOrder = #tabs + 1
     tabOpts.OnActivate = function(selectedTab)
       for _, t in ipairs(tabs) do
         if t == selectedTab then t:Select() else t:Deselect() end
@@ -131,9 +149,51 @@ function Window.new(config)
     end
     local tab = Tab.new(tabOpts)
     tabs[#tabs + 1] = tab
+    tabEntries[#tabEntries + 1] = { tab = tab, button = tab.Button, name = tabOpts.Name or "Tab" }
     if #tabs == 1 then tab:Select() end
     return tab
   end
+
+  function api:AddTab(o)
+    o = o or {}
+    o.LayoutOrder = nextSidebarOrder()
+    return addTab(o)
+  end
+
+  function api:AddTabGroup(name)
+    local header = Create("TextLabel", {
+      Name = "GroupHeader", BackgroundTransparency = 1, Text = string.upper(name or "Group"),
+      TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left,
+      TextSize = 10, Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 0, 16),
+      LayoutOrder = nextSidebarOrder(), Parent = sidebar,
+    })
+    local group = { _header = header, _entries = {} }
+    groups[#groups + 1] = group
+    function group:AddTab(o)
+      o = o or {}
+      o.LayoutOrder = nextSidebarOrder()
+      local tab = addTab(o)
+      self._entries[#self._entries + 1] = tabEntries[#tabEntries]
+      return tab
+    end
+    return group
+  end
+
+  function api:SearchTabs(query)
+    query = (query or ""):lower()
+    for _, e in ipairs(tabEntries) do
+      e.button.Visible = (query == "" or e.name:lower():find(query, 1, true) ~= nil)
+    end
+    for _, g in ipairs(groups) do
+      local anyVisible = false
+      for _, e in ipairs(g._entries) do if e.button.Visible then anyVisible = true break end end
+      g._header.Visible = anyVisible
+    end
+  end
+
+  maid:Give(searchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    api:SearchTabs(searchInput.Text)
+  end))
 
   function api:IsVisible() return visible end
   function api:Show()
