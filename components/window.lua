@@ -150,8 +150,9 @@ function Window.new(config)
     Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
     Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
-  -- content panel: a SOLID lighter card (not frosted) so it stays clearly distinct from the darker window
-  Acrylic.decorate(contentPanel, theme, { solid = true, noStroke = true, base = theme.Colors.card })
+  -- content panel: lighter card that frosts with the acrylic config (slider); flat (no gradient) + borderless
+  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT, noStroke = true,
+    base = theme.Colors.card, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
     BackgroundTransparency = 1,
@@ -303,7 +304,8 @@ function Window.new(config)
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetAcrylicTransparency(n)
-    main.BackgroundTransparency = n  -- frosts the window; content panel stays solid
+    main.BackgroundTransparency = n        -- window/chrome
+    contentPanel.BackgroundTransparency = n -- content panel follows the same acrylic config
     return n
   end
   function api:SetToggleKey(k) toggleKey = k; return k end

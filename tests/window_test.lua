@@ -260,24 +260,21 @@ h.describe("window", function()
     uis.InputBegan:Fire({ KeyCode = h.roblox.Enum.KeyCode.RightControl }, false)
     h.expect(w:IsVisible()).toBe(false)
   end)
-  h.it("dark window backing (frostable) + SOLID rounded inset content card (WindUI look)", function()
+  h.it("darker window + lighter content card, both frost with the acrylic config", function()
     local R = h.loadLib()
     local w = newWin()
-    -- window backing: darker chrome colour, rounded, frostable (transparency from the acrylic slider)
+    -- window backing: darker chrome colour, rounded, frosts with the acrylic config
     h.expect(w.Main.BackgroundColor3.R8).toBe(R.Theme.Colors.background.R8)
     h.expect(w.Main.BackgroundTransparency > 0).toBeTruthy()
     h.expect(w.Main:FindFirstChildOfClass("UICorner") ~= nil).toBeTruthy()
     h.expect(w.Main:FindFirstChildOfClass("UIStroke") ~= nil).toBeTruthy()
     local body = w.Main:FindFirstChild("Body")
     local panel = body:FindFirstChild("ContentPanel")
-    -- content panel: SOLID lighter card (not frosted), clearly distinct from the darker window
+    -- content panel: lighter card; follows the acrylic config (frosted, not stuck solid); borderless
     h.expect(panel.BackgroundColor3.R8).toBe(R.Theme.Colors.card.R8)
-    h.expect(panel.BackgroundTransparency).toBe(0)                       -- solid
-    h.expect(panel.BackgroundTransparency < w.Main.BackgroundTransparency).toBeTruthy()  -- content more solid than window
-    -- rounded inset card, borderless, no frost gradient
+    h.expect(panel.BackgroundTransparency > 0).toBeTruthy()              -- follows acrylic config
     h.expect(panel:FindFirstChildOfClass("UICorner") ~= nil).toBeTruthy()
     h.expect(panel.Position.X.Offset > 0).toBeTruthy()
-    h.expect(panel:FindFirstChildOfClass("UIGradient")).toBe(nil)
     h.expect(panel:FindFirstChildOfClass("UIStroke")).toBe(nil)
     h.expect(w.AcrylicBlur).toBe(nil)
     h.expect(w.ContentScroll.Parent.Name).toBe("ContentPanel")
