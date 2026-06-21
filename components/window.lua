@@ -261,12 +261,23 @@ function Window.new(config)
     end
   end
 
-  local minimized = false
+  local fab
+  local function ensureFab()
+    if fab then return fab end
+    fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.primary,
+      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui), Create.corner(22) })
+    local fi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
+      Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
+    Icons.apply(fi, "gamepad-2", theme.Colors.primaryForeground)
+    maid:Give(fab.MouseButton1Click:Connect(function() api:Toggle() end))
+    return fab
+  end
+
   function api:Minimize()
     Overlay.closeAll()
-    minimized = not minimized
-    body.Visible = not minimized
-    Animate.to(main, "base", { Size = UDim2.new(0, width, 0, minimized and TITLE_H or height) })
+    visible = false
+    main.Visible = false
+    ensureFab().Visible = true
   end
   maid:Give(minBtn.MouseButton1Click:Connect(function() api:Minimize() end))
 
@@ -338,17 +349,8 @@ function Window.new(config)
   if config.AutoAdapt ~= false then api:AdaptToViewport() end
 
   -- mobile/touch floating toggle button
-  local fab
-  if config.FloatingToggle or UserInputService.TouchEnabled then
-    fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.primary,
-      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700,
-      Parent = Overlay.get(gui), Create.corner(22) })
-    local fi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
-      Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
-    Icons.apply(fi, "gamepad-2", theme.Colors.primaryForeground)
-    maid:Give(fab.MouseButton1Click:Connect(function() api:Toggle() end))
-  end
-  function api:SetFloatingToggleVisible(b) if fab then fab.Visible = b end end
+  if config.FloatingToggle or UserInputService.TouchEnabled then ensureFab() end
+  function api:SetFloatingToggleVisible(b) ensureFab().Visible = b end
 
   maid:Give(gui)
 
