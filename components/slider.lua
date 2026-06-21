@@ -22,8 +22,9 @@ function Slider.new(opts)
     return n
   end
 
+  local hasDesc = opts.Description ~= nil and opts.Description ~= ""
   local root = Create("Frame", { Name = "SliderRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, opts.Text and 44 or 24), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
+    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 58 or 44) or 24), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
   local valueLabel
   if opts.Text then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
@@ -33,6 +34,12 @@ function Slider.new(opts)
       TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Right,
       TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans, Size = UDim2.new(0, 40, 0, 16),
       Position = UDim2.new(1, -40, 0, 0), Parent = root })
+    if hasDesc then
+      Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Position = UDim2.new(0, 0, 0, 18), Size = UDim2.new(1, -40, 0, 18), Parent = root })
+    end
   end
   local track = Create("Frame", { Name = "Track", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
     Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 1, -10), Parent = root, Create.corner(3) })
@@ -61,6 +68,7 @@ function Slider.new(opts)
     fill.BackgroundColor3 = theme.Colors.primary
     handle.BackgroundColor3 = theme.Colors.foreground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     if valueLabel then valueLabel.TextColor3 = theme.Colors.mutedForeground end
   end)) end
 

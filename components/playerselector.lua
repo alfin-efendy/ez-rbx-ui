@@ -20,7 +20,7 @@ function PlayerSelector.new(opts)
   local current = names()
   local sb = SelectBox.new({
     Parent = opts.Parent, LayoutOrder = opts.LayoutOrder, Theme = opts.Theme, Config = opts.Config,
-    Flag = opts.Flag, Multi = opts.Multi, Text = opts.Text, Options = current,
+    Flag = opts.Flag, Multi = opts.Multi, Text = opts.Text, Description = opts.Description, Options = current,
     Default = opts.Multi and {} or current[1], Callback = opts.Callback, AccentReg = opts.AccentReg,
   })
   local function refresh(exclude)

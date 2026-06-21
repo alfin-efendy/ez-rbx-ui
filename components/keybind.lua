@@ -33,12 +33,20 @@ function Keybind.new(opts)
   local keyCode = "Unknown"
   local onPressed
 
+  local hasDesc = opts.Description ~= nil and opts.Description ~= ""
   local btn = Create("TextButton", { Name = "Keybind", AutoButtonColor = false, Text = "",
-    BackgroundColor3 = theme.Colors.surface, Size = UDim2.new(1, 0, 0, 34), LayoutOrder = opts.LayoutOrder or 0,
+    BackgroundColor3 = theme.Colors.surface, Size = UDim2.new(1, 0, 0, hasDesc and 50 or 34), LayoutOrder = opts.LayoutOrder or 0,
     Parent = opts.Parent, Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
   Create("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = opts.Text or "Keybind",
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -80, 1, 0), Parent = btn })
+    TextYAlignment = hasDesc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center, Font = Enum.Font.BuilderSans,
+    Position = UDim2.new(0, 0, 0, hasDesc and 8 or 0), Size = UDim2.new(1, -80, hasDesc and 0 or 1, hasDesc and 18 or 0), Parent = btn })
+  if hasDesc then
+    Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+      TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+      TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(1, -80, 0, 18), Parent = btn })
+  end
   local keyBox = Create("TextLabel", { Name = "Key", BackgroundColor3 = theme.Colors.input,
     Text = "...", TextColor3 = theme.Colors.foreground, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
     Size = UDim2.new(0, 70, 0, 22), Position = UDim2.new(1, -70, 0.5, -11), Parent = btn, Create.corner(theme.Radius.sm) })
@@ -71,6 +79,7 @@ function Keybind.new(opts)
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     btn.BackgroundColor3 = theme.Colors.surface
     local lab = btn:FindFirstChild("Label"); if lab then lab.TextColor3 = theme.Colors.foreground end
+    local de = btn:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     keyBox.BackgroundColor3 = theme.Colors.input; keyBox.TextColor3 = theme.Colors.foreground
   end)) end
 

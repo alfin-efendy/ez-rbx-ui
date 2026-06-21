@@ -30,17 +30,27 @@ function SelectBox.new(opts)
     return tostring(value or "Select")
   end
 
+  local hasDesc = opts.Description ~= nil and opts.Description ~= ""
   local btn = Create("TextButton", {
     Name = "SelectBox", AutoButtonColor = false, Text = "",
     BackgroundColor3 = theme.Colors.input, BackgroundTransparency = 0,
-    Size = UDim2.new(1, 0, 0, 32), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Size = UDim2.new(1, 0, 0, hasDesc and 52 or 32), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
     Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
   if opts.Text then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
-      TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans, Size = UDim2.new(0.5, -8, 1, 0), Parent = btn })
+      TextYAlignment = hasDesc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
+      TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(0, 0, 0, hasDesc and 8 or 0),
+      Size = UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0), Parent = btn })
+    if hasDesc then
+      Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Position = UDim2.new(0, 0, 0, 28), Size = UDim2.new(0.5, -8, 0, 18), Parent = btn })
+    end
   end
   local valueLabel = Create("TextLabel", { Name = "Value", BackgroundTransparency = 1, Text = display(),
     TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground,
@@ -175,6 +185,7 @@ function SelectBox.new(opts)
     btn.BackgroundColor3 = theme.Colors.input
     valueLabel.TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground
     local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local de = btn:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(caret, "chevron-down", theme.Colors.primary)
   end)) end
 
