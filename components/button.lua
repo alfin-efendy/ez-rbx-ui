@@ -59,7 +59,7 @@ function Button.new(opts)
     Animate.to(btn, "fast", { BackgroundTransparency = transparent and 1 or 0 })
   end))
   maid:Give(btn.MouseButton1Click:Connect(function()
-    if opts.Action == "ResetConfig" and opts.Window then opts.Window:ResetConfiguration() end
+    if opts.Action == "ResetConfig" and opts.Window and opts.Window.ResetConfiguration then opts.Window:ResetConfiguration() end
     if opts.Callback then opts.Callback() end
   end))
   maid:Give(btn)
