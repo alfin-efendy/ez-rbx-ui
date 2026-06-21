@@ -387,6 +387,17 @@ function Window.new(config)
     local shadow = main:FindFirstChild("HeaderShadow"); if shadow then shadow.BackgroundColor3 = theme.Colors.background end
     local line = sidebarHandle:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
     local grip = sidebarHandle:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
+    local grad = main:FindFirstChildOfClass("UIGradient")
+    if grad then
+      grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, theme.Colors.surface),
+        ColorSequenceKeypoint.new(1, theme.Colors.card),
+      })
+    end
+    local mstroke = main:FindFirstChildOfClass("UIStroke")
+    if mstroke then mstroke.Color = theme.Colors.border end
+    local noise = main:FindFirstChild("AcrylicNoise")
+    if noise then noise.ImageTransparency = (theme.Mode == "light") and 0.97 or 0.92 end
   end)
 
   local fab

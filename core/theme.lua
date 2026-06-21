@@ -35,7 +35,7 @@ local DEFAULT = {
 Theme.PALETTES = {
   dark = DEFAULT.Colors,
   light = {
-    background = rgb(255, 255, 255), card = rgb(255, 255, 255), surface = rgb(244, 244, 245),
+    background = rgb(250, 250, 250), card = rgb(255, 255, 255), surface = rgb(244, 244, 245),
     border = rgb(228, 228, 231), input = rgb(244, 244, 245), ring = rgb(24, 24, 27),
     mutedForeground = rgb(113, 113, 122), foreground = rgb(24, 24, 27),
     primary = rgb(24, 24, 27), primaryForeground = rgb(250, 250, 250),
