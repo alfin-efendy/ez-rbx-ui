@@ -16,6 +16,15 @@ local function keyName(k)
   return "Unknown"
 end
 
+-- Indexing Enum.KeyCode with an invalid/free-form string THROWS in real Roblox
+-- ("X is not a valid member of Enum.KeyCode") — and this runs on every keypress.
+-- Resolve once through a pcall so a bad name degrades to Unknown instead of erroring.
+local function toKeyCode(name)
+  local ok, kc = pcall(function() return Enum.KeyCode[name] end)
+  if ok and kc then return kc end
+  return Enum.KeyCode.Unknown
+end
+
 function Keybind.new(opts)
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
@@ -41,7 +50,7 @@ function Keybind.new(opts)
   local commit = Flag.bind(opts, keyName(opts.Default or "Unknown"), apply)
 
   local api = { Frame = btn }
-  function api.GetKey() return Enum.KeyCode[keyCode] end
+  function api.GetKey() return toKeyCode(keyCode) end
   function api.SetKey(k) commit(keyName(k)) end
   function api.OnPressed(fn) onPressed = fn end
   function api.Destroy() maid:DoCleanup() end
@@ -52,7 +61,7 @@ function Keybind.new(opts)
     if listening then
       listening = false
       commit(keyName(input.KeyCode))
-    elseif not gameProcessed and input.KeyCode == Enum.KeyCode[keyCode] then
+    elseif not gameProcessed and input.KeyCode == toKeyCode(keyCode) then
       if opts.Callback then opts.Callback() end
       if onPressed then onPressed() end
     end

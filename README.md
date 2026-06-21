@@ -90,8 +90,8 @@ Call these on a `tab` or an `accordion` (same API):
 | `AddImage(opts)` | `Image` (rbxassetid) or `Lucide` (icon name), `Height` |
 | `AddProgressBar(opts)` | `Default (0..1)` → `Get()/Set(p)` |
 | `AddTable(opts)` | `Columns, Rows` → `SetData(rows)/AddRow(row)/Clear()` |
-| `AddPlayerSelector(opts)` | `Text, Multi, Flag` (auto-updates on join/leave) |
-| `AddAccordion(opts)` | `Title, Icon, Expanded` → a collapsible host with the same `AddX` methods |
+| `AddPlayerSelector(opts)` | `Text, Multi, Flag` (auto-updates on join/leave) → `GetValue()/SetValue(v)/GetOptions()/Refresh()` |
+| `AddAccordion(opts)` | `Title, Icon, Expanded` → a collapsible host with the same `AddX` methods, plus `Toggle()/Expand()/Collapse()/IsExpanded()/SetTitle(s)/SetIcon(name)` |
 
 Any control with a `Flag` (and a window `Config`) auto-saves and restores its value, and is restored on `ResetConfiguration`.
 
@@ -111,7 +111,7 @@ Tokens live in `EzUI.Theme` (zinc dark palette, monochrome white primary). Overr
 EzUI:CreateWindow({ Theme = { Colors = { primary = Color3.fromRGB(59, 130, 246) } } })
 ```
 
-Token groups: `Colors` (`background, card, surface, border, input, ring, foreground, mutedForeground, primary, primaryForeground, destructive, success, warning, info`), `Radius`, `Spacing`, `Font`, `Motion`.
+Token groups: `Colors` (`background, card, surface, border, input, ring, foreground, mutedForeground, primary, primaryForeground, destructive, success, warning, info, switchTrackOff`), `Radius`, `Spacing`, `Font`, `Motion`. A partial override is deep-merged onto the defaults, so you only specify what you change.
 
 ---
 

@@ -47,6 +47,13 @@ function Accordion.new(opts)
   })
   Icons.apply(caret, "chevron-right", theme.Colors.mutedForeground)
 
+  local leadIcon
+  if opts.Icon then
+    leadIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
+      Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 24, 0.5, -8), Parent = header })
+    Icons.apply(leadIcon, opts.Icon, theme.Colors.foreground)
+  end
+  local titleX = opts.Icon and 46 or 24
   local title = Create("TextLabel", {
     Name = "Title",
     BackgroundTransparency = 1,
@@ -55,8 +62,8 @@ function Accordion.new(opts)
     TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.label.Size,
     Font = Enum.Font.BuilderSans,
-    Size = UDim2.new(1, -24, 1, 0),
-    Position = UDim2.new(0, 24, 0, 0),
+    Size = UDim2.new(1, -titleX, 1, 0),
+    Position = UDim2.new(0, titleX, 0, 0),
     Parent = header,
   })
 
@@ -102,7 +109,7 @@ function Accordion.new(opts)
   function api:Collapse() if expanded then expanded = false; applyHeight(true) end end
   function api:IsExpanded() return expanded end
   function api:SetTitle(s) title.Text = s end
-  function api:SetIcon(name) end -- optional leading icon slot; reserved
+  function api:SetIcon(name) if leadIcon then Icons.apply(leadIcon, name, theme.Colors.foreground) end end
 
   function api.MountRow(child)
     order = order + 1

@@ -15,7 +15,8 @@ local SIDEBAR_W = 150
 
 function Window.new(config)
   config = config or {}
-  local theme = config.Theme or DefaultTheme
+  -- merge a partial Theme override onto the defaults (verbatim use would crash on missing tokens)
+  local theme = (config.Theme and DefaultTheme.new(config.Theme)) or DefaultTheme
   local maid = Maid.new()
   local width = (config.Size and config.Size.Width) or 560
   local height = (config.Size and config.Size.Height) or 420
@@ -296,7 +297,7 @@ function Window.new(config)
   -- mobile/touch floating toggle button
   local fab
   if config.FloatingToggle or UserInputService.TouchEnabled then
-    fab = Create("ImageButton", { Name = "FloatingToggle", BackgroundColor3 = theme.Colors.primary,
+    fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.primary,
       Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700,
       Parent = Overlay.get(gui), Create.corner(22) })
     local fi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),

@@ -58,6 +58,19 @@ function Notification.show(opts)
       Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
   end
 
+  if opts.Action then
+    local act = opts.Action
+    local aBtn = Create("TextButton", { Name = "Action", AutoButtonColor = false,
+      BackgroundColor3 = theme.Colors.surface, Text = act.Text or act.Label or "Action",
+      TextColor3 = theme.Colors.foreground, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+      Size = UDim2.new(0, 96, 0, 24), LayoutOrder = 3, Parent = toast,
+      Create.corner(theme.Radius.sm) })
+    aBtn.MouseButton1Click:Connect(function()
+      if act.Callback then pcall(act.Callback) end
+      Notification.dismiss(id)
+    end)
+  end
+
   toasts[id] = { id = id, frame = toast, onDismiss = opts.OnDismiss }
   toast.BackgroundTransparency = 1
   Animate.to(toast, "base", { BackgroundTransparency = 0 })

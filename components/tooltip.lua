@@ -10,9 +10,10 @@ function Tooltip.attach(target, text, themeArg)
   local function show()
     if tip then return end
     local ap = target.AbsolutePosition
-    tip = Create("TextLabel", { Name = "Tooltip", BackgroundColor3 = theme.Colors.card,
+    tip = Create("TextLabel", { Name = "Tooltip", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
       Text = text, TextColor3 = theme.Colors.foreground, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      Size = UDim2.new(0, 8 + #text * 7, 0, 22), Position = UDim2.new(0, ap and ap.X or 0, 0, (ap and ap.Y or 0) - 26),
+      Size = UDim2.new(0, 0, 0, 22), AutomaticSize = Enum.AutomaticSize.X,
+      Position = UDim2.new(0, ap and ap.X or 0, 0, (ap and ap.Y or 0) - 26),
       ZIndex = 2000, Create.corner(theme.Radius.sm), Create.padding({ left = 6, right = 6 }) })
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = tip })
     Overlay.mount(tip)

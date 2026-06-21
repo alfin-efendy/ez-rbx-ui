@@ -33,7 +33,7 @@ function NumberBox.new(opts)
     Position = UDim2.new(0, 0, 0, hasLabel and 20 or 0), Size = UDim2.new(1, 0, 0, 30),
     Parent = root, Create.corner(theme.Radius.md) })
   local function stepBtn(name, icon, x)
-    local b = Create("ImageButton", { Name = name, BackgroundColor3 = theme.Colors.surface,
+    local b = Create("ImageButton", { Name = name, AutoButtonColor = false, BackgroundColor3 = theme.Colors.surface,
       Size = UDim2.new(0, 26, 1, -6), Position = x, Parent = box, Create.corner(theme.Radius.sm) })
     local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 14, 0, 14),
       Position = UDim2.new(0.5, -7, 0.5, -7), Parent = b })
