@@ -24,34 +24,33 @@ h.describe("notification", function()
     w:Notify({ Title = "A", Duration = 0 }); w:Notify({ Title = "B", Duration = 0 })
     h.expect(toastCount(gui)).toBe(2)
   end)
-  h.it("adds a type-tinted countdown bar for timed toasts, none for persistent", function()
+  h.it("countdown bar shrinks, pauses on hover, dismisses at zero", function()
     R.Notification.clearAll()
     local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
-    local realDelay = h.roblox.task.delay
-    h.roblox.task.delay = function() end -- keep timed toast alive so we can inspect it
-    R.Notification.show({ Title = "timed", Type = "success", Duration = 3000, Theme = R.Theme })
-    R.Notification.show({ Title = "sticky", Type = "info", Duration = 0, Theme = R.Theme })
-    h.roblox.task.delay = realDelay
-    local bars, tintOk = 0, false
-    for _, c in ipairs(root:GetChildren()) do
-      if c.Name == "ToastContainer" then
-        for _, t in ipairs(c:GetChildren()) do
-          if t.Name == "Toast" then
-            local p = t:FindFirstChild("Progress")
-            if p then bars = bars + 1; if p.BackgroundColor3 == R.Theme.Colors.success then tintOk = true end end
-          end
-        end
-      end
-    end
-    h.expect(bars).toBe(1)
-    h.expect(tintOk).toBe(true)
-  end)
-  h.it("timed toast auto-dismisses", function()
-    R.Notification.clearAll()
-    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
     local w = R.Window.new({ Title = "W", Parent = gui })
-    w:Notify({ Title = "Bye", Duration = 100 }) -- mock task.delay runs synchronously -> immediate dismiss
+    w:Notify({ Title = "t", Type = "success", Duration = 1000 }) -- total = 1s
+    local function cont() for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then return c end end end
+    local function bar() local c = cont(); for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then local p = t:FindFirstChild("Progress"); if p then return p end end end end
+    h.expect(bar() ~= nil).toBeTruthy()
+    h.expect(bar().BackgroundColor3).toBe(R.Theme.Colors.success)
+    h.mock.stepHeartbeat(0.5)
+    h.expect(math.abs(bar().Size.X.Scale - 0.5) < 0.12).toBeTruthy()
+    cont().MouseEnter:Fire()              -- pause
+    h.mock.stepHeartbeat(1.0)             -- would have dismissed if not paused
+    h.expect(bar() ~= nil).toBeTruthy()   -- still alive, bar frozen
+    cont().MouseLeave:Fire()              -- resume
+    h.mock.stepHeartbeat(1.0)             -- past remaining -> dismiss
     h.expect(toastCount(gui)).toBe(0)
+  end)
+  h.it("persistent toast has no countdown bar", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    w:Notify({ Title = "x", Duration = 0 })
+    local has = false
+    for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+      for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" and t:FindFirstChild("Progress") then has = true end end end end
+    h.expect(has).toBe(false)
   end)
 end)
 h.run()

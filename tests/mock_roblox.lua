@@ -188,6 +188,7 @@ function M.installInto(env, mock, strict)
     GetUserThumbnailAsync = function() return "rbxassetid://0" end,
   }
   local RunService = { RenderStepped = makeSignal(), Heartbeat = makeSignal() }
+  mock.stepHeartbeat = function(dt) RunService.Heartbeat:Fire(dt) end
   local services = { HttpService = HttpService, TweenService = TweenService, UserInputService = UserInputService, Players = Players, RunService = RunService }
   env.game = { GetService = function(_, name) return services[name] end, HttpGet = function() return "" end }
   env.TweenInfo = { new = function(t, style, dir) return { Time = t, EasingStyle = style, EasingDirection = dir } end }

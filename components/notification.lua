@@ -3,10 +3,12 @@
 -- stack to expand into a full list. Each toast is a CanvasGroup so it can fade.
 local Notification = {}
 local Create, DefaultTheme, Maid, Overlay, Animate, Icons
+local RunService = game:GetService("RunService")
 local container
 local order = {}   -- array of entries (oldest first, newest last)
 local seq = 0
 local expanded = false
+local stepConn
 
 function Notification.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Animate = R.Animate; Icons = R.Icons
@@ -27,15 +29,27 @@ local function ensureContainer()
   })
   container.MouseEnter:Connect(function()
     expanded = true
-    for _, e in ipairs(order) do if e.progressTween then pcall(function() e.progressTween:Pause() end) end end
+    for _, e in ipairs(order) do e.paused = true end
     Notification.relayout()
   end)
   container.MouseLeave:Connect(function()
     expanded = false
-    for _, e in ipairs(order) do if e.progressTween then pcall(function() e.progressTween:Play() end) end end
+    for _, e in ipairs(order) do e.paused = false end
     Notification.relayout()
   end)
   Overlay.mount(container)
+  if not stepConn then
+    stepConn = RunService.Heartbeat:Connect(function(dt)
+      for i = #order, 1, -1 do
+        local e = order[i]
+        if e.total and not e.paused then
+          e.remaining = e.remaining - dt
+          if e.bar then e.bar.Size = UDim2.new(math.max(0, e.remaining / e.total), 0, 0, 3) end
+          if e.remaining <= 0 then Notification.dismiss(e.id) end
+        end
+      end
+    end)
+  end
   return container
 end
 
@@ -117,11 +131,11 @@ function Notification.show(opts)
   Notification.relayout()         -- slides it from off-screen to its slot + fades in
 
   if (opts.Duration or 4000) > 0 then
+    local total = (opts.Duration or 4000) / 1000
     local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
       Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
-    order[#order].progressTween = Animate.to(bar, (opts.Duration or 4000) / 1000,
-      { Size = UDim2.new(0, 0, 0, 3) }, Enum.EasingStyle.Linear)
-    task.delay((opts.Duration or 4000) / 1000, function() Notification.dismiss(id) end)
+    local e = order[#order]
+    e.total = total; e.remaining = total; e.paused = false; e.bar = bar
   end
   return id
 end
