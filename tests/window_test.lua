@@ -60,6 +60,20 @@ h.describe("window", function()
     local w = R.Window.new({ Title = "M", Parent = screen })
     h.expect(w.Main:FindFirstChild("ResizeGrip") ~= nil).toBeTruthy()
   end)
+  h.it("Close does a graceful full shutdown", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local fired = {}
+    local w = R.Window.new({ Title = "C", Parent = screen, Config = { FileName = "CL", AutoSave = false },
+      OnClose = function() fired.onClose = true end })
+    w:SetCloseCallback(function() fired.cb = true end)
+    local gui = w.Gui
+    w:Close()
+    h.expect(fired.onClose).toBeTruthy()
+    h.expect(fired.cb).toBeTruthy()
+    h.expect(gui._destroyed).toBeTruthy()  -- gui torn down
+    w:AddTab({ Name = "X" })                -- no-op after close, must not error
+    h.expect(w:IsVisible()).toBe(false)
+  end)
   h.it("ToggleKey input toggles visibility", function()
     local w = newWin()
     local uis = h.roblox.game:GetService("UserInputService")

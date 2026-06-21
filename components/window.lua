@@ -24,6 +24,8 @@ function Window.new(config)
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
+  local closed = false
+  local closeCallback
 
   -- optional config persistence (controls register their flags against this)
   local cfg = nil
@@ -171,6 +173,7 @@ function Window.new(config)
   end
 
   function api:AddTab(o)
+    if closed then return end
     o = o or {}
     o.LayoutOrder = nextSidebarOrder()
     return addTab(o)
@@ -225,10 +228,11 @@ function Window.new(config)
 
   function api:IsVisible() return visible end
   function api:Show()
+    if closed then return end
     visible = true; main.Visible = true
   end
-  function api:Hide() visible = false; main.Visible = false end
-  function api:Toggle() if visible then api:Hide() else api:Show() end end
+  function api:Hide() if closed then return end; visible = false; main.Visible = false end
+  function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
   function api:SetTitle(s) titleLabel.Text = s end
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
@@ -315,7 +319,7 @@ function Window.new(config)
     if not gameProcessed and input.KeyCode == toggleKey then api:Toggle() end
   end))
 
-  maid:Give(closeBtn.MouseButton1Click:Connect(function() api:Hide() end))
+  maid:Give(closeBtn.MouseButton1Click:Connect(function() api:Close() end))
 
   -- responsive: clamp to viewport (best-effort; no-op headless where workspace is nil)
   function api:AdaptToViewport()
@@ -344,7 +348,23 @@ function Window.new(config)
   function api:SetFloatingToggleVisible(b) if fab then fab.Visible = b end end
 
   maid:Give(gui)
-  function api.Destroy() maid:DoCleanup() end
+
+  function api:SetCloseCallback(fn) closeCallback = fn end
+  function api:Close()
+    if closed then return end
+    closed = true
+    visible = false
+    Animate.to(main, "fast", { BackgroundTransparency = 1 })
+    if config.OnClose then pcall(config.OnClose) end
+    if closeCallback then pcall(closeCallback) end
+    if cfg then pcall(function() cfg:Save() end) end
+    Overlay.closeAll()
+    if Notif then Notif.clearAll() end
+    maid:DoCleanup()       -- disconnects EVERY connection (drag, resize, toggle-key, close, ...)
+    gui:Destroy()
+    Overlay.reset()
+  end
+  function api.Destroy() api:Close() end
 
   return api
 end
