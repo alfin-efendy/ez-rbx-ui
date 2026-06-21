@@ -53,6 +53,13 @@ function Card.new(opts)
     end
   end
 
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    card.BackgroundColor3 = theme.Colors.card
+    local st = card:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+    local ti = card:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local bo = card:FindFirstChild("Body"); if bo then bo.TextColor3 = theme.Colors.mutedForeground end
+  end)) end
+
   maid:Give(card)
   return { Frame = card, Destroy = function() maid:DoCleanup() end }
 end
