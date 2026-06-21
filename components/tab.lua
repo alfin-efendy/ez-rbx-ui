@@ -29,14 +29,14 @@ function Tab.new(opts)
   })
   local indicator = Create("Frame", {
     Name = "Active", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
-    Size = UDim2.new(0, 3, 0, 18), Position = UDim2.new(0, -4, 0.5, -9), Visible = false, ZIndex = 2,
+    Size = UDim2.new(0, 3, 0, 18), Position = UDim2.new(0, -10, 0.5, -9), Visible = false, ZIndex = 2,
     Parent = button, Create.corner(2),
   })
   local icon = Create("ImageLabel", {
     Name = "Icon",
     BackgroundTransparency = 1,
     Size = UDim2.new(0, 16, 0, 16),
-    Position = UDim2.new(0, 0, 0.5, -8),
+    Position = UDim2.new(0, 4, 0.5, -8),
     Parent = button,
   })
   if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) else icon.Visible = false end
@@ -48,8 +48,8 @@ function Tab.new(opts)
     TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.label.Size,
     Font = Enum.Font.BuilderSans,
-    Size = UDim2.new(1, opts.Icon and -26 or 0, 1, 0),
-    Position = UDim2.new(0, opts.Icon and 26 or 0, 0, 0),
+    Size = UDim2.new(1, opts.Icon and -30 or -6, 1, 0),
+    Position = UDim2.new(0, opts.Icon and 30 or 6, 0, 0),
     Parent = button,
   })
 
