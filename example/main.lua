@@ -39,6 +39,15 @@ require("menu/components/progressbar")(window, display)
 require("menu/components/table")(window, display)
 require("menu/components/card")(window, display)
 
+local containers = window:AddTabGroup("Containers")
+require("menu/components/accordion")(window, containers)
+require("menu/components/resizable")(window, containers)
+
+local overlays = window:AddTabGroup("Overlays")
+require("menu/components/tooltip")(window, overlays)
+require("menu/components/dialog")(window, overlays)
+require("menu/components/notification")(window, overlays)
+
 require("menu/settings")(window)
 require("menu/credits")(window)
 
