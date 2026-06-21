@@ -18,7 +18,8 @@ local MIN_W, MIN_H = 380, 260
 function Window.new(config)
   config = config or {}
   -- merge a partial Theme override onto the defaults (verbatim use would crash on missing tokens)
-  local theme = (config.Theme and DefaultTheme.new(config.Theme)) or DefaultTheme
+  local theme = DefaultTheme.new(config.Theme or {})
+  if config.Mode == "light" then DefaultTheme.applyMode(theme, "light") else theme.Mode = "dark" end
   local maid = Maid.new()
   local width = (config.Size and config.Size.Width) or 560
   local height = (config.Size and config.Size.Height) or 420

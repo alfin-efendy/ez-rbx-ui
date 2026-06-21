@@ -32,7 +32,7 @@ h.describe("notification", function()
     local function cont() for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then return c end end end
     local function bar() local c = cont(); for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then local p = t:FindFirstChild("Progress"); if p then return p end end end end
     h.expect(bar() ~= nil).toBeTruthy()
-    h.expect(bar().BackgroundColor3).toBe(R.Theme.Colors.success)
+    h.expect(bar().BackgroundColor3.G8).toBe(R.Theme.Colors.success.G8) -- success tint (compare by value; window deep-copies its theme)
     h.mock.stepHeartbeat(0.5)
     h.expect(math.abs(bar().Size.X.Scale - 0.5) < 0.12).toBeTruthy()
     cont().MouseEnter:Fire()              -- pause

@@ -23,6 +23,18 @@ h.describe("theme", function()
     h.expect(Theme.Colors.primary.R8).toBe(250) -- default untouched
     h.expect(t.Colors.background.R8).toBe(9)     -- inherited
   end)
+  h.it("ships dark + light palettes", function()
+    h.expect(Theme.PALETTES.dark ~= nil).toBeTruthy()
+    h.expect(Theme.PALETTES.light ~= nil).toBeTruthy()
+  end)
+  h.it("applyMode swaps base tokens in place but keeps the accent", function()
+    local t = Theme.new()
+    t.Colors.primary = h.roblox.Color3.fromRGB(1, 2, 3) -- a custom accent
+    Theme.applyMode(t, "light")
+    h.expect(t.Colors.background.R8).toBe(255)
+    h.expect(t.Colors.foreground.R8).toBe(24)
+    h.expect(t.Colors.primary.R8).toBe(1) -- accent preserved
+  end)
 end)
 
 h.run()

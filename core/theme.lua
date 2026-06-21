@@ -32,6 +32,28 @@ local DEFAULT = {
   Motion = { fast = 0.12, base = 0.18, slow = 0.28 },
 }
 
+Theme.PALETTES = {
+  dark = DEFAULT.Colors,
+  light = {
+    background = rgb(255, 255, 255), card = rgb(255, 255, 255), surface = rgb(244, 244, 245),
+    border = rgb(228, 228, 231), input = rgb(244, 244, 245), ring = rgb(24, 24, 27),
+    mutedForeground = rgb(113, 113, 122), foreground = rgb(24, 24, 27),
+    primary = rgb(24, 24, 27), primaryForeground = rgb(250, 250, 250),
+    destructive = rgb(239, 68, 68), success = rgb(34, 197, 94), warning = rgb(234, 179, 8),
+    info = rgb(59, 130, 246), switchTrackOff = rgb(228, 228, 231),
+  },
+}
+
+-- swap base+semantic tokens in place, preserving the live accent (primary/primaryForeground)
+function Theme.applyMode(theme, mode)
+  local p = Theme.PALETTES[mode] or Theme.PALETTES.dark
+  for k, v in pairs(p) do
+    if k ~= "primary" and k ~= "primaryForeground" then theme.Colors[k] = v end
+  end
+  theme.Mode = mode
+  return theme
+end
+
 local function deepMerge(base, over)
   local out = {}
   for k, v in pairs(base) do
