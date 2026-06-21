@@ -2,9 +2,13 @@ local h = require("tests.helper")
 local Icons = h.requireModule("core.icons")
 
 h.describe("icons", function()
-  h.it("seed set includes chrome icons", function()
+  h.it("curated set includes chrome icons", function()
     h.expect(Icons.data["chevron-right"] ~= nil).toBeTruthy()
-    h.expect(Icons.data["house"] ~= nil).toBeTruthy()
+    h.expect(Icons.data["home"] ~= nil).toBeTruthy()
+  end)
+  h.it("house alias resolves to home", function()
+    h.expect(Icons.data["house"]).toBeNil()       -- not a raw data key
+    h.expect(Icons.get("house") ~= nil).toBeTruthy() -- but get() aliases it
   end)
   h.it("get returns rbxassetid + both rect props", function()
     local a = Icons.get("house")

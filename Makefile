@@ -19,3 +19,8 @@ run: build
 test:
 	@echo "Running headless tests..."
 	@for f in tests/*_test.lua; do echo "-- $$f"; lua $$f || exit 1; done
+
+.PHONY: icons
+icons:
+	@echo "Generating curated icon table..."
+	@node scripts/build-icons.mjs
