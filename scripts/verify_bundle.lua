@@ -123,6 +123,15 @@ w:SetMode("dark")
 assert(type(w:SaveConfiguration()) == "boolean", "SaveConfiguration")
 assert(type(w:LoadConfiguration()) == "boolean", "LoadConfiguration")
 
+-- R5: light-mode acrylic re-skin + reference simple FAB
+w:SetMode("light")
+assert(w.Main:FindFirstChildOfClass("UIGradient"), "no acrylic gradient")
+w:SetMode("dark")
+local w4 = EzUI:CreateWindow({ Title = "FabRef", Parent = screen, FloatingToggle = true,
+  Config = { FileName = "Verify4", AutoSave = false } })
+local fab4; for _, c in ipairs(w4.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab4 = c end end
+assert(fab4 and fab4:FindFirstChild("Chevron"), "no simple FAB chevron")
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error

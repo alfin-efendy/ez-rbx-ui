@@ -6,6 +6,8 @@ return function(window)
     Callback = function(m) window:SetMode(m == "Light" and "light" or "dark") end })
   tab:AddColorPicker({ Text = "Accent color", Default = Color3.fromRGB(99, 102, 241),
     Callback = function(c) window:SetAccent(c) end })
+  tab:AddSelectBox({ Text = "Floating button", Options = { "simple", "square", "circle" }, Default = "simple",
+    Callback = function(t) window:SetFloatingToggle({ Type = t }) end })
   tab:AddSlider({ Text = "UI scale (%)", Min = 80, Max = 130, Default = 100,
     Callback = function(v) window:SetUIScale(v / 100) end })
   tab:AddSlider({ Text = "Acrylic transparency (%)", Min = 0, Max = 60, Default = 12,
