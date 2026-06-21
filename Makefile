@@ -24,3 +24,7 @@ test:
 icons:
 	@echo "Generating curated icon table..."
 	@node scripts/build-icons.mjs
+
+.PHONY: check
+check: build test
+	@echo "Foundation check OK."
