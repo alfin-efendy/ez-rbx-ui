@@ -56,13 +56,16 @@ function Window.new(config)
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
   -- acrylic transparency: content panel lighter+more see-through; window/chrome darker+more solid (~0.6x)
   local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
-  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.35
+  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.3
+  -- chrome (window/header/menu) is clearly darker than the content card in BOTH modes:
+  -- dark = background (near-black), light = surface (grey, vs the white card).
+  local function chromeColor() return (theme.Mode == "light") and theme.Colors.surface or theme.Colors.background end
 
   local main = Create("Frame", {
     Name = "Main",
     Size = UDim2.new(0, width, 0, height),
     Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2),
-    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = chromeT,
+    BackgroundColor3 = chromeColor(), BackgroundTransparency = chromeT,
     BorderSizePixel = 0, ClipsDescendants = true,
     Parent = gui,
     Create.corner(theme.Radius.window),
@@ -148,7 +151,7 @@ function Window.new(config)
     Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
   Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT, noStroke = true,
-    base = theme.Colors.card, gradientTop = theme.Colors.surface, gradientBottom = theme.Colors.card })
+    base = theme.Colors.card, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
     BackgroundTransparency = 1,
@@ -301,7 +304,7 @@ function Window.new(config)
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetAcrylicTransparency(n)
     contentPanel.BackgroundTransparency = n
-    main.BackgroundTransparency = n * 0.35
+    main.BackgroundTransparency = n * 0.3
     return n
   end
   function api:SetToggleKey(k) toggleKey = k; return k end
@@ -409,7 +412,7 @@ function Window.new(config)
   -- window-shell live re-skin (mode/accent)
   themer.register(function()
     local ms = main:FindFirstChildOfClass("UIStroke"); if ms then ms.Color = theme.Colors.border end
-    main.BackgroundColor3 = theme.Colors.background
+    main.BackgroundColor3 = chromeColor()
     titleLabel.TextColor3 = theme.Colors.foreground
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
