@@ -10,4 +10,8 @@ return function(window, host)
   tab:AddButton({ Text = "With icon", Icon = "play" })
   tab:AddButton({ Text = "Reset config", Variant = "destructive", Action = "ResetConfig" })
   tab:AddParagraph("Button variants: default/secondary/outline/ghost/destructive, optional Icon, and Action='ResetConfig'.")
+  local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
+  acc:AddButton({ Text = "Action" })
+  local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
+  acc2:AddButton({ Text = "Action" })
 end

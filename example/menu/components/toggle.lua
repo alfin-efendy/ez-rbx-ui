@@ -7,4 +7,8 @@ return function(window, host)
   tab:AddSection("Persistence (Flag)")
   tab:AddToggle({ Text = "Remember me", Flag = "ex_toggle", Default = true })
   tab:AddParagraph("Flag-bound controls auto-save to the config file and restore on next load.")
+  local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
+  acc:AddToggle({ Text = "Nested toggle", Default = true })
+  local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
+  acc2:AddToggle({ Text = "Nested toggle", Default = false })
 end

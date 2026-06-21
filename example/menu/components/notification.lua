@@ -10,4 +10,8 @@ return function(window, host)
     window:Notify({ Title = "Item deleted", Type = "warning", Action = { Text = "Undo", Callback = function() window:ShowSuccess({ Title = "Restored" }) end } })
   end })
   tab:AddParagraph("ShowSuccess/Warning/Error/Info + Notify{Action=…}; toasts have a countdown that pauses on hover.")
+  local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
+  acc:AddButton({ Text = "Notify", Callback = function() window:ShowInfo({ Title = "Hi" }) end })
+  local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
+  acc2:AddButton({ Text = "Notify", Callback = function() window:ShowInfo({ Title = "Hi" }) end })
 end
