@@ -2,11 +2,12 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
+  Notif = R.Notification
 end
 
 local TITLE_H = 40
@@ -143,6 +144,13 @@ function Window.new(config)
   function api:Toggle() if visible then api:Hide() else api:Show() end end
   function api:SetTitle(s) titleLabel.Text = s end
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
+  function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
+  function api:ShowSuccess(o) o = o or {}; o.Type = "success"; return api:Notify(o) end
+  function api:ShowWarning(o) o = o or {}; o.Type = "warning"; return api:Notify(o) end
+  function api:ShowError(o) o = o or {}; o.Type = "error"; return api:Notify(o) end
+  function api:ShowInfo(o) o = o or {}; o.Type = "info"; return api:Notify(o) end
+  function api:DismissNotification(id) Notif.dismiss(id) end
+  function api:ClearNotifications() Notif.clearAll() end
 
   local minimized = false
   function api:Minimize()

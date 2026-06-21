@@ -119,6 +119,8 @@ function M.installInto(env, mock, strict)
     SortOrder = enumNs({ "LayoutOrder", "Name" }),
     TextXAlignment = enumNs({ "Left", "Center", "Right" }),
     TextYAlignment = enumNs({ "Top", "Center", "Bottom" }),
+    VerticalAlignment = enumNs({ "Top", "Center", "Bottom" }),
+    HorizontalAlignment = enumNs({ "Left", "Center", "Right" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
     KeyCode = enumNs({ "RightControl", "E", "P", "Insert", "Unknown" }),
     UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard" }),
