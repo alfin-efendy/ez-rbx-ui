@@ -88,6 +88,19 @@ local accCard = t2:AddAccordion({ Title = "Card" }); accCard:Expand()
 assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
 
 w:Minimize() -- hides window + shows floating toggle
+-- R3 Plan C: lock, advanced dropdown, profiles, tag, card, toast bar
+local lockBtn = t:AddButton({ Text = "L", Locked = true })
+assert(lockBtn.Frame:FindFirstChild("LockShield"), "no lock shield")
+w:LockAll(); w:UnlockAll()
+local adv = t:AddSelectBox({ Text = "Adv", AllowNone = true,
+  Options = { { Value = "A", Icon = "star", Desc = "a" }, { Divider = true }, { Value = "B" } } })
+adv.Open(); adv.Close()
+w:UseConfigProfile("PvP"); assert(#w:ConfigProfiles() >= 1, "no profiles")
+local tag = w:Tag({ Text = "Beta", Icon = "star" }); tag.SetText("RC"); tag.Destroy()
+local card = t:AddCard({ Title = "C", Body = "b", Buttons = { { Text = "OK" } } })
+assert(card.Frame:FindFirstChild("Title"), "no card title")
+w:Notify({ Title = "timed", Type = "success", Duration = 2000 }) -- progress bar path
+
 -- R3 Plan B: live accent + settings APIs
 w:SetAccent("Indigo")
 w:SetUIScale(1.1)

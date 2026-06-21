@@ -27,6 +27,12 @@ return function(window)
   local counter = tab:AddLabel("Clicks: 0")
   tab:AddButton({ Text = "Increment", Callback = function() count = count + 1; counter.SetText("Clicks: " .. count) end })
 
+  tab:AddSection("Locked + advanced dropdown")
+  tab:AddButton({ Text = "Locked button", Locked = true })
+  tab:AddSelectBox({ Text = "Weapon", AllowNone = true, Options = {
+    { Value = "Bow", Icon = "target", Desc = "Ranged" }, { Divider = true },
+    { Value = "Shield", Icon = "shield", Desc = "Defense" } } })
+
   tab:AddSection("Dependent select")
   local detail = tab:AddSelectBox({ Text = "Detail", Options = { "Sword", "Axe" }, Default = "Sword" })
   tab:AddSelectBox({ Text = "Category", Options = { "Weapon", "Armor" }, Default = "Weapon",

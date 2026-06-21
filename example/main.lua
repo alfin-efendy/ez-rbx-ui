@@ -28,4 +28,5 @@ local menus = {
 }
 for _, build in ipairs(menus) do build(window) end
 
+window:Tag({ Text = "v3", Icon = "sparkles" })
 window:ShowInfo({ Title = "Welcome", Message = "EzUI demo loaded. Press RightControl to toggle.", Duration = 5000 })

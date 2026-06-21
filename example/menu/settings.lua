@@ -18,6 +18,10 @@ return function(window)
   tab:AddKeybind({ Text = "Toggle UI key", Default = Enum.KeyCode.RightControl,
     Callback = function() window:Toggle() end })
 
+  tab:AddSection("Profiles")
+  tab:AddSelectBox({ Text = "Config profile", Options = window:ConfigProfiles(), Default = "Default",
+    Callback = function(name) window:UseConfigProfile(name) end })
+
   tab:AddSection("Danger zone")
   tab:AddButton({ Text = "Reset all settings", Variant = "destructive",
     Callback = function() window:ResetConfiguration({ Confirm = true }) end })
