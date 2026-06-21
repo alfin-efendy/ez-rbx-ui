@@ -47,6 +47,16 @@ h.describe("selectbox", function()
     s.SetValue({ "A", "C" })
     h.expect(#s.GetValue()).toBe(2)
   end)
+  h.it("selected option uses a surface highlight + foreground text (not accent)", function()
+    local ov = Overlay.get(h.roblox.Instance.new("ScreenGui"))
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A" })
+    sb.Open()
+    local dd; for _, c in ipairs(ov:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local optA; for _, c in ipairs(dd:GetChildren()) do if c.Name == "Opt" and c:GetAttribute("OptValue") == "A" then optA = c end end
+    h.expect(optA.BackgroundTransparency).toBe(0)
+    h.expect(optA.BackgroundColor3).toBe(R.Theme.Colors.surface)
+    h.expect(optA:FindFirstChild("OptLabel").TextColor3).toBe(R.Theme.Colors.foreground)
+  end)
   h.it("renders per-item icon/desc and a divider, and AllowNone deselects", function()
     local ov = Overlay.get(h.roblox.Instance.new("ScreenGui"))
     local sb = SelectBox.new({ Parent = Create("Frame", {}),

@@ -116,14 +116,15 @@ function SelectBox.new(opts)
           Size = UDim2.new(1, -8, 0, 1), LayoutOrder = i, ZIndex = 1002, Parent = dropdown })
       else
         local rowH = e.desc and 38 or 26
+        local sel = isSelected(e.value)
         local o = Create("TextButton", { Name = "Opt", AutoButtonColor = false, Text = "",
-          BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 1, ZIndex = 1002,
+          BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = sel and 0 or 1, ZIndex = 1002,
           Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = i, Parent = dropdown, Create.corner(theme.Radius.sm),
           Create.padding({ left = 6, right = 6 }) })
         o:SetAttribute("OptValue", e.value)
         local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
           Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), Parent = o })
-        if isSelected(e.value) then Icons.apply(check, "check", theme.Colors.primary) else check.Visible = false end
+        if sel then Icons.apply(check, "check", theme.Colors.foreground) else check.Visible = false end
         local textX = 20
         if e.icon then
           local lead = Create("ImageLabel", { Name = "Lead", BackgroundTransparency = 1, ZIndex = 1003,
@@ -132,7 +133,7 @@ function SelectBox.new(opts)
           textX = 40
         end
         Create("TextLabel", { Name = "OptLabel", BackgroundTransparency = 1, Text = e.value, ZIndex = 1003,
-          TextColor3 = isSelected(e.value) and theme.Colors.primary or theme.Colors.foreground,
+          TextColor3 = theme.Colors.foreground,
           TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
           Size = UDim2.new(1, -textX - 4, e.desc and 0 or 1, e.desc and 16 or 0),
           Position = UDim2.new(0, textX, 0, e.desc and 4 or 0), Parent = o })
