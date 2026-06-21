@@ -117,7 +117,7 @@ w:SetNotificationsEnabled(true)
 -- R4 Plan B: live light/dark + accent preserved + save/load
 w:SetAccent(Color3.fromRGB(120, 80, 200))
 w:SetMode("light"); assert(w:GetMode() == "light", "mode not light")
-assert(w.Main:FindFirstChild("TitleBar").BackgroundColor3.R > 0.9, "shell not light")
+assert(w.Main.BackgroundColor3.R > 0.9, "shell not light")
 w:SetMode("dark")
 assert(type(w:SaveConfiguration()) == "boolean", "SaveConfiguration")
 assert(type(w:LoadConfiguration()) == "boolean", "LoadConfiguration")
@@ -162,7 +162,7 @@ w:SetAccent("Violet")
 
 -- R8: Adaptive accent follows mode + Custom luminance foreground
 w:SetAccent("Adaptive"); w:SetMode("light")
-assert(w.Main:FindFirstChild("TitleBar").BackgroundColor3.R > 0.9, "light shell")
+assert(w.Main.BackgroundColor3.R > 0.9, "light shell")
 w:SetAccent(Color3.fromRGB(255, 255, 255)) -- white custom accent (luminance foreground path)
 w:SetMode("dark"); w:SetAccent("Adaptive")
 

@@ -53,24 +53,26 @@ function Window.new(config)
     Parent = config.Parent,
   })
 
+  local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
+  -- acrylic transparency: content panel lighter+more see-through; window/chrome darker+more solid (~0.6x)
+  local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
+  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.6
+
   local main = Create("Frame", {
     Name = "Main",
     Size = UDim2.new(0, width, 0, height),
     Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2),
-    BackgroundTransparency = 1, BorderSizePixel = 0, ClipsDescendants = true,
+    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = chromeT,
+    BorderSizePixel = 0, ClipsDescendants = true,
     Parent = gui,
     Create.corner(theme.Radius.window),
   })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = main })
-  local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
-  -- acrylic transparency: content panel lighter+more see-through; chrome darker+more solid (~0.6x)
-  local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
-  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.6
 
   -- title bar
   local titleBar = Create("Frame", {
     Name = "TitleBar",
-    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = chromeT,
+    BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, TITLE_H),
     Parent = main,
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
@@ -112,9 +114,6 @@ function Window.new(config)
     Size = UDim2.new(1, 0, 1, -TITLE_H),
     Parent = main,
   })
-  local sidebarBg = Create("Frame", { Name = "SidebarBg", BackgroundColor3 = theme.Colors.background,
-    BackgroundTransparency = chromeT, BorderSizePixel = 0,
-    Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(0, sidebarW, 1, 0), Parent = body })
   -- sidebar search box (pinned above the tab list)
   local searchBox = Create("Frame", {
     Name = "Search", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
@@ -141,11 +140,12 @@ function Window.new(config)
     Create.listLayout({ Padding = 4 }),
     Create.padding({ all = 8 }),
   })
+  local cgap = theme.Spacing.gap
   local contentPanel = Create("Frame", {
     Name = "ContentPanel", BorderSizePixel = 0,
-    Position = UDim2.new(0, sidebarW, 0, 0),
-    Size = UDim2.new(1, -sidebarW, 1, 0),
-    Parent = body, ClipsDescendants = true,
+    Position = UDim2.new(0, sidebarW + cgap, 0, cgap),
+    Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
+    Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
   Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT,
     base = theme.Colors.card, gradientTop = theme.Colors.surface, gradientBottom = theme.Colors.card })
@@ -171,10 +171,9 @@ function Window.new(config)
   local function applySidebarWidth(wpx)
     sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
-    sidebarBg.Size = UDim2.new(0, sidebarW, 1, 0)
     searchBox.Size = UDim2.new(0, sidebarW - 16, 0, 24)
-    contentPanel.Position = UDim2.new(0, sidebarW, 0, 0)
-    contentPanel.Size = UDim2.new(1, -sidebarW, 1, 0)
+    contentPanel.Position = UDim2.new(0, sidebarW + cgap, 0, cgap)
+    contentPanel.Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2)
     sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
   end
   local sbDrag
@@ -302,8 +301,7 @@ function Window.new(config)
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetAcrylicTransparency(n)
     contentPanel.BackgroundTransparency = n
-    titleBar.BackgroundTransparency = n * 0.6
-    sidebarBg.BackgroundTransparency = n * 0.6
+    main.BackgroundTransparency = n * 0.6
     return n
   end
   function api:SetToggleKey(k) toggleKey = k; return k end
@@ -411,8 +409,7 @@ function Window.new(config)
   -- window-shell live re-skin (mode/accent)
   themer.register(function()
     local ms = main:FindFirstChildOfClass("UIStroke"); if ms then ms.Color = theme.Colors.border end
-    titleBar.BackgroundColor3 = theme.Colors.background
-    sidebarBg.BackgroundColor3 = theme.Colors.background
+    main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
