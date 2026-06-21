@@ -35,6 +35,12 @@ function Button.new(opts)
   })
   if stroke then Create("UIStroke", { Color = stroke, Thickness = 1, Parent = btn }) end
 
+  local scale = Create("UIScale", { Scale = 1, Parent = btn })
+  local hovering = false
+  local bgNormal = transparent and 1 or 0
+  local bgHover = transparent and 0.92 or 0.12
+  local bgPressed = transparent and 0.85 or 0.2
+
   local hasIcon = opts.Icon ~= nil
   if hasIcon then
     local img = Create("ImageLabel", {
@@ -53,10 +59,21 @@ function Button.new(opts)
   })
 
   maid:Give(btn.MouseEnter:Connect(function()
-    Animate.to(btn, "fast", { BackgroundTransparency = transparent and 0.92 or 0.12 })
+    hovering = true
+    Animate.to(btn, "fast", { BackgroundTransparency = bgHover })
   end))
   maid:Give(btn.MouseLeave:Connect(function()
-    Animate.to(btn, "fast", { BackgroundTransparency = transparent and 1 or 0 })
+    hovering = false
+    Animate.to(btn, "fast", { BackgroundTransparency = bgNormal })
+    Animate.to(scale, "fast", { Scale = 1 })
+  end))
+  maid:Give(btn.MouseButton1Down:Connect(function()
+    Animate.to(scale, "fast", { Scale = 0.97 })
+    Animate.to(btn, "fast", { BackgroundTransparency = bgPressed })
+  end))
+  maid:Give(btn.MouseButton1Up:Connect(function()
+    Animate.to(scale, "base", { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    Animate.to(btn, "fast", { BackgroundTransparency = hovering and bgHover or bgNormal })
   end))
   maid:Give(btn.MouseButton1Click:Connect(function()
     if opts.Action == "ResetConfig" and opts.Window and opts.Window.ResetConfiguration then opts.Window:ResetConfiguration() end
