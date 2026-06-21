@@ -12,7 +12,7 @@ local NOISE_ID = "rbxassetid://9968344105" -- subtle grain; verify in Studio, se
 
 function Acrylic.decorate(frame, theme, opts)
   opts = opts or {}
-  frame.BackgroundColor3 = theme.Colors.card
+  frame.BackgroundColor3 = opts.base or theme.Colors.card
   frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.12)
 
   if not frame:FindFirstChildOfClass("UIStroke") then
@@ -27,12 +27,27 @@ function Acrylic.decorate(frame, theme, opts)
     end
     if not frame:FindFirstChildOfClass("UIGradient") then
       Create("UIGradient", { Rotation = 90, Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, theme.Colors.surface),
-        ColorSequenceKeypoint.new(1, theme.Colors.card),
+        ColorSequenceKeypoint.new(0, opts.gradientTop or theme.Colors.surface),
+        ColorSequenceKeypoint.new(1, opts.gradientBottom or theme.Colors.card),
       }), Parent = frame })
     end
   end
   return frame
+end
+
+-- Real frosted blur: a Lighting BlurEffect toggled with window visibility. Headless-safe
+-- (when Lighting is unavailable the BlurEffect is simply left unparented).
+function Acrylic.blur(opts)
+  opts = opts or {}
+  local target = opts.size or 18
+  local blur = Create("BlurEffect", { Name = "EzUIAcrylicBlur", Size = target, Enabled = true })
+  local ok, Lighting = pcall(function() return game:GetService("Lighting") end)
+  if ok and Lighting then blur.Parent = Lighting end
+  return {
+    Instance = blur,
+    SetEnabled = function(on) blur.Enabled = on and true or false; blur.Size = on and target or 0 end,
+    Destroy = function() pcall(function() blur:Destroy() end) end,
+  }
 end
 
 return Acrylic
