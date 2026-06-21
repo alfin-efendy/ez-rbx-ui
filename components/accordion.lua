@@ -141,8 +141,6 @@ function Accordion.new(opts)
   end))
 
   maid:Give(header.MouseButton1Click:Connect(function() api:Toggle() end))
-  maid:Give(header.MouseEnter:Connect(function() Animate.to(container, "fast", { BackgroundColor3 = theme.Colors.surface }) end))
-  maid:Give(header.MouseLeave:Connect(function() Animate.to(container, "fast", { BackgroundColor3 = theme.Colors.card }) end))
   maid:Give(container)
 
   function api.Destroy() maid:DoCleanup() end
