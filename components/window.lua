@@ -379,15 +379,15 @@ function Window.new(config)
     return (lum > 0.55) and Color3.fromRGB(24, 24, 27) or Color3.fromRGB(250, 250, 250)
   end
   function api:SetAccent(nameOrColor)
-    if nameOrColor == "Adaptive" then
+    if type(nameOrColor) ~= "string" then -- a Color3 (typeof is unreliable under the mock)
+      theme.AccentName = "Custom"
+      theme.Colors.primary = nameOrColor
+      theme.Colors.primaryForeground = fgForColor(nameOrColor)
+    elseif nameOrColor == "Adaptive" then
       theme.AccentName = "Adaptive"
       local p = DefaultTheme.PALETTES[theme.Mode] or DefaultTheme.PALETTES.dark
       theme.Colors.primary = p.primary
       theme.Colors.primaryForeground = p.primaryForeground
-    elseif typeof(nameOrColor) == "Color3" then
-      theme.AccentName = "Custom"
-      theme.Colors.primary = nameOrColor
-      theme.Colors.primaryForeground = fgForColor(nameOrColor)
     else
       local a = Themer.accent(nameOrColor)
       if not a then return end

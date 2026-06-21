@@ -5,10 +5,10 @@ return function(window)
   tab:AddSelectBox({ Text = "Mode", Options = { "Dark", "Light" }, Default = "Dark",
     Callback = function(m) window:SetMode(m == "Light" and "light" or "dark") end })
   local accentPicker
-  tab:AddSelectBox({ Text = "Accent", Options = { "Mono", "Indigo", "Violet", "Emerald", "Sky", "Rose", "Custom" },
-    Default = "Mono", Callback = function(name)
+  tab:AddSelectBox({ Text = "Accent", Options = { "Adaptive", "Indigo", "Violet", "Emerald", "Sky", "Rose", "Custom" },
+    Default = "Adaptive", Callback = function(name)
       if name == "Custom" then
-        if accentPicker then accentPicker.Frame.Visible = true end
+        if accentPicker then accentPicker.Frame.Visible = true; window:SetAccent(accentPicker.GetColor()) end
       else
         if accentPicker then accentPicker.Frame.Visible = false end
         window:SetAccent(name)

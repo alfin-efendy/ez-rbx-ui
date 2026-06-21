@@ -161,6 +161,12 @@ local stx = t:AddSelectBox({ Text = "Mode", Options = { "A", "B" }, Default = "A
 assert(stx.Frame:FindFirstChild("Title"), "selectbox Title missing")
 w:SetAccent("Violet")
 
+-- R8: Adaptive accent follows mode + Custom luminance foreground
+w:SetAccent("Adaptive"); w:SetMode("light")
+assert(w.Main.BackgroundColor3.R > 0.9, "light shell")
+w:SetAccent(Color3.fromRGB(255, 255, 255)) -- white custom accent (luminance foreground path)
+w:SetMode("dark"); w:SetAccent("Adaptive")
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error
