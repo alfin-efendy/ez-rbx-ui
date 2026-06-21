@@ -30,6 +30,15 @@ require("menu/components/keybind")(window, inputs)
 require("menu/components/colorpicker")(window, inputs)
 require("menu/components/playerselector")(window, inputs)
 
+local display = window:AddTabGroup("Display")
+require("menu/components/label")(window, display)
+require("menu/components/paragraph")(window, display)
+require("menu/components/separator")(window, display)
+require("menu/components/image")(window, display)
+require("menu/components/progressbar")(window, display)
+require("menu/components/table")(window, display)
+require("menu/components/card")(window, display)
+
 require("menu/settings")(window)
 require("menu/credits")(window)
 
