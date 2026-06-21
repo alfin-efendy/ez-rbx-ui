@@ -272,10 +272,11 @@ h.describe("window", function()
     h.expect(panel.BackgroundColor3.R8).toBe(R.Theme.Colors.card.R8)
     h.expect(panel.BackgroundTransparency > 0).toBeTruthy()
     h.expect(w.Main.BackgroundTransparency < panel.BackgroundTransparency).toBeTruthy()  -- window more solid
-    -- content panel is a rounded inset card (not flush)
+    -- content panel is a rounded inset card (not flush), borderless
     h.expect(panel:FindFirstChildOfClass("UICorner") ~= nil).toBeTruthy()
     h.expect(panel.Position.X.Offset > 0).toBeTruthy()
     h.expect(panel:FindFirstChildOfClass("UIGradient") ~= nil).toBeTruthy()
+    h.expect(panel:FindFirstChildOfClass("UIStroke")).toBe(nil)  -- border removed
     h.expect(w.AcrylicBlur).toBe(nil)
     h.expect(w.ContentScroll.Parent.Name).toBe("ContentPanel")
   end)

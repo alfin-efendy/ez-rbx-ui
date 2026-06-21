@@ -15,7 +15,7 @@ function Acrylic.decorate(frame, theme, opts)
   frame.BackgroundColor3 = opts.base or theme.Colors.card
   frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.12)
 
-  if not frame:FindFirstChildOfClass("UIStroke") then
+  if not opts.noStroke and not frame:FindFirstChildOfClass("UIStroke") then
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = frame })
   end
 

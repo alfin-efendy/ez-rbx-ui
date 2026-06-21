@@ -56,7 +56,7 @@ function Window.new(config)
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
   -- acrylic transparency: content panel lighter+more see-through; window/chrome darker+more solid (~0.6x)
   local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
-  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.6
+  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.35
 
   local main = Create("Frame", {
     Name = "Main",
@@ -147,7 +147,7 @@ function Window.new(config)
     Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
     Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
-  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT,
+  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT, noStroke = true,
     base = theme.Colors.card, gradientTop = theme.Colors.surface, gradientBottom = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
@@ -301,7 +301,7 @@ function Window.new(config)
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetAcrylicTransparency(n)
     contentPanel.BackgroundTransparency = n
-    main.BackgroundTransparency = n * 0.6
+    main.BackgroundTransparency = n * 0.35
     return n
   end
   function api:SetToggleKey(k) toggleKey = k; return k end
