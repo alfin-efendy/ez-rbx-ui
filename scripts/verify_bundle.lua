@@ -87,6 +87,12 @@ local t2 = w2:AddTab({ Name = "T" })
 local accCard = t2:AddAccordion({ Title = "Card" }); accCard:Expand()
 assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
 
+-- R4 Plan A: sidebar grip, simple pill FAB with size/pos
+assert(w.Main:FindFirstChild("Body"):FindFirstChild("SidebarHandle"):FindFirstChild("Grip"), "no sidebar grip")
+local w3 = EzUI:CreateWindow({ Title = "Pill", Parent = screen, FloatingToggle = true,
+  Config = { FileName = "Verify3", AutoSave = false } })
+w3:SetFloatingToggle({ Type = "simple", Size = { Width = 140, Height = 38 }, Position = { X = 20, Y = -70 } })
+
 w:Minimize() -- hides window + shows floating toggle
 -- R3 Plan C: lock, advanced dropdown, profiles, tag, card, toast bar
 local lockBtn = t:AddButton({ Text = "L", Locked = true })
