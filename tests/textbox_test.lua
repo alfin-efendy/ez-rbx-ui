@@ -1,0 +1,20 @@
+local h = require("tests.helper")
+local R = h.loadLib()
+local TextBox, Create, Config = R.TextBox, R.Create, R.Config
+
+h.describe("textbox", function()
+  h.it("SetText/GetText round-trip and persist", function()
+    local cfg = Config.new({ FileName = "TB", AutoSave = false })
+    local tb = TextBox.new({ Parent = Create("Frame", {}), Text = "Name", Default = "Player", Flag = "name", Config = cfg })
+    h.expect(tb.GetText()).toBe("Player")
+    tb.SetText("Neo")
+    h.expect(tb.GetText()).toBe("Neo")
+    h.expect(cfg:Get("name")).toBe("Neo")
+  end)
+  h.it("copyable variant exposes a copy button", function()
+    local tb = TextBox.new({ Text = "Key", Default = "abc", Copyable = true })
+    h.expect(tb.Frame:FindFirstChild("Box"):FindFirstChild("Copy") ~= nil).toBeTruthy()
+  end)
+end)
+
+h.run()

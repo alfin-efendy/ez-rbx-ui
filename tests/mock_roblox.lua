@@ -35,7 +35,7 @@ local function newInstance(cls)
       if k == "GetAttribute" then return function(_, ak) return props["_attr_" .. ak] end end
       if k == "GetPropertyChangedSignal" then return function(_, p) signals["chg_" .. p] = signals["chg_" .. p] or makeSignal(); return signals["chg_" .. p] end end
       -- event fields created on demand
-      local ev = { MouseButton1Click = true, MouseEnter = true, MouseLeave = true, InputBegan = true, InputEnded = true, InputChanged = true, Activated = true, Completed = true, MouseButton1Down = true, MouseButton1Up = true, Changed = true }
+      local ev = { MouseButton1Click = true, MouseEnter = true, MouseLeave = true, InputBegan = true, InputEnded = true, InputChanged = true, Activated = true, Completed = true, MouseButton1Down = true, MouseButton1Up = true, Changed = true, FocusLost = true, Focused = true }
       if ev[k] then signals[k] = signals[k] or makeSignal(); return signals[k] end
       -- Roblox throws when reading an invalid member. Underscore-prefixed names are
       -- never valid Roblox members, so reading an UNSET one is a mock-ism leaking into
