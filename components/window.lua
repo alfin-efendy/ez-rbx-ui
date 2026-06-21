@@ -2,12 +2,12 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
-  Notif = R.Notification
+  Notif = R.Notification; Asset = R.Asset
 end
 
 local TITLE_H = 40
@@ -304,15 +304,67 @@ function Window.new(config)
   end
 
   local fab
+  local fabOpts = (type(config.FloatingToggle) == "table") and config.FloatingToggle or {}
   local function ensureFab()
     if fab then return fab end
-    fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.primary,
-      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui), Create.corner(22) })
-    local fi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
-      Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
-    Icons.apply(fi, "gamepad-2", theme.Colors.primaryForeground)
-    maid:Give(fab.MouseButton1Click:Connect(function() api:Toggle() end))
+    local kind = fabOpts.Type or "simple"
+    local resolved = Asset.image(fabOpts.Image)
+    fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundTransparency = 0,
+      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
+    fab:SetAttribute("FabType", kind)
+    if kind == "square" then
+      fab.BackgroundColor3 = theme.Colors.surface
+      Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
+      Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
+      local img = Create("ImageLabel", { BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+        Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3), Parent = fab, Create.corner(theme.Radius.md) })
+      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.foreground) end
+    elseif kind == "circle" then
+      fab.BackgroundColor3 = theme.Colors.primary
+      Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
+      local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
+      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
+    else -- simple
+      fab.BackgroundColor3 = theme.Colors.surface
+      Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.md), Parent = fab })
+      Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
+      local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
+      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.foreground) end
+    end
+    -- a click toggles; a drag (>6px) moves the FAB and suppresses that click's toggle
+    local moved = false
+    if fabOpts.Draggable ~= false then
+      local dragging, startPos, fabStart
+      maid:Give(fab.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+          dragging = true; moved = false; startPos = input.Position; fabStart = fab.Position
+        end
+      end))
+      maid:Give(UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+          local dx, dy = input.Position.X - startPos.X, input.Position.Y - startPos.Y
+          if math.abs(dx) > 6 or math.abs(dy) > 6 then moved = true end
+          fab.Position = UDim2.new(fabStart.X.Scale, fabStart.X.Offset + dx, fabStart.Y.Scale, fabStart.Y.Offset + dy)
+        end
+      end))
+      maid:Give(fab.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+      end))
+    end
+    maid:Give(fab.MouseButton1Click:Connect(function()
+      if moved then moved = false; return end
+      api:Toggle()
+    end))
     return fab
+  end
+  function api:SetFloatingToggle(opts)
+    local wasVisible = fab and fab.Visible
+    if fab then fab:Destroy(); fab = nil end
+    fabOpts = opts or {}
+    ensureFab()
+    fab.Visible = wasVisible ~= false
   end
 
   function api:Minimize()
