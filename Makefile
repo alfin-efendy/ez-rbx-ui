@@ -28,3 +28,8 @@ icons:
 .PHONY: check
 check: build test
 	@echo "Foundation check OK."
+
+.PHONY: stress
+stress:
+	@echo "Serving stress scene on :8081..."
+	@lua-bundler -e ./example/stress.lua -o ./output/stress.lua -s -p 8081;
