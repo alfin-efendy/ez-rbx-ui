@@ -301,6 +301,9 @@ function Window.new(config)
   function api:ClearNotifications() Notif.clearAll() end
 
   function api:ResetFlag(flag) if cfg then cfg:ResetFlag(flag) end end
+  function api:ConfigProfiles() return cfg and cfg:ListProfiles() or { "Default" } end
+  function api:UseConfigProfile(name) if cfg then cfg:SwitchProfile(name) end end
+
   function api:ResetConfiguration(o)
     o = o or {}
     if not cfg then return end

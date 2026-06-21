@@ -156,6 +156,11 @@ function M.installInto(env, mock, strict)
   env.isfolder = function(p) for k in pairs(mock.fs) do if k:sub(1, #p) == p then return true end end return false end
   env.makefolder = function() end
   env.delfile = function(p) mock.fs[p] = nil end
+  env.listfiles = function(dir)
+    local out = {}
+    for k in pairs(mock.fs) do if k:sub(1, #dir + 1) == dir .. "/" then out[#out + 1] = k end end
+    return out
+  end
 
   -- services
   local HttpService = {
