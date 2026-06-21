@@ -37,36 +37,36 @@ jobs:
             --entry ./main.lua \
             --output ./release/ez-rbx-ui.lua \
             --release
-            
+
+      - name: Verify bundle syntax
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lua5.1
+          lua5.1 -e "assert(loadfile('./release/ez-rbx-ui.lua')); print('bundle syntax ok')"
+
       - name: Create README for release
         run: |
           cat > release/README.md << 'EOF'
-          # EzUI Library - Release Files
+          # EzUI Library - Release
 
-          This release contains the bundled of EzUI Library.
+          Bundled, single-file build of EzUI (v2).
 
           ## Quick Installation
 
           ```lua
-          -- Load EzUI
           local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
 
-          -- Create a window
-          local window = EzUI.CreateWindow({
-              Name = "My UI",
-              Size = {Width = 500, Height = 400}
+          local Window = EzUI:CreateWindow({
+              Title = "My UI",
+              Size = { Width = 560, Height = 420 },
+              Acrylic = true,
           })
 
-          -- Add components
-          local tab = window:AddTab({Name = "Home", Icon = "🏠"})
+          local tab = Window:AddTab({ Name = "Home", Icon = "home" }) -- Lucide icon names
           tab:AddLabel("Welcome to EzUI!")
-          tab:AddButton("Click Me", function() print("Hello!") end)
+          tab:AddToggle({ Text = "Enable", Flag = "enable", Default = false })
+          tab:AddButton({ Text = "Click Me", Callback = function() print("Hello!") end })
 
-          -- Show notifications
-          window:ShowSuccess({
-              Title = "Ready!",
-              Message = "EzUI is loaded and ready to use"
-          })
+          Window:ShowSuccess({ Title = "Ready!", Message = "EzUI is loaded." })
           ```
 
           For complete documentation, visit: https://github.com/alfin-efendy/ez-rbx-ui
@@ -116,21 +116,19 @@ jobs:
             
             ## 📦 What's Included
             - Complete bundled library (`ez-rbx-ui.lua`)
-            - Individual components for advanced users
-            - Utility modules (Colors, Config)
-            - Usage examples and documentation
-            
+
             ## 🚀 Quick Start
             ```lua
             local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
             ```
-            
+
             ## ✨ Features
-            - 🎨 Dark mode design with 12 components
-            - 🔔 Toast notification system (Sonner-style)
-            - 💾 Configuration system with auto-save
-            - ⚡ Smooth animations and responsive design
-            - 🧩 Modular architecture
+            - 🎨 shadcn-inspired design, Fluent acrylic panel, Lucide icons
+            - 🧩 Full control set: toggle, slider, numberbox, select (multi), keybind, colorpicker, textbox, table, image, progressbar, player selector
+            - 🪟 Tab groups + full-text sidebar search, dialogs, draggable/resizable window, mobile floating toggle
+            - 🔔 Sonner-style toast notifications
+            - 💾 Flag-based config with auto-save/load + reset
+            - ⚡ Engine-driven flex layout + smooth tab/accordion transitions
             
             ## 📚 Documentation
             Visit the [repository](https://github.com/alfin-efendy/ez-rbx-ui) for complete documentation and examples.
