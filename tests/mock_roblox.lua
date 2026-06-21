@@ -36,6 +36,12 @@ local function newInstance(cls)
       -- event fields created on demand
       local ev = { MouseButton1Click = true, MouseEnter = true, MouseLeave = true, InputBegan = true, InputEnded = true, InputChanged = true, Activated = true, Completed = true, MouseButton1Down = true, MouseButton1Up = true, Changed = true }
       if ev[k] then signals[k] = signals[k] or makeSignal(); return signals[k] end
+      -- Roblox throws when reading an invalid member. Underscore-prefixed names are
+      -- never valid Roblox members, so reading an UNSET one is a mock-ism leaking into
+      -- production code (e.g. root._destroyed). Throw to catch it, like Roblox would.
+      if type(k) == "string" and k:sub(1, 1) == "_" then
+        error(tostring(k) .. " is not a valid member (mock strict: unset internal field read)", 2)
+      end
       return nil
     end,
     __newindex = function(_, k, v)

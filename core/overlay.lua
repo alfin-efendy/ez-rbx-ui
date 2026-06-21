@@ -6,7 +6,9 @@ local root = nil
 function Overlay.Init(R) Create = R.Create end
 
 function Overlay.get(parentGui)
-  if root and not root._destroyed then return root end
+  -- Roblox-safe liveness check: reading a non-existent member (e.g. a mock-only
+  -- "_destroyed" flag) THROWS on real Instances. A destroyed Instance has Parent=nil.
+  if root and root.Parent ~= nil then return root end
   root = Create("Frame", {
     Name = "EzUI_OverlayRoot",
     BackgroundTransparency = 1,
