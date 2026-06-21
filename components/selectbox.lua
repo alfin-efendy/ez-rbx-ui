@@ -9,6 +9,11 @@ end
 
 local function contains(arr, v) for _, x in ipairs(arr) do if x == v then return true end end return false end
 
+local function normOpt(o)
+  if type(o) == "table" then return { value = o.Value or o.value, icon = o.Icon, desc = o.Desc, divider = o.Divider == true } end
+  return { value = o }
+end
+
 function SelectBox.new(opts)
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
@@ -60,7 +65,11 @@ function SelectBox.new(opts)
       api.SetValue(nv)
       if dropdown then api.Close(); api.Open() end -- rebuild to re-tint
     else
-      api.SetValue(opt)
+      if opts.AllowNone and value == opt then
+        api.SetValue(nil)
+      else
+        api.SetValue(opt)
+      end
       api.Close()
     end
   end
@@ -100,20 +109,42 @@ function SelectBox.new(opts)
       ClearTextOnFocus = false, ZIndex = 1002, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
     searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
 
-    for i, opt in ipairs(options) do
-      local o = Create("TextButton", { Name = "Opt", AutoButtonColor = false, Text = "",
-        BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 1, ZIndex = 1002,
-        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = i, Parent = dropdown, Create.corner(theme.Radius.sm),
-        Create.padding({ left = 6, right = 6 }) })
-      local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
-        Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), Parent = o })
-      if isSelected(opt) then Icons.apply(check, "check", theme.Colors.primary) else check.Visible = false end
-      Create("TextLabel", { BackgroundTransparency = 1, Text = opt, ZIndex = 1003,
-        TextColor3 = isSelected(opt) and theme.Colors.primary or theme.Colors.mutedForeground,
-        TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size,
-        Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 20, 0, 0), Parent = o })
-      o.MouseButton1Click:Connect(function() pick(opt) end)
-      optButtons[#optButtons + 1] = { btn = o, text = opt }
+    for i, raw in ipairs(options) do
+      local e = normOpt(raw)
+      if e.divider then
+        Create("Frame", { Name = "Divider", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0,
+          Size = UDim2.new(1, -8, 0, 1), LayoutOrder = i, ZIndex = 1002, Parent = dropdown })
+      else
+        local rowH = e.desc and 38 or 26
+        local o = Create("TextButton", { Name = "Opt", AutoButtonColor = false, Text = "",
+          BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 1, ZIndex = 1002,
+          Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = i, Parent = dropdown, Create.corner(theme.Radius.sm),
+          Create.padding({ left = 6, right = 6 }) })
+        o:SetAttribute("OptValue", e.value)
+        local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
+          Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), Parent = o })
+        if isSelected(e.value) then Icons.apply(check, "check", theme.Colors.primary) else check.Visible = false end
+        local textX = 20
+        if e.icon then
+          local lead = Create("ImageLabel", { Name = "Lead", BackgroundTransparency = 1, ZIndex = 1003,
+            Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 20, 0.5, -7), Parent = o })
+          Icons.apply(lead, e.icon, theme.Colors.foreground)
+          textX = 40
+        end
+        Create("TextLabel", { Name = "OptLabel", BackgroundTransparency = 1, Text = e.value, ZIndex = 1003,
+          TextColor3 = isSelected(e.value) and theme.Colors.primary or theme.Colors.foreground,
+          TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+          Size = UDim2.new(1, -textX - 4, e.desc and 0 or 1, e.desc and 16 or 0),
+          Position = UDim2.new(0, textX, 0, e.desc and 4 or 0), Parent = o })
+        if e.desc then
+          Create("TextLabel", { Name = "Desc", BackgroundTransparency = 1, Text = e.desc, ZIndex = 1003,
+            TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left,
+            TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+            Size = UDim2.new(1, -textX - 4, 0, 14), Position = UDim2.new(0, textX, 0, 20), Parent = o })
+        end
+        o.MouseButton1Click:Connect(function() pick(e.value) end)
+        optButtons[#optButtons + 1] = { btn = o, text = tostring(e.value) .. " " .. tostring(e.desc or "") }
+      end
     end
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)

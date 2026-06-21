@@ -47,6 +47,24 @@ h.describe("selectbox", function()
     s.SetValue({ "A", "C" })
     h.expect(#s.GetValue()).toBe(2)
   end)
+  h.it("renders per-item icon/desc and a divider, and AllowNone deselects", function()
+    local ov = Overlay.get(h.roblox.Instance.new("ScreenGui"))
+    local sb = SelectBox.new({ Parent = Create("Frame", {}),
+      Options = { { Value = "A", Icon = "star", Desc = "alpha" }, { Divider = true }, { Value = "B" } },
+      Default = "A", AllowNone = true })
+    sb.Open()
+    local dd; for _, c in ipairs(ov:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local hasLead, hasDivider, optA = false, false, nil
+    for _, c in ipairs(dd:GetChildren()) do
+      if c.Name == "Opt" and c:FindFirstChild("Lead") then hasLead = true end
+      if c.Name == "Divider" then hasDivider = true end
+      if c.Name == "Opt" and c:GetAttribute("OptValue") == "A" then optA = c end
+    end
+    h.expect(hasLead).toBe(true)
+    h.expect(hasDivider).toBe(true)
+    optA.MouseButton1Click:Fire() -- A is selected + AllowNone => deselect
+    h.expect(sb.GetValue()).toBe(nil)
+  end)
 end)
 
 h.run()
