@@ -18,6 +18,7 @@ local window = EzUI:CreateWindow({
 
 -- literal requires only (the bundler embeds/rewrites only literal-string require calls)
 require("menu/home")(window)
+require("menu/settings")(window)
 
 local inputs = window:AddTabGroup("Inputs")
 require("menu/components/button")(window, inputs)
@@ -46,9 +47,6 @@ local overlays = window:AddTabGroup("Overlays")
 require("menu/components/tooltip")(window, overlays)
 require("menu/components/dialog")(window, overlays)
 require("menu/components/notification")(window, overlays)
-
-require("menu/settings")(window)
-require("menu/credits")(window)
 
 window:Tag({ Text = "v3", Icon = "sparkles" })
 window:ShowInfo({ Title = "Welcome", Message = "EzUI demo loaded. Press RightControl to toggle.", Duration = 5000 })
