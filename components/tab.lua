@@ -106,6 +106,7 @@ function Tab.new(opts)
   Host.attach(api, {
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
     registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
+    registerControl = opts.RegisterControl,
     nextOrder = function() order = order + 1; return order end,
   })
 
@@ -121,6 +122,7 @@ function Tab.new(opts)
     accOpts.Window = opts.Window
     accOpts.RegisterSearchable = opts.RegisterSearchable
     accOpts.AccentThemer = opts.AccentThemer
+    accOpts.RegisterControl = opts.RegisterControl
     return Accordion.new(accOpts)
   end
 

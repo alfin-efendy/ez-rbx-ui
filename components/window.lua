@@ -29,6 +29,8 @@ function Window.new(config)
   local closed = false
   local closeCallback
   local themer = Themer.new()
+  local lockables = {}
+  local function registerControl(c) lockables[#lockables + 1] = c end
 
   -- optional config persistence (controls register their flags against this)
   local cfg = nil
@@ -198,6 +200,7 @@ function Window.new(config)
     tabOpts.Config = cfg
     tabOpts.Window = api
     tabOpts.AccentThemer = themer
+    tabOpts.RegisterControl = registerControl
     -- controls register their searchable text here (full-text search across components)
     tabOpts.RegisterSearchable = function(frame, text)
       searchIndex[#searchIndex + 1] = { entry = entry, frame = frame, text = (text or ""):lower() }
@@ -316,6 +319,8 @@ function Window.new(config)
   end
 
   function api:GetThemer() return themer end
+  function api:LockAll() for _, c in ipairs(lockables) do if c.SetLocked then c.SetLocked(true) end end end
+  function api:UnlockAll() for _, c in ipairs(lockables) do if c.SetLocked then c.SetLocked(false) end end end
   function api:SetAccent(nameOrColor)
     local a = Themer.accent(nameOrColor)
     if not a and typeof(nameOrColor) == "Color3" then a = { Primary = nameOrColor, Foreground = theme.Colors.primaryForeground } end
