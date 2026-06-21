@@ -154,11 +154,22 @@ function Window.new(config)
     Parent = body,
   })
 
-  -- draggable sidebar↔content divider
+  -- draggable sidebar↔content divider (with a centered grip)
   local sidebarHandle = Create("ImageButton", {
-    Name = "SidebarHandle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.border, BackgroundTransparency = 0.5,
-    ZIndex = 6, Size = UDim2.new(0, 4, 1, 0), Position = UDim2.new(0, sidebarW, 0, 0), Parent = body,
+    Name = "SidebarHandle", AutoButtonColor = false, BackgroundTransparency = 1,
+    ZIndex = 6, Size = UDim2.new(0, 12, 1, 0), Position = UDim2.new(0, sidebarW, 0, 0), Parent = body,
   })
+  Create("Frame", { Name = "Line", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0, ZIndex = 6,
+    Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Parent = sidebarHandle })
+  local sbGrip = Create("Frame", { Name = "Grip", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0, ZIndex = 7,
+    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 14, 0, 22),
+    Parent = sidebarHandle, Create.corner(theme.Radius.sm) })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = sbGrip })
+  local sbGripIcon = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 10, 0, 10),
+    Position = UDim2.new(0.5, -5, 0.5, -5), Parent = sbGrip })
+  Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground)
+  maid:Give(sidebarHandle.MouseEnter:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.foreground) end))
+  maid:Give(sidebarHandle.MouseLeave:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground) end))
   local function applySidebarWidth(wpx)
     sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
