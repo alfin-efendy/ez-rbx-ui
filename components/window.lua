@@ -163,11 +163,11 @@ function Window.new(config)
   Create("Frame", { Name = "Line", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0, ZIndex = 6,
     Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Parent = sidebarHandle })
   local sbGrip = Create("Frame", { Name = "Grip", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0, ZIndex = 7,
-    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 14, 0, 22),
+    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 8, 0, 16),
     Parent = sidebarHandle, Create.corner(theme.Radius.sm) })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = sbGrip })
-  local sbGripIcon = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 10, 0, 10),
-    Position = UDim2.new(0.5, -5, 0.5, -5), Parent = sbGrip })
+  local sbGripIcon = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 8, 0, 8),
+    Position = UDim2.new(0.5, -4, 0.5, -4), Parent = sbGrip })
   Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground)
   maid:Give(sidebarHandle.MouseEnter:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.foreground) end))
   maid:Give(sidebarHandle.MouseLeave:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground) end))
