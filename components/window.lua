@@ -406,6 +406,7 @@ function Window.new(config)
     if fab then return fab end
     local kind = fabOpts.Type or "simple"
     local resolved = Asset.image(fabOpts.Image)
+    local fabSnap
     fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundTransparency = 0,
       Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
     fab:SetAttribute("FabType", kind)
@@ -422,14 +423,36 @@ function Window.new(config)
       local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
-    else -- simple: labeled pill, like the old library's "Open <Name>" button
-      fab.Size = UDim2.new(0, 120, 0, 36)
-      fab.BackgroundColor3 = theme.Colors.surface
-      Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.md), Parent = fab })
-      Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
-      Create("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = "Open " .. (config.Title or "UI"),
-        TextColor3 = theme.Colors.foreground, TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
-        TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 1, 0), Parent = fab })
+    else -- simple: reference-style 50x50 icon square with a shadow + edge-snap
+      fab.Size = UDim2.new(0, 50, 0, 50)
+      fab.BackgroundColor3 = theme.Colors.primary
+      Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = fab })
+      local chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
+      Icons.apply(chev, "chevron-right", theme.Colors.primaryForeground)
+      local shadow = Create("Frame", { Name = "FloatingToggleShadow", BackgroundColor3 = theme.Colors.background,
+        BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1699, Active = false,
+        AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 56, 0, 56), Parent = Overlay.get(gui), Create.corner(12) })
+      local function trackShadow()
+        shadow.Position = UDim2.new(fab.Position.X.Scale, fab.Position.X.Offset + 25, fab.Position.Y.Scale, fab.Position.Y.Offset + 25)
+      end
+      maid:Give(fab:GetPropertyChangedSignal("Position"):Connect(trackShadow))
+      trackShadow()
+      maid:Give(shadow)
+      fabSnap = function()
+        local vp = Overlay.get(gui).AbsoluteSize
+        if not vp or vp.X <= 0 then return end
+        local ap = fab.AbsolutePosition
+        local cx = (ap and ap.X or 0) + 25
+        local peek = 15
+        if cx < vp.X / 2 then
+          Icons.apply(chev, "chevron-right", theme.Colors.primaryForeground)
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
+        else
+          Icons.apply(chev, "chevron-left", theme.Colors.primaryForeground)
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - 50 + peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
+        end
+      end
     end
     -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
     if fabOpts.Size then
@@ -464,7 +487,10 @@ function Window.new(config)
         end
       end))
       maid:Give(fab.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+          dragging = false
+          if moved and fabSnap then fabSnap() end
+        end
       end))
     end
     maid:Give(fab.MouseButton1Click:Connect(function()
