@@ -201,6 +201,7 @@ function Window.new(config)
       searchIndex[#searchIndex + 1] = { entry = entry, frame = frame, text = (text or ""):lower() }
     end
     tabOpts.OnActivate = function(selectedTab)
+      Overlay.closeAll()
       for _, t in ipairs(tabs) do
         if t == selectedTab then t:Select() else t:Deselect() end
       end
