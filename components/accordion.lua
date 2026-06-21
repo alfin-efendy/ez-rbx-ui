@@ -1,9 +1,10 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Accordion = {}
-local Create, DefaultTheme, Animate, Maid, Icons
+local Create, DefaultTheme, Animate, Maid, Icons, Host, REG
 
 function Accordion.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
+  Host = R.Host; REG = R
 end
 
 local HEADER_H = 34
@@ -109,6 +110,12 @@ function Accordion.new(opts)
     child.Parent = content
     return order
   end
+
+  -- AddX control methods (Label/Button/Toggle/TextBox/NumberBox/SelectBox/...)
+  Host.attach(api, {
+    R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
+    nextOrder = function() order = order + 1; return order end,
+  })
 
   -- Re-apply height when content grows (engine drives sibling reflow via parent UIListLayout).
   maid:Give(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()

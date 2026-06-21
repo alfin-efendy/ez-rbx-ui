@@ -1,10 +1,10 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Tab = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Accordion
+local Create, DefaultTheme, Animate, Maid, Icons, Accordion, Host, REG
 
 function Tab.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate
-  Maid = R.Maid; Icons = R.Icons; Accordion = R.Accordion
+  Maid = R.Maid; Icons = R.Icons; Accordion = R.Accordion; Host = R.Host; REG = R
 end
 
 function Tab.new(opts)
@@ -91,20 +91,12 @@ function Tab.new(opts)
     return order
   end
 
-  function api:AddSection(text)
-    local lbl = Create("TextLabel", {
-      Name = "Section",
-      BackgroundTransparency = 1,
-      Text = string.upper(text),
-      TextColor3 = theme.Colors.mutedForeground,
-      TextXAlignment = Enum.TextXAlignment.Left,
-      TextSize = 11,
-      Font = Enum.Font.BuilderSans,
-      Size = UDim2.new(1, 0, 0, 18),
-    })
-    api.MountRow(lbl)
-    return lbl
-  end
+  -- AddLabel/AddParagraph/AddSection/AddSeparator/AddButton/AddToggle/AddTextBox/
+  -- AddNumberBox/AddSelectBox are provided by the Host mixin (below).
+  Host.attach(api, {
+    R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
+    nextOrder = function() order = order + 1; return order end,
+  })
 
   function api:AddAccordion(accOpts)
     accOpts = accOpts or {}
@@ -112,6 +104,8 @@ function Tab.new(opts)
     accOpts.Parent = content
     accOpts.LayoutOrder = order
     accOpts.Theme = theme
+    accOpts.Config = opts.Config
+    accOpts.Window = opts.Window
     return Accordion.new(accOpts)
   end
 

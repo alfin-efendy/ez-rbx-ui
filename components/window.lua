@@ -2,11 +2,11 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
-  Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab
+  Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config
 end
 
 local TITLE_H = 40
@@ -21,6 +21,16 @@ function Window.new(config)
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
+
+  -- optional config persistence (controls register their flags against this)
+  local cfg = nil
+  local cfgOpts = config.Config
+  if cfgOpts and cfgOpts.Enabled ~= false and (cfgOpts.FileName or cfgOpts.Enabled) then
+    cfg = ConfigMod.new({
+      FolderName = cfgOpts.FolderName, FileName = cfgOpts.FileName,
+      AutoSave = cfgOpts.AutoSave, AutoLoad = cfgOpts.AutoLoad,
+    })
+  end
 
   local gui = Create("ScreenGui", {
     Name = "EzUI",
@@ -103,13 +113,15 @@ function Window.new(config)
 
   Overlay.get(gui)
 
-  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Maid = maid }
+  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
 
   function api:AddTab(tabOpts)
     tabOpts = tabOpts or {}
     tabOpts.SidebarParent = sidebar
     tabOpts.ContentParent = contentScroll
     tabOpts.Theme = theme
+    tabOpts.Config = cfg
+    tabOpts.Window = api
     tabOpts.LayoutOrder = #tabs + 1
     tabOpts.OnActivate = function(selectedTab)
       for _, t in ipairs(tabs) do
