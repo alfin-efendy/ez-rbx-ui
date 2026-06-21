@@ -88,6 +88,14 @@ local accCard = t2:AddAccordion({ Title = "Card" }); accCard:Expand()
 assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
 
 w:Minimize() -- hides window + shows floating toggle
+-- R3 Plan B: live accent + settings APIs
+w:SetAccent("Indigo")
+w:SetUIScale(1.1)
+w:SetAcrylicTransparency(0.2)
+w:SetNotificationsEnabled(false)
+assert(w:Notify({ Title = "blocked", Duration = 0 }) == nil, "notify should be gated when disabled")
+w:SetNotificationsEnabled(true)
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error
