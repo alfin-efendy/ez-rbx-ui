@@ -397,6 +397,22 @@ function Window.new(config)
         TextColor3 = theme.Colors.foreground, TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
         TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 1, 0), Parent = fab })
     end
+    -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
+    if fabOpts.Size then
+      if type(fabOpts.Size) == "table" and type(fabOpts.Size.Width) == "number" then
+        fab.Size = UDim2.new(0, fabOpts.Size.Width, 0, fabOpts.Size.Height or 44)
+      else
+        fab.Size = fabOpts.Size
+      end
+    end
+    if fabOpts.Position then
+      if type(fabOpts.Position) == "table" and type(fabOpts.Position.X) == "number" then
+        fab.Position = UDim2.new(0, fabOpts.Position.X, 1, fabOpts.Position.Y or -60)
+      else
+        fab.Position = fabOpts.Position
+      end
+    end
+
     -- a click toggles; a drag (>6px) moves the FAB and suppresses that click's toggle
     local moved = false
     if fabOpts.Draggable ~= false then
