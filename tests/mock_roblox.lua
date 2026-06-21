@@ -30,7 +30,12 @@ local function newInstance(cls)
       if k == "FindFirstChild" then return function(_, name) for _, c in ipairs(children) do if c.Name == name then return c end end end end
       if k == "FindFirstChildOfClass" then return function(_, c2) for _, c in ipairs(children) do if c.ClassName == c2 then return c end end end end
       if k == "IsA" then return function(_, c2) return props.ClassName == c2 end end
-      if k == "Destroy" then return function() props._destroyed = true; for i = #children, 1, -1 do children[i] = nil end end end
+      if k == "Destroy" then return function()
+        props._destroyed = true
+        if props.Parent and props.Parent.__removeChild then props.Parent.__removeChild(inst) end
+        props.Parent = nil
+        for i = #children, 1, -1 do children[i] = nil end
+      end end
       if k == "SetAttribute" then return function(_, ak, av) props["_attr_" .. ak] = av end end
       if k == "GetAttribute" then return function(_, ak) return props["_attr_" .. ak] end end
       if k == "GetPropertyChangedSignal" then return function(_, p) signals["chg_" .. p] = signals["chg_" .. p] or makeSignal(); return signals["chg_" .. p] end end
@@ -47,6 +52,7 @@ local function newInstance(cls)
     end,
     __newindex = function(_, k, v)
       if k == "Parent" then
+        if props.Parent and props.Parent.__removeChild then props.Parent.__removeChild(inst) end
         props.Parent = v
         if v and v.__addChild then v.__addChild(inst) end
       else
@@ -55,6 +61,9 @@ local function newInstance(cls)
     end,
   })
   rawset(inst, "__addChild", function(c) children[#children + 1] = c end)
+  rawset(inst, "__removeChild", function(c)
+    for i = #children, 1, -1 do if children[i] == c then table.remove(children, i) end end
+  end)
   rawset(inst, "__isInstance", true) -- so mock typeof() reports "Instance"
   return inst
 end
