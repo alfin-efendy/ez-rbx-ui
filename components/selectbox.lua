@@ -33,8 +33,8 @@ function SelectBox.new(opts)
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
   local btn = Create("TextButton", {
     Name = "SelectBox", AutoButtonColor = false, Text = "",
-    BackgroundColor3 = theme.Colors.input, BackgroundTransparency = 0,
-    Size = UDim2.new(1, 0, 0, hasDesc and 52 or 32), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
+    Size = UDim2.new(1, 0, 0, hasDesc and 52 or 38), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
     Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
@@ -52,14 +52,17 @@ function SelectBox.new(opts)
         Position = UDim2.new(0, 0, 0, 28), Size = UDim2.new(0.5, -8, 0, 18), Parent = btn })
     end
   end
+  local field = Create("Frame", { Name = "Field", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0, Active = false,
+    Size = opts.Text and UDim2.new(0.5, -4, 0, 26) or UDim2.new(1, 0, 0, 26),
+    Position = opts.Text and UDim2.new(0.5, 4, 0.5, -13) or UDim2.new(0, 0, 0.5, -13),
+    Parent = btn, Create.corner(theme.Radius.sm) })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = field })
   local valueLabel = Create("TextLabel", { Name = "Value", BackgroundTransparency = 1, Text = display(),
-    TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground,
-    TextXAlignment = opts.Text and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+    TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
-    Size = opts.Text and UDim2.new(0.5, -28, 1, 0) or UDim2.new(1, -20, 1, 0),
-    Position = opts.Text and UDim2.new(0.5, 8, 0, 0) or UDim2.new(0, 0, 0, 0), Parent = btn })
+    Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 8, 0, 0), Parent = field })
   local caret = Create("ImageLabel", { Name = "Caret", BackgroundTransparency = 1,
-    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0.5, -7), Parent = btn })
+    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -20, 0.5, -7), Parent = field })
   Icons.apply(caret, "chevron-down", theme.Colors.primary)
 
   local function refresh() valueLabel.Text = display() end
@@ -182,8 +185,10 @@ function SelectBox.new(opts)
   maid:Give(function() api.Close() end)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
-    btn.BackgroundColor3 = theme.Colors.input
-    valueLabel.TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground
+    btn.BackgroundColor3 = theme.Colors.surface
+    field.BackgroundColor3 = theme.Colors.input
+    local fs = field:FindFirstChildOfClass("UIStroke"); if fs then fs.Color = theme.Colors.border end
+    valueLabel.TextColor3 = theme.Colors.foreground
     local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     local de = btn:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(caret, "chevron-down", theme.Colors.primary)

@@ -23,8 +23,9 @@ function Slider.new(opts)
   end
 
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
-  local root = Create("Frame", { Name = "SliderRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 58 or 44) or 24), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
+  local root = Create("Frame", { Name = "SliderRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
+    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 58 or 44) or 24), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
   local valueLabel
   if opts.Text then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
@@ -43,6 +44,7 @@ function Slider.new(opts)
   end
   local track = Create("Frame", { Name = "Track", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
     Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 1, -10), Parent = root, Create.corner(3) })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = track })
   local fill = Create("Frame", { Name = "Fill", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
     Size = UDim2.new(0, 0, 1, 0), Parent = track, Create.corner(3) })
   local handle = Create("Frame", { Name = "Handle", BackgroundColor3 = theme.Colors.foreground, BorderSizePixel = 0,
@@ -64,7 +66,9 @@ function Slider.new(opts)
   function api.Destroy() maid:DoCleanup() end
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    root.BackgroundColor3 = theme.Colors.surface
     track.BackgroundColor3 = theme.Colors.surface
+    local ts = track:FindFirstChildOfClass("UIStroke"); if ts then ts.Color = theme.Colors.border end
     fill.BackgroundColor3 = theme.Colors.primary
     handle.BackgroundColor3 = theme.Colors.foreground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
