@@ -61,7 +61,13 @@ function Toggle.new(opts)
 
   local commit = Flag.bind(opts, opts.Default == true, apply)
 
-  if opts.AccentReg then maid:Give(opts.AccentReg(function() apply(value) end)) end
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    btn.BackgroundColor3 = theme.Colors.surface
+    local lab = btn:FindFirstChild("Label"); if lab then lab.TextColor3 = theme.Colors.foreground end
+    local d = btn:FindFirstChild("Description"); if d then d.TextColor3 = theme.Colors.mutedForeground end
+    local st = track:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+    apply(value)
+  end)) end
 
   local api = { Frame = btn }
   function api.Get() return value end

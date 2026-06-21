@@ -57,6 +57,13 @@ function TextBox.new(opts)
   end))
   maid:Give(root)
 
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    box.BackgroundColor3 = theme.Colors.input
+    input.TextColor3 = theme.Colors.foreground; input.PlaceholderColor3 = theme.Colors.mutedForeground
+    local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local cp = box:FindFirstChild("Copy"); if cp then Icons.apply(cp, "copy", theme.Colors.mutedForeground) end
+  end)) end
+
   return {
     Frame = root,
     GetText = function() return input.Text end,

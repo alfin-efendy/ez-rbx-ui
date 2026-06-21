@@ -141,6 +141,13 @@ function ColorPicker.new(opts)
   maid:Give(btn.MouseButton1Click:Connect(function() if popover then api.Close() else api.Open() end end))
   maid:Give(btn)
   maid:Give(function() api.Close() end)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    btn.BackgroundColor3 = theme.Colors.surface
+    local lab = btn:FindFirstChild("Label"); if lab then lab.TextColor3 = theme.Colors.foreground end
+    local st = swatch:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+  end)) end
+
   return api
 end
 

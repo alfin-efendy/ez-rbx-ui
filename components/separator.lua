@@ -15,6 +15,7 @@ function Separator.new(opts)
     LayoutOrder = opts.LayoutOrder or 0,
     Parent = opts.Parent,
   })
+  if opts.AccentReg then opts.AccentReg(function() frame.BackgroundColor3 = theme.Colors.border end) end
   return { Frame = frame, Destroy = function() frame:Destroy() end }
 end
 

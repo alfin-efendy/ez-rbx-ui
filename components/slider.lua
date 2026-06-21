@@ -56,7 +56,13 @@ function Slider.new(opts)
   function api.OnChanged(fn) onChanged = fn end
   function api.Destroy() maid:DoCleanup() end
 
-  if opts.AccentReg then maid:Give(opts.AccentReg(function() fill.BackgroundColor3 = theme.Colors.primary end)) end
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    track.BackgroundColor3 = theme.Colors.surface
+    fill.BackgroundColor3 = theme.Colors.primary
+    handle.BackgroundColor3 = theme.Colors.foreground
+    local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    if valueLabel then valueLabel.TextColor3 = theme.Colors.mutedForeground end
+  end)) end
 
   local dragging = false
   local function fromX(px)

@@ -30,6 +30,10 @@ function Label.new(opts)
     Parent = opts.Parent,
   })
 
+  if opts.AccentReg then opts.AccentReg(function()
+    frame.TextColor3 = (variant == "default") and theme.Colors.foreground or theme.Colors.mutedForeground
+  end) end
+
   return {
     Frame = frame,
     SetText = function(s) frame.Text = (variant == "section") and string.upper(s) or s end,

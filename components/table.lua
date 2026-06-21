@@ -47,6 +47,16 @@ function Table.new(opts)
 
   api.SetData(opts.Rows)
   maid:Give(root)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    body.BackgroundColor3 = theme.Colors.surface
+    local header = root:FindFirstChild("Header")
+    if header then for _, c in ipairs(header:GetChildren()) do if c.Name == "Cell" then c.TextColor3 = theme.Colors.mutedForeground end end end
+    for _, row in ipairs(body:GetChildren()) do
+      if row.Name == "Row" then for _, c in ipairs(row:GetChildren()) do if c.Name == "Cell" then c.TextColor3 = theme.Colors.foreground end end end
+    end
+  end)) end
+
   return api
 end
 

@@ -64,14 +64,13 @@ function Button.new(opts)
   end))
   maid:Give(btn)
 
-  if variant == "default" and opts.AccentReg then
-    maid:Give(opts.AccentReg(function()
-      local nbg, nfg = palette(theme, variant)
-      btn.BackgroundColor3 = nbg
-      label.TextColor3 = nfg
-      if hasIcon then Icons.apply(btn:FindFirstChild("Icon"), opts.Icon, nfg) end
-    end))
-  end
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    local nbg, nfg, nstroke = palette(theme, variant)
+    if not transparent then btn.BackgroundColor3 = nbg end
+    label.TextColor3 = nfg
+    if hasIcon then Icons.apply(btn:FindFirstChild("Icon"), opts.Icon, nfg) end
+    local st = btn:FindFirstChildOfClass("UIStroke"); if st and nstroke then st.Color = nstroke end
+  end)) end
 
   return {
     Frame = btn,

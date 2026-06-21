@@ -56,6 +56,16 @@ function NumberBox.new(opts)
   maid:Give(input.FocusLost:Connect(function() set(input.Text) end))
   maid:Give(root)
 
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    box.BackgroundColor3 = theme.Colors.input
+    input.TextColor3 = theme.Colors.foreground
+    local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    for _, c in ipairs(box:GetChildren()) do
+      if c:IsA("ImageButton") then c.BackgroundColor3 = theme.Colors.surface
+        local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.foreground end end
+    end
+  end)) end
+
   return {
     Frame = root,
     GetValue = function() return value end,

@@ -161,6 +161,13 @@ function SelectBox.new(opts)
   maid:Give(btn.MouseButton1Click:Connect(function() if dropdown then api.Close() else api.Open() end end))
   maid:Give(btn)
   maid:Give(function() api.Close() end)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    btn.BackgroundColor3 = theme.Colors.input
+    valueLabel.TextColor3 = theme.Colors.foreground
+    Icons.apply(caret, "chevron-down", theme.Colors.mutedForeground)
+  end)) end
+
   return api
 end
 

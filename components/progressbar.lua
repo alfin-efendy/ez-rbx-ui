@@ -14,8 +14,11 @@ function ProgressBar.new(opts)
   local fill = Create("Frame", { Name = "Fill", BackgroundColor3 = opts.Color or theme.Colors.primary, BorderSizePixel = 0,
     Size = UDim2.new(value, 0, 1, 0), Parent = track, Create.corner(4) })
   local unreg
-  if opts.AccentReg and not opts.Color then
-    unreg = opts.AccentReg(function() fill.BackgroundColor3 = theme.Colors.primary end)
+  if opts.AccentReg then
+    unreg = opts.AccentReg(function()
+      track.BackgroundColor3 = theme.Colors.surface
+      if not opts.Color then fill.BackgroundColor3 = theme.Colors.primary end
+    end)
   end
   return {
     Frame = root,

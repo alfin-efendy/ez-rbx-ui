@@ -67,6 +67,13 @@ function Keybind.new(opts)
     end
   end))
   maid:Give(btn)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    btn.BackgroundColor3 = theme.Colors.surface
+    local lab = btn:FindFirstChild("Label"); if lab then lab.TextColor3 = theme.Colors.foreground end
+    keyBox.BackgroundColor3 = theme.Colors.input; keyBox.TextColor3 = theme.Colors.foreground
+  end)) end
+
   return api
 end
 return Keybind
