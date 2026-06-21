@@ -90,6 +90,19 @@ function Window.new(config)
   })
   Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
 
+  -- header elevation: a 1px seam line + a soft downward shadow so content scrolls under the title bar
+  local headerShadow = Create("Frame", {
+    Name = "HeaderShadow", Active = false, BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+    Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 0, TITLE_H), ZIndex = 4, Parent = main,
+  })
+  Create("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1),
+  }), Parent = headerShadow })
+  Create("Frame", {
+    Name = "HeaderSeparator", Active = false, BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0,
+    Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 0, TITLE_H), ZIndex = 5, Parent = main,
+  })
+
   -- body: sidebar + content
   local body = Create("Frame", {
     Name = "Body",
