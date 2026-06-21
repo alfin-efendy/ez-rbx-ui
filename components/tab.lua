@@ -66,6 +66,19 @@ function Tab.new(opts)
     Create.padding({ all = theme.Spacing.pad }),
   })
 
+  -- Drive the parent ScrollingFrame's CanvasSize explicitly from this tab's content height.
+  -- AutomaticCanvasSize is unreliable here because the CanvasGroup starts hidden (measured 0).
+  local contentLayout = content:FindFirstChildOfClass("UIListLayout")
+  local contentPad = theme.Spacing.pad
+  local function syncCanvas()
+    local sf = content.Parent
+    if selected and sf then
+      local acs = contentLayout.AbsoluteContentSize
+      sf.CanvasSize = UDim2.new(0, 0, 0, ((acs and acs.Y) or 0) + contentPad * 2)
+    end
+  end
+  maid:Give(contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(syncCanvas))
+
   local api = { Button = button, Content = content, Maid = maid }
 
   function api:IsSelected() return selected end
@@ -77,6 +90,8 @@ function Tab.new(opts)
     content.GroupTransparency = 1
     content.Position = UDim2.new(0, 0, 0, 10)
     content.Visible = true
+    if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
+    syncCanvas()
     Animate.to(content, "base", { GroupTransparency = 0, Position = UDim2.new(0, 0, 0, 0) })
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })

@@ -16,8 +16,8 @@ h.describe("stress (headless integration)", function()
       end
     end
     h.expect(tabs).toBe(20)
-    -- content scroll auto-sizes; only first tab visible
-    h.expect(w.ContentScroll.AutomaticCanvasSize.Name).toBe("Y")
+    -- content scroll canvas is driven explicitly per active tab; only first tab visible
+    h.expect(w.ContentScroll.AutomaticCanvasSize.Name).toBe("None")
   end)
   h.it("switching tabs is constant work (one selected at a time)", function()
     local screen = h.roblox.Instance.new("ScreenGui")

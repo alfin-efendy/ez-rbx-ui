@@ -156,7 +156,7 @@ function Window.new(config)
     ScrollBarImageColor3 = theme.Colors.border,
     Position = UDim2.new(0, sidebarW, 0, 0),
     Size = UDim2.new(1, -sidebarW, 1, 0),
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    AutomaticCanvasSize = Enum.AutomaticSize.None,
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ClipsDescendants = true,
     Parent = body,
