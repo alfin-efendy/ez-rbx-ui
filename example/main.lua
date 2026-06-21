@@ -28,7 +28,6 @@ require("menu/components/selectbox")(window, inputs)
 require("menu/components/slider")(window, inputs)
 require("menu/components/keybind")(window, inputs)
 require("menu/components/colorpicker")(window, inputs)
-require("menu/components/playerselector")(window, inputs)
 
 local display = window:AddTabGroup("Display")
 require("menu/components/label")(window, display)

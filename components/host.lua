@@ -17,7 +17,6 @@ local SIMPLE = {
   AddColorPicker = { mod = "ColorPicker" },
   AddImage = { mod = "Image" },
   AddTable = { mod = "Table" },
-  AddPlayerSelector = { mod = "PlayerSelector" },
   AddProgressBar = { mod = "ProgressBar" },
   AddResizable = { mod = "Resizable" },
   AddCard = { mod = "Card" },

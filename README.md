@@ -90,7 +90,6 @@ Call these on a `tab` or an `accordion` (same API):
 | `AddImage(opts)` | `Image` (rbxassetid) or `Lucide` (icon name), `Height` |
 | `AddProgressBar(opts)` | `Default (0..1)` → `Get()/Set(p)` |
 | `AddTable(opts)` | `Columns, Rows` → `SetData(rows)/AddRow(row)/Clear()` |
-| `AddPlayerSelector(opts)` | `Text, Multi, Flag` (auto-updates on join/leave) → `GetValue()/SetValue(v)/GetOptions()/Refresh()` |
 | `AddAccordion(opts)` | `Title, Icon, Expanded` → a collapsible host with the same `AddX` methods, plus `Toggle()/Expand()/Collapse()/IsExpanded()/SetTitle(s)/SetIcon(name)` |
 
 Any control with a `Flag` (and a window `Config`) auto-saves and restores its value, and is restored on `ResetConfiguration`.
@@ -140,7 +139,7 @@ Controls with `Flag` register against the window's `Config`. `Window:ResetConfig
 | `Colors` module (`utils/colors`) | `EzUI.Theme` tokens / `Theme` override |
 | `EzUI:NewConfig(...)` | unchanged |
 | flags (`Flag = "..."`) | unchanged |
-| — | **new:** `AddSlider, AddKeybind, AddColorPicker, AddImage, AddProgressBar, AddTable, AddPlayerSelector`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
+| — | **new:** `AddSlider, AddKeybind, AddColorPicker, AddImage, AddProgressBar, AddTable`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
 
 v2 internals are a clean rewrite: engine-driven layout (`UIListLayout` + `AutomaticSize` + `UIFlex`) instead of manual Y positioning, a single-tween accordion (no O(n²) reflow), and `CanvasGroup` tab transitions.
 

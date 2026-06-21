@@ -57,7 +57,6 @@ cp.Close()
 t:AddProgressBar({ Default = 0.5 })
 t:AddImage({ Lucide = "home" })
 t:AddTable({ Columns = { "A", "B" }, Rows = { { "1", "2" } } })
-t:AddPlayerSelector({ Text = "P" })
 
 local acc = t:AddAccordion({ Title = "Adv" })
 acc:Toggle()
