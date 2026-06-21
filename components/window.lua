@@ -57,19 +57,17 @@ function Window.new(config)
     Name = "Main",
     Size = UDim2.new(0, width, 0, height),
     Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2),
-    BorderSizePixel = 0,
+    BackgroundTransparency = 1, BorderSizePixel = 0, ClipsDescendants = true,
     Parent = gui,
     Create.corner(theme.Radius.window),
   })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = main })
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
-  Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT,
-    base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
-  local acrylicBlur = (config.Acrylic ~= false) and Acrylic.blur({}) or nil
 
   -- title bar
   local titleBar = Create("Frame", {
     Name = "TitleBar",
-    BackgroundTransparency = 1,
+    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = 0,
     Size = UDim2.new(1, 0, 0, TITLE_H),
     Parent = main,
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
@@ -111,6 +109,8 @@ function Window.new(config)
     Size = UDim2.new(1, 0, 1, -TITLE_H),
     Parent = main,
   })
+  local sidebarBg = Create("Frame", { Name = "SidebarBg", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+    Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(0, sidebarW, 1, 0), Parent = body })
   -- sidebar search box (pinned above the tab list)
   local searchBox = Create("Frame", {
     Name = "Search", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
@@ -139,11 +139,13 @@ function Window.new(config)
   })
   local cgap = theme.Spacing.gap
   local contentPanel = Create("Frame", {
-    Name = "ContentPanel", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
+    Name = "ContentPanel", BorderSizePixel = 0,
     Position = UDim2.new(0, sidebarW + cgap, 0, cgap),
     Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
     Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
+  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = acrylicT,
+    base = theme.Colors.card, gradientTop = theme.Colors.surface, gradientBottom = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
     BackgroundTransparency = 1,
@@ -166,6 +168,7 @@ function Window.new(config)
   local function applySidebarWidth(wpx)
     sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
+    sidebarBg.Size = UDim2.new(0, sidebarW, 1, 0)
     searchBox.Size = UDim2.new(0, sidebarW - 16, 0, 24)
     contentPanel.Position = UDim2.new(0, sidebarW + cgap, 0, cgap)
     contentPanel.Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2)
@@ -187,7 +190,7 @@ function Window.new(config)
 
   Overlay.get(gui)
 
-  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, AcrylicBlur = acrylicBlur, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
+  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
 
   local tabEntries = {}
   local groups = {}
@@ -282,13 +285,11 @@ function Window.new(config)
   function api:Show()
     if closed then return end
     visible = true; main.Visible = true
-    if acrylicBlur then acrylicBlur.SetEnabled(true) end
     if hideFab then hideFab() end
   end
   function api:Hide()
     if closed then return end
     visible = false; main.Visible = false
-    if acrylicBlur then acrylicBlur.SetEnabled(false) end
     if showFab then showFab() end
   end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
@@ -296,7 +297,7 @@ function Window.new(config)
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
-  function api:SetAcrylicTransparency(n) main.BackgroundTransparency = n; return n end
+  function api:SetAcrylicTransparency(n) contentPanel.BackgroundTransparency = n; return n end
   function api:SetToggleKey(k) toggleKey = k; return k end
   local uiScale
   function api:SetUIScale(n)
@@ -401,7 +402,9 @@ function Window.new(config)
 
   -- window-shell live re-skin (mode/accent)
   themer.register(function()
-    main.BackgroundColor3 = theme.Colors.background
+    local ms = main:FindFirstChildOfClass("UIStroke"); if ms then ms.Color = theme.Colors.border end
+    titleBar.BackgroundColor3 = theme.Colors.background
+    sidebarBg.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
@@ -409,17 +412,11 @@ function Window.new(config)
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
     contentPanel.BackgroundColor3 = theme.Colors.card
-    local grad = main:FindFirstChildOfClass("UIGradient")
-    if grad then
-      grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, theme.Colors.card),
-        ColorSequenceKeypoint.new(1, theme.Colors.background),
-      })
-    end
-    local mstroke = main:FindFirstChildOfClass("UIStroke")
-    if mstroke then mstroke.Color = theme.Colors.border end
-    local noise = main:FindFirstChild("AcrylicNoise")
-    if noise then noise.ImageTransparency = (theme.Mode == "light") and 0.97 or 0.92 end
+    local grad = contentPanel:FindFirstChildOfClass("UIGradient")
+    if grad then grad.Color = ColorSequence.new({
+      ColorSequenceKeypoint.new(0, theme.Colors.surface), ColorSequenceKeypoint.new(1, theme.Colors.card) }) end
+    local cstroke = contentPanel:FindFirstChildOfClass("UIStroke"); if cstroke then cstroke.Color = theme.Colors.border end
+    local noise = contentPanel:FindFirstChild("AcrylicNoise"); if noise then noise.ImageTransparency = (theme.Mode == "light") and 0.97 or 0.92 end
   end)
 
   local fabOpts = (type(config.FloatingToggle) == "table") and config.FloatingToggle or {}
@@ -646,7 +643,6 @@ function Window.new(config)
     if cfg then pcall(function() cfg:Save() end) end
     Overlay.closeAll()
     if Notif then Notif.clearAll() end
-    if acrylicBlur then acrylicBlur.Destroy() end
     maid:DoCleanup()       -- disconnects EVERY connection (drag, resize, toggle-key, close, ...)
     gui:Destroy()
     Overlay.reset()
