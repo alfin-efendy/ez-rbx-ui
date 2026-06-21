@@ -40,11 +40,15 @@ function Notification.show(opts)
     Create.listLayout({ Padding = 4 }),
   })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = toast })
-  Create("Frame", { Name = "Accent", BackgroundColor3 = accent, BorderSizePixel = 0,
-    Size = UDim2.new(0, 3, 1, 0), Position = UDim2.new(0, 0, 0, 0), Parent = toast })
+  -- title row: fixed-height (NOT a scale-height child, which would fight AutomaticSize.Y
+  -- and blow the toast up to full height). Colored dot indicates the toast type.
+  local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
+  Create("Frame", { Name = "Dot", BackgroundColor3 = accent, BorderSizePixel = 0,
+    Size = UDim2.new(0, 8, 0, 8), Position = UDim2.new(0, 0, 0.5, -4), Parent = titleRow, Create.corner(4) })
   Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
+    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -16, 1, 0), Position = UDim2.new(0, 16, 0, 0), Parent = titleRow })
   if opts.Message then
     Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
       TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,

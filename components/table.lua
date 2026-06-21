@@ -29,10 +29,11 @@ function Table.new(opts)
   end
 
   makeRow(root, cols, true, 0)
-  local body = Create("ScrollingFrame", { Name = "Body", BackgroundTransparency = 1, BorderSizePixel = 0,
+  local body = Create("ScrollingFrame", { Name = "Body", BackgroundColor3 = theme.Colors.surface,
+    BackgroundTransparency = 0.5, BorderSizePixel = 0,
     ScrollBarThickness = 3, Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(1, 0, 1, -26),
     AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0, 0, 0, 0), Parent = root,
-    Create.listLayout({ Padding = 2 }) })
+    Create.corner(theme.Radius.sm), Create.padding({ all = 4 }), Create.listLayout({ Padding = 2 }) })
 
   local order = 0
   local api = { Frame = root, Body = body }

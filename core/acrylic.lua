@@ -7,7 +7,9 @@ function Acrylic.Init(R) Create = R.Create end
 function Acrylic.decorate(frame, theme, opts)
   opts = opts or {}
   frame.BackgroundColor3 = theme.Colors.card
-  frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.18)
+  -- Near-opaque by default: over a busy game a heavily translucent panel is
+  -- unreadable (the game bleeds through). Keep just a hint of acrylic.
+  frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.04)
 
   -- stroke (idempotent)
   if not frame:FindFirstChildOfClass("UIStroke") then

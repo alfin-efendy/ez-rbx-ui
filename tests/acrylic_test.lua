@@ -7,7 +7,7 @@ h.describe("acrylic", function()
     local f = Create("Frame", {})
     Acrylic.decorate(f, Theme)
     h.expect(f.BackgroundColor3.R8).toBe(24)          -- card
-    h.expect(f.BackgroundTransparency).toBe(0.18)
+    h.expect(f.BackgroundTransparency).toBe(0.04)     -- near-opaque (readable over a game)
     h.expect(f:FindFirstChildOfClass("UIGradient") ~= nil).toBeTruthy()
     h.expect(f:FindFirstChildOfClass("UIStroke") ~= nil).toBeTruthy()
   end)
