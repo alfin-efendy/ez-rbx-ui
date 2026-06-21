@@ -113,7 +113,7 @@ function M.installInto(env, mock, strict)
   env.Enum = {
     Font = enumNs({ "BuilderSans", "SourceSans", "Gotham" }),
     FontWeight = enumNs({ "Regular", "Medium", "SemiBold", "Bold" }),
-    EasingStyle = enumNs({ "Quart", "Quint", "Linear", "Sine" }),
+    EasingStyle = enumNs({ "Quart", "Quint", "Linear", "Sine", "Back" }),
     EasingDirection = enumNs({ "In", "Out", "InOut" }),
     AutomaticSize = enumNs({ "None", "X", "Y", "XY" }),
     SortOrder = enumNs({ "LayoutOrder", "Name" }),

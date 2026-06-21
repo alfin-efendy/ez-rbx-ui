@@ -24,4 +24,14 @@ function Animate.to(instance, duration, goalProps, style, dir)
   return tween
 end
 
+Animate.EASING = { pop = Enum.EasingStyle.Back, smooth = Enum.EasingStyle.Quint }
+
+-- pop-in: scale a UIScale child from 0.9 -> 1 with a Back/Out overshoot.
+function Animate.pop(inst, duration)
+  local us = inst:FindFirstChildOfClass("UIScale")
+  if not us then us = Instance.new("UIScale"); us.Parent = inst end
+  us.Scale = 0.9
+  return Animate.to(us, duration or "base", { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+end
+
 return Animate
