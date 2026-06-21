@@ -53,7 +53,10 @@ function Table.new(opts)
     local header = root:FindFirstChild("Header")
     if header then for _, c in ipairs(header:GetChildren()) do if c.Name == "Cell" then c.TextColor3 = theme.Colors.mutedForeground end end end
     for _, row in ipairs(body:GetChildren()) do
-      if row.Name == "Row" then for _, c in ipairs(row:GetChildren()) do if c.Name == "Cell" then c.TextColor3 = theme.Colors.foreground end end end
+      if row.Name == "Row" then
+        row.BackgroundColor3 = theme.Colors.surface
+        for _, c in ipairs(row:GetChildren()) do if c.Name == "Cell" then c.TextColor3 = theme.Colors.foreground end end
+      end
     end
   end)) end
 
