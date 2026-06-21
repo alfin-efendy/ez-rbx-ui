@@ -52,7 +52,7 @@ function SelectBox.new(opts)
         Position = UDim2.new(0, 0, 0, 28), Size = UDim2.new(0.5, -8, 0, 18), Parent = btn })
     end
   end
-  local field = Create("Frame", { Name = "Field", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0, Active = false,
+  local field = Create("Frame", { Name = "Field", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0, Active = false,
     Size = opts.Text and UDim2.new(0.5, -4, 0, 26) or UDim2.new(1, 0, 0, 26),
     Position = opts.Text and UDim2.new(0.5, 4, 0.5, -13) or UDim2.new(0, 0, 0.5, -13),
     Parent = btn, Create.corner(theme.Radius.sm) })
@@ -186,7 +186,7 @@ function SelectBox.new(opts)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     btn.BackgroundColor3 = theme.Colors.surface
-    field.BackgroundColor3 = theme.Colors.input
+    field.BackgroundColor3 = theme.Colors.background
     local fs = field:FindFirstChildOfClass("UIStroke"); if fs then fs.Color = theme.Colors.border end
     valueLabel.TextColor3 = theme.Colors.foreground
     local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end

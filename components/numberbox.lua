@@ -40,7 +40,7 @@ function NumberBox.new(opts)
         Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(0.5, -8, 0, 26), Parent = root })
     end
   end
-  local box = Create("Frame", { Name = "Box", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
+  local box = Create("Frame", { Name = "Box", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
     Position = hasLabel and UDim2.new(0.5, 4, 0.5, -15) or UDim2.new(0, 0, 0, 0),
     Size = hasLabel and UDim2.new(0.5, -4, 0, 30) or UDim2.new(1, 0, 0, 30),
     Parent = root, Create.corner(theme.Radius.md) })
@@ -71,7 +71,7 @@ function NumberBox.new(opts)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     root.BackgroundColor3 = theme.Colors.surface
-    box.BackgroundColor3 = theme.Colors.input
+    box.BackgroundColor3 = theme.Colors.background
     local bs = box:FindFirstChildOfClass("UIStroke"); if bs then bs.Color = theme.Colors.border end
     input.TextColor3 = theme.Colors.foreground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end

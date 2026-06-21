@@ -30,6 +30,8 @@ h.describe("textbox", function()
     local tb = TextBox.new({ Parent = Create("Frame", {}), Text = "Name" })
     h.expect(tb.Frame.BackgroundTransparency).toBe(0)
     h.expect(tb.Frame:FindFirstChild("Box"):FindFirstChildOfClass("UIStroke") ~= nil).toBeTruthy()
+    local R = h.loadLib()
+    h.expect(tb.Frame:FindFirstChild("Box").BackgroundColor3.R8).toBe(R.Theme.Colors.background.R8)
   end)
 end)
 

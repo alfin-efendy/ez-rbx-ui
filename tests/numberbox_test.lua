@@ -23,6 +23,8 @@ h.describe("numberbox", function()
     local nb = NumberBox.new({ Parent = Create("Frame", {}), Text = "Amount", Default = 1 })
     h.expect(nb.Frame.BackgroundTransparency).toBe(0)
     h.expect(nb.Frame:FindFirstChild("Box"):FindFirstChildOfClass("UIStroke") ~= nil).toBeTruthy()
+    local R = h.loadLib()
+    h.expect(nb.Frame:FindFirstChild("Box").BackgroundColor3.R8).toBe(R.Theme.Colors.background.R8)
   end)
 end)
 
