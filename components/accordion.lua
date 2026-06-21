@@ -18,23 +18,25 @@ function Accordion.new(opts)
 
   local container = Create("Frame", {
     Name = "Accordion",
-    BackgroundTransparency = 1,
+    BackgroundColor3 = theme.Colors.card,
+    BackgroundTransparency = 0,
     ClipsDescendants = true,
     AutomaticSize = Enum.AutomaticSize.None,
     Size = UDim2.new(1, 0, 0, HEADER_H),
     LayoutOrder = opts.LayoutOrder or 0,
     Parent = opts.Parent,
   })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = container })
+  Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.md), Parent = container })
 
   local header = Create("TextButton", {
     Name = "Header",
     Text = "",
     AutoButtonColor = false,
-    BackgroundColor3 = theme.Colors.surface,
-    BackgroundTransparency = 0,
+    BackgroundColor3 = theme.Colors.card,
+    BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, HEADER_H),
     Parent = container,
-    Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
 
@@ -80,6 +82,12 @@ function Accordion.new(opts)
   })
   local layout = content:FindFirstChildOfClass("UIListLayout")
 
+  local divider = Create("Frame", {
+    Name = "Divider", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0,
+    Size = UDim2.new(1, -theme.Spacing.inputX * 2, 0, 1), Position = UDim2.new(0, theme.Spacing.inputX, 0, HEADER_H),
+    Visible = expanded, ZIndex = 2, Parent = container,
+  })
+
   local api = { Container = container, Header = header, Content = content, Maid = maid }
 
   local function contentHeight()
@@ -91,15 +99,16 @@ function Accordion.new(opts)
 
   local function applyHeight(animated)
     local target = HEADER_H + (expanded and (theme.Spacing.gap + contentHeight()) or 0)
-    if expanded then content.Visible = true end
+    if expanded then content.Visible = true; divider.Visible = true end
     if animated then
       local tw = Animate.to(container, "base", { Size = UDim2.new(1, 0, 0, target) })
       tw.Completed:Connect(function()
-        if not expanded then content.Visible = false end
+        if not expanded then content.Visible = false; divider.Visible = false end
       end)
     else
       container.Size = UDim2.new(1, 0, 0, target)
       content.Visible = expanded
+      divider.Visible = expanded
     end
     Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.mutedForeground)
   end
@@ -131,8 +140,8 @@ function Accordion.new(opts)
   end))
 
   maid:Give(header.MouseButton1Click:Connect(function() api:Toggle() end))
-  maid:Give(header.MouseEnter:Connect(function() Animate.to(header, "fast", { BackgroundColor3 = theme.Colors.border }) end))
-  maid:Give(header.MouseLeave:Connect(function() Animate.to(header, "fast", { BackgroundColor3 = theme.Colors.surface }) end))
+  maid:Give(header.MouseEnter:Connect(function() Animate.to(container, "fast", { BackgroundColor3 = theme.Colors.surface }) end))
+  maid:Give(header.MouseLeave:Connect(function() Animate.to(container, "fast", { BackgroundColor3 = theme.Colors.card }) end))
   maid:Give(container)
 
   function api.Destroy() maid:DoCleanup() end
