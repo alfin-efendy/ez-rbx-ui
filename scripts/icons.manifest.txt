@@ -3,6 +3,11 @@ settings
 settings-2
 shapes
 target
+image
+table
+columns-2
+rows-3
+message-square
 chevron-right
 chevron-down
 chevron-left
