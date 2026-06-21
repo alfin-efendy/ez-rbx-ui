@@ -1,6 +1,7 @@
 home
 settings
 settings-2
+shapes
 target
 chevron-right
 chevron-down

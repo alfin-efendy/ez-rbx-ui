@@ -46,7 +46,7 @@ function SelectBox.new(opts)
   local api = { Frame = btn }
   function api.GetValue() return value end
   function api.SetValue(v) commit(v); if onChanged then onChanged(value) end end
-  function api.SetOptions(o) options = o or {} end
+  function api.SetOptions(o) options = o or {}; refresh() end
 
   local function pick(opt)
     if multi then

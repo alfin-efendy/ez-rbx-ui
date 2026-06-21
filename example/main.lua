@@ -20,6 +20,7 @@ local window = EzUI:CreateWindow({
 local menus = {
   require("menu/home"),
   require("menu/controls"),
+  require("menu/components"),
   require("menu/visuals"),
   require("menu/players"),
   require("menu/settings"),
