@@ -7,7 +7,7 @@ h.describe("button", function()
     local p = Create("Frame", {})
     local clicks = 0
     local b = Button.new({ Parent = p, Text = "Go", Callback = function() clicks = clicks + 1 end, LayoutOrder = 2 })
-    h.expect(b.Frame.BackgroundColor3.R8).toBe(250)  -- primary mono
+    h.expect(b.Frame:FindFirstChild("Surface").BackgroundColor3.R8).toBe(250)  -- primary mono
     h.expect(b.Frame.LayoutOrder).toBe(2)
     b.Frame.MouseButton1Click:Fire()
     h.expect(clicks).toBe(1)
@@ -21,10 +21,12 @@ h.describe("button", function()
   end)
   h.it("presses in on MouseButton1Down and springs back on MouseButton1Up", function()
     local b = Button.new({ Parent = Create("Frame", {}), Text = "Go" })
+    -- the press UIScale lives on the inner Surface (not the laid-out Button) so siblings never reflow
+    local sc = b.Frame:FindFirstChild("Surface"):FindFirstChildOfClass("UIScale")
     b.Frame.MouseButton1Down:Fire()
-    h.expect(b.Frame:FindFirstChildOfClass("UIScale").Scale).toBe(0.97)
+    h.expect(sc.Scale).toBe(0.97)
     b.Frame.MouseButton1Up:Fire()
-    h.expect(b.Frame:FindFirstChildOfClass("UIScale").Scale).toBe(1)
+    h.expect(sc.Scale).toBe(1)
   end)
 end)
 

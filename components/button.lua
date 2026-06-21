@@ -22,20 +22,25 @@ function Button.new(opts)
   local bg, fg, stroke = palette(theme, variant)
   local transparent = (variant == "ghost")
 
+  -- btn: fixed-size hit area, laid out by UIListLayout. It never scales, so the press
+  -- animation can't change its AbsoluteSize and siblings never reflow.
   local btn = Create("TextButton", {
-    Name = "Button",
-    AutoButtonColor = false,
-    Text = "",
-    BackgroundColor3 = bg,
-    BackgroundTransparency = transparent and 1 or 0,
-    Size = UDim2.new(1, 0, 0, 34),
-    LayoutOrder = opts.LayoutOrder or 0,
+    Name = "Button", AutoButtonColor = false, Text = "",
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, 34), LayoutOrder = opts.LayoutOrder or 0,
     Parent = opts.Parent,
+  })
+  -- surface: the visible button. Centred (AnchorPoint 0.5) so the press UIScale shrinks
+  -- toward the middle; Active=false so clicks fall through to btn.
+  local surface = Create("Frame", {
+    Name = "Surface", BackgroundColor3 = bg, BackgroundTransparency = transparent and 1 or 0,
+    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
+    Size = UDim2.new(1, 0, 1, 0), Active = false, Parent = btn,
     Create.corner(theme.Radius.md),
   })
-  if stroke then Create("UIStroke", { Color = stroke, Thickness = 1, Parent = btn }) end
+  local scale = Create("UIScale", { Scale = 1, Parent = surface })
+  if stroke then Create("UIStroke", { Color = stroke, Thickness = 1, Parent = surface }) end
 
-  local scale = Create("UIScale", { Scale = 1, Parent = btn })
   local hovering = false
   local bgNormal = transparent and 1 or 0
   local bgHover = transparent and 0.92 or 0.12
@@ -46,7 +51,7 @@ function Button.new(opts)
     local img = Create("ImageLabel", {
       Name = "Icon", BackgroundTransparency = 1,
       Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0.5, -44, 0.5, -8),
-      Parent = btn,
+      Parent = surface,
     })
     Icons.apply(img, opts.Icon, fg)
   end
@@ -55,25 +60,25 @@ function Button.new(opts)
     Text = opts.Text or "Button", TextColor3 = fg, TextSize = theme.Font.label.Size,
     Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 1, 0),
     Position = UDim2.new(0, hasIcon and 12 or 0, 0, 0),
-    Parent = btn,
+    Parent = surface,
   })
 
   maid:Give(btn.MouseEnter:Connect(function()
     hovering = true
-    Animate.to(btn, "fast", { BackgroundTransparency = bgHover })
+    Animate.to(surface, "fast", { BackgroundTransparency = bgHover })
   end))
   maid:Give(btn.MouseLeave:Connect(function()
     hovering = false
-    Animate.to(btn, "fast", { BackgroundTransparency = bgNormal })
+    Animate.to(surface, "fast", { BackgroundTransparency = bgNormal })
     Animate.to(scale, "fast", { Scale = 1 })
   end))
   maid:Give(btn.MouseButton1Down:Connect(function()
     Animate.to(scale, "fast", { Scale = 0.97 })
-    Animate.to(btn, "fast", { BackgroundTransparency = bgPressed })
+    Animate.to(surface, "fast", { BackgroundTransparency = bgPressed })
   end))
   maid:Give(btn.MouseButton1Up:Connect(function()
     Animate.to(scale, "base", { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    Animate.to(btn, "fast", { BackgroundTransparency = hovering and bgHover or bgNormal })
+    Animate.to(surface, "fast", { BackgroundTransparency = hovering and bgHover or bgNormal })
   end))
   maid:Give(btn.MouseButton1Click:Connect(function()
     if opts.Action == "ResetConfig" and opts.Window and opts.Window.ResetConfiguration then opts.Window:ResetConfiguration() end
@@ -83,10 +88,10 @@ function Button.new(opts)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     local nbg, nfg, nstroke = palette(theme, variant)
-    if not transparent then btn.BackgroundColor3 = nbg end
+    if not transparent then surface.BackgroundColor3 = nbg end
     label.TextColor3 = nfg
-    if hasIcon then Icons.apply(btn:FindFirstChild("Icon"), opts.Icon, nfg) end
-    local st = btn:FindFirstChildOfClass("UIStroke"); if st and nstroke then st.Color = nstroke end
+    if hasIcon then Icons.apply(surface:FindFirstChild("Icon"), opts.Icon, nfg) end
+    local st = surface:FindFirstChildOfClass("UIStroke"); if st and nstroke then st.Color = nstroke end
   end)) end
 
   return {
