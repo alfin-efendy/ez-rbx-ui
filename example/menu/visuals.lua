@@ -1,0 +1,10 @@
+return function(window)
+  local tab = window:AddTab({ Name = "Visuals", Icon = "eye" })
+  tab:AddSection("ESP")
+  tab:AddToggle({ Text = "Enable ESP", Flag = "esp", Default = false })
+  tab:AddColorPicker({ Text = "Box Color", Default = Color3.fromRGB(255, 80, 80), Flag = "espcolor" })
+  local acc = tab:AddAccordion({ Title = "Advanced", Icon = "settings-2", Expanded = false })
+  acc:AddToggle({ Text = "Chams", Default = false })
+  acc:AddSlider({ Text = "Thickness", Min = 1, Max = 10, Default = 2 })
+  acc:AddSelectBox({ Text = "Targets", Options = { "Players", "NPCs", "Both" }, Multi = true, Default = { "Players" } })
+end

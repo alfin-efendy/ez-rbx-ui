@@ -72,9 +72,12 @@ g:AddTab({ Name = "Grouped" })
 w:SearchTabs("grouped"); w:SearchTabs("")
 w:Dialog({ Title = "Q", Message = "m", Buttons = { { Text = "OK" } } })
 
--- Enhancements: action toast, minimize toggle, then graceful Close (full shutdown)
+-- Round-2: switch with description, resizable, action toast, minimize→hide
+t:AddToggle({ Text = "Desc", Default = true, Description = "a description line" })
+local rz = t:AddResizable({ Panes = { { Default = 0.5 }, { Default = 0.5 } } })
+rz.Panes[1]:AddButton({ Text = "L" }); rz.Panes[2]:AddButton({ Text = "R" })
 w:Notify({ Title = "Undo me", Type = "warning", Duration = 0, Action = { Text = "Undo", Callback = function() end } })
-w:Minimize(); w:Minimize()
+w:Minimize() -- hides window + shows floating toggle
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error
