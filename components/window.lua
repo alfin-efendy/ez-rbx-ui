@@ -2,11 +2,11 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
-  Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config
+  Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
 end
 
 local TITLE_H = 40
@@ -142,6 +142,7 @@ function Window.new(config)
   function api:Hide() visible = false; main.Visible = false end
   function api:Toggle() if visible then api:Hide() else api:Show() end end
   function api:SetTitle(s) titleLabel.Text = s end
+  function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
 
   local minimized = false
   function api:Minimize()
