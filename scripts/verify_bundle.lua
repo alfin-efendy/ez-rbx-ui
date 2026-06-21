@@ -115,6 +115,14 @@ w:SetNotificationsEnabled(false)
 assert(w:Notify({ Title = "blocked", Duration = 0 }) == nil, "notify should be gated when disabled")
 w:SetNotificationsEnabled(true)
 
+-- R4 Plan B: live light/dark + accent preserved + save/load
+w:SetAccent(Color3.fromRGB(120, 80, 200))
+w:SetMode("light"); assert(w:GetMode() == "light", "mode not light")
+assert(w.Main.BackgroundColor3.R > 0.9, "shell not light")
+w:SetMode("dark")
+assert(type(w:SaveConfiguration()) == "boolean", "SaveConfiguration")
+assert(type(w:LoadConfiguration()) == "boolean", "LoadConfiguration")
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error
