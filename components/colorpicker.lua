@@ -6,7 +6,8 @@ function ColorPicker.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Flag = R.Flag
 end
 
-local function toArr(c) return { c.R8 or math.floor(c.R * 255), c.G8 or math.floor(c.G * 255), c.B8 or math.floor(c.B * 255) } end
+-- Color3 channels are .R/.G/.B (0-1 floats) in real Roblox; .R8 does NOT exist.
+local function toArr(c) return { math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5) } end
 local function toColor(v)
   if type(v) == "table" and v[1] then return Color3.fromRGB(v[1], v[2], v[3]) end
   return v
