@@ -12,6 +12,7 @@ end
 
 local TITLE_H = 40
 local SIDEBAR_W = 150
+local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
 
 function Window.new(config)
@@ -24,6 +25,7 @@ function Window.new(config)
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
+  local sidebarW = SIDEBAR_W
   local closed = false
   local closeCallback
 
@@ -99,7 +101,7 @@ function Window.new(config)
   -- sidebar search box (pinned above the tab list)
   local searchBox = Create("Frame", {
     Name = "Search", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
-    Position = UDim2.new(0, 8, 0, 6), Size = UDim2.new(0, SIDEBAR_W - 16, 0, 24), Parent = body,
+    Position = UDim2.new(0, 8, 0, 6), Size = UDim2.new(0, sidebarW - 16, 0, 24), Parent = body,
     Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }),
   })
   local searchInput = Create("TextBox", {
@@ -115,7 +117,7 @@ function Window.new(config)
     BorderSizePixel = 0,
     ScrollBarThickness = 0,
     Position = UDim2.new(0, 0, 0, 36),
-    Size = UDim2.new(0, SIDEBAR_W, 1, -36),
+    Size = UDim2.new(0, sidebarW, 1, -36),
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0, 0, 0, 0),
     Parent = body,
@@ -128,13 +130,40 @@ function Window.new(config)
     BorderSizePixel = 0,
     ScrollBarThickness = 4,
     ScrollBarImageColor3 = theme.Colors.border,
-    Position = UDim2.new(0, SIDEBAR_W, 0, 0),
-    Size = UDim2.new(1, -SIDEBAR_W, 1, 0),
+    Position = UDim2.new(0, sidebarW, 0, 0),
+    Size = UDim2.new(1, -sidebarW, 1, 0),
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ClipsDescendants = true,
     Parent = body,
   })
+
+  -- draggable sidebar↔content divider
+  local sidebarHandle = Create("ImageButton", {
+    Name = "SidebarHandle", AutoButtonColor = false, BackgroundColor3 = theme.Colors.border, BackgroundTransparency = 0.5,
+    ZIndex = 6, Size = UDim2.new(0, 4, 1, 0), Position = UDim2.new(0, sidebarW, 0, 0), Parent = body,
+  })
+  local function applySidebarWidth(wpx)
+    sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
+    sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
+    searchBox.Size = UDim2.new(0, sidebarW - 16, 0, 24)
+    contentScroll.Position = UDim2.new(0, sidebarW, 0, 0)
+    contentScroll.Size = UDim2.new(1, -sidebarW, 1, 0)
+    sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
+  end
+  local sbDrag
+  maid:Give(sidebarHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = true; Overlay.closeAll() end
+  end))
+  maid:Give(UserInputService.InputChanged:Connect(function(input)
+    if sbDrag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+      local bp = body.AbsolutePosition
+      applySidebarWidth(input.Position.X - (bp and bp.X or 0))
+    end
+  end))
+  maid:Give(sidebarHandle.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = false end
+  end))
 
   Overlay.get(gui)
 
