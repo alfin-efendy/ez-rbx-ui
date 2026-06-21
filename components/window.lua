@@ -56,16 +56,16 @@ function Window.new(config)
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
   -- acrylic transparency: content panel lighter+more see-through; window/chrome darker+more solid (~0.6x)
   local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
-  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.3
   -- chrome (window/header/menu) is clearly darker than the content card in BOTH modes:
-  -- dark = background (near-black), light = surface (grey, vs the white card).
+  -- dark = background (near-black), light = surface (grey, vs the white card). The acrylic
+  -- slider frosts the WINDOW; the content panel stays a SOLID lighter card (WindUI look).
   local function chromeColor() return (theme.Mode == "light") and theme.Colors.surface or theme.Colors.background end
 
   local main = Create("Frame", {
     Name = "Main",
     Size = UDim2.new(0, width, 0, height),
     Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2),
-    BackgroundColor3 = chromeColor(), BackgroundTransparency = chromeT,
+    BackgroundColor3 = chromeColor(), BackgroundTransparency = baseT,
     BorderSizePixel = 0, ClipsDescendants = true,
     Parent = gui,
     Create.corner(theme.Radius.window),
@@ -150,8 +150,8 @@ function Window.new(config)
     Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
     Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
   })
-  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT, noStroke = true,
-    base = theme.Colors.card, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.card })
+  -- content panel: a SOLID lighter card (not frosted) so it stays clearly distinct from the darker window
+  Acrylic.decorate(contentPanel, theme, { solid = true, noStroke = true, base = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
     BackgroundTransparency = 1,
@@ -303,8 +303,7 @@ function Window.new(config)
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetAcrylicTransparency(n)
-    contentPanel.BackgroundTransparency = n
-    main.BackgroundTransparency = n * 0.3
+    main.BackgroundTransparency = n  -- frosts the window; content panel stays solid
     return n
   end
   function api:SetToggleKey(k) toggleKey = k; return k end

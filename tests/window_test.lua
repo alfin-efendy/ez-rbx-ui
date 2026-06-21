@@ -91,13 +91,14 @@ h.describe("window", function()
     h.expect(w:SaveConfiguration()).toBeTruthy()
     h.expect(type(w:LoadConfiguration())).toBe("boolean")
   end)
-  h.it("light mode re-skins the acrylic gradient + stroke to light tokens", function()
+  h.it("light mode re-skins the window shell + content card to light tokens", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
     w:SetMode("light")
-    local grad = w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel"):FindFirstChildOfClass("UIGradient")
     local stroke = w.Main:FindFirstChildOfClass("UIStroke")
-    h.expect(grad.Color.color[1].Value).toBe(R.Theme.PALETTES.light.surface)  -- panel gradient top = surface
+    local panel = w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel")
+    h.expect(w.Main.BackgroundColor3).toBe(R.Theme.PALETTES.light.surface)  -- chrome = darker-than-card grey in light
+    h.expect(panel.BackgroundColor3).toBe(R.Theme.PALETTES.light.card)      -- content = light card
     h.expect(stroke.Color).toBe(R.Theme.PALETTES.light.border)
   end)
   h.it("sidebar handle resizes the sidebar width", function()
@@ -126,7 +127,7 @@ h.describe("window", function()
     local sc = w.Main:FindFirstChildOfClass("UIScale")
     h.expect(sc ~= nil).toBeTruthy(); h.expect(sc.Scale).toBe(1.2)
     w:SetAcrylicTransparency(0.5)
-    h.expect(w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel").BackgroundTransparency).toBe(0.5)
+    h.expect(w.Main.BackgroundTransparency).toBe(0.5)  -- acrylic frosts the window; content stays solid
     h.expect(w:SetToggleKey(h.roblox.Enum.KeyCode.K)).toBe(h.roblox.Enum.KeyCode.K)
   end)
   h.it("closes an open popover when switching tabs", function()
@@ -259,24 +260,25 @@ h.describe("window", function()
     uis.InputBegan:Fire({ KeyCode = h.roblox.Enum.KeyCode.RightControl }, false)
     h.expect(w:IsVisible()).toBe(false)
   end)
-  h.it("rounded window backing (dark) + rounded inset content card (lighter), no 100% transparent", function()
+  h.it("dark window backing (frostable) + SOLID rounded inset content card (WindUI look)", function()
     local R = h.loadLib()
     local w = newWin()
-    -- window backing visible + rounded + more solid than content
+    -- window backing: darker chrome colour, rounded, frostable (transparency from the acrylic slider)
     h.expect(w.Main.BackgroundColor3.R8).toBe(R.Theme.Colors.background.R8)
     h.expect(w.Main.BackgroundTransparency > 0).toBeTruthy()
     h.expect(w.Main:FindFirstChildOfClass("UICorner") ~= nil).toBeTruthy()
     h.expect(w.Main:FindFirstChildOfClass("UIStroke") ~= nil).toBeTruthy()
     local body = w.Main:FindFirstChild("Body")
     local panel = body:FindFirstChild("ContentPanel")
+    -- content panel: SOLID lighter card (not frosted), clearly distinct from the darker window
     h.expect(panel.BackgroundColor3.R8).toBe(R.Theme.Colors.card.R8)
-    h.expect(panel.BackgroundTransparency > 0).toBeTruthy()
-    h.expect(w.Main.BackgroundTransparency < panel.BackgroundTransparency).toBeTruthy()  -- window more solid
-    -- content panel is a rounded inset card (not flush), borderless
+    h.expect(panel.BackgroundTransparency).toBe(0)                       -- solid
+    h.expect(panel.BackgroundTransparency < w.Main.BackgroundTransparency).toBeTruthy()  -- content more solid than window
+    -- rounded inset card, borderless, no frost gradient
     h.expect(panel:FindFirstChildOfClass("UICorner") ~= nil).toBeTruthy()
     h.expect(panel.Position.X.Offset > 0).toBeTruthy()
-    h.expect(panel:FindFirstChildOfClass("UIGradient") ~= nil).toBeTruthy()
-    h.expect(panel:FindFirstChildOfClass("UIStroke")).toBe(nil)  -- border removed
+    h.expect(panel:FindFirstChildOfClass("UIGradient")).toBe(nil)
+    h.expect(panel:FindFirstChildOfClass("UIStroke")).toBe(nil)
     h.expect(w.AcrylicBlur).toBe(nil)
     h.expect(w.ContentScroll.Parent.Name).toBe("ContentPanel")
   end)

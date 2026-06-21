@@ -124,7 +124,7 @@ assert(type(w:LoadConfiguration()) == "boolean", "LoadConfiguration")
 
 -- R5: light-mode acrylic re-skin + reference simple FAB
 w:SetMode("light")
-assert(w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel"):FindFirstChildOfClass("UIGradient"), "no acrylic gradient")
+assert(w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel").BackgroundColor3.R > 0.9, "content card not light")
 w:SetMode("dark")
 local w4 = EzUI:CreateWindow({ Title = "FabRef", Parent = screen, FloatingToggle = true,
   Config = { FileName = "Verify4", AutoSave = false } })
