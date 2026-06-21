@@ -10,6 +10,17 @@ h.describe("overlay", function()
     h.expect(r1).toBe(r2)
     h.expect(r1.ClipsDescendants).toBe(false)
   end)
+  h.it("closeAll invokes tracked popover closers once", function()
+    Overlay.reset()
+    local gui = h.roblox.Instance.new("ScreenGui"); Overlay.get(gui)
+    local closed = 0
+    local fn = function() closed = closed + 1 end
+    Overlay.trackPopover(fn)
+    Overlay.closeAll()
+    h.expect(closed).toBe(1)
+    Overlay.closeAll() -- cleared, not called again
+    h.expect(closed).toBe(1)
+  end)
   h.it("mount parents element to overlay root", function()
     local gui = h.roblox.Instance.new("ScreenGui")
     local root = Overlay.get(gui)

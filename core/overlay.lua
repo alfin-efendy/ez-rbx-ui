@@ -2,6 +2,7 @@
 local Overlay = {}
 local Create
 local root = nil
+local popovers = {} -- set of close functions for open popovers (dropdowns, color pickers)
 
 function Overlay.Init(R) Create = R.Create end
 
@@ -26,6 +27,15 @@ function Overlay.mount(element)
   return element
 end
 
-function Overlay.reset() root = nil end
+-- Popover registry: components register their Close fn so the window can close
+-- every open popover at once (e.g. on drag/resize/minimize/shutdown).
+function Overlay.trackPopover(closeFn) popovers[closeFn] = true; return closeFn end
+function Overlay.untrackPopover(closeFn) popovers[closeFn] = nil end
+function Overlay.closeAll()
+  local fns = popovers; popovers = {}
+  for fn in pairs(fns) do pcall(fn) end
+end
+
+function Overlay.reset() root = nil; popovers = {} end
 
 return Overlay
