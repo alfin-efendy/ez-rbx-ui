@@ -1,0 +1,24 @@
+local h = require("tests.helper")
+local R = h.loadLib()
+local Button, Create = R.Button, R.Create
+
+h.describe("button", function()
+  h.it("default variant uses primary bg, fires Callback on click", function()
+    local p = Create("Frame", {})
+    local clicks = 0
+    local b = Button.new({ Parent = p, Text = "Go", Callback = function() clicks = clicks + 1 end, LayoutOrder = 2 })
+    h.expect(b.Frame.BackgroundColor3.R8).toBe(250)  -- primary mono
+    h.expect(b.Frame.LayoutOrder).toBe(2)
+    b.Frame.MouseButton1Click:Fire()
+    h.expect(clicks).toBe(1)
+  end)
+  h.it("Action=ResetConfig calls Window:ResetConfiguration", function()
+    local reset = 0
+    local fakeWindow = { ResetConfiguration = function() reset = reset + 1 end }
+    local b = Button.new({ Text = "Reset", Variant = "destructive", Action = "ResetConfig", Window = fakeWindow })
+    b.Frame.MouseButton1Click:Fire()
+    h.expect(reset).toBe(1)
+  end)
+end)
+
+h.run()
