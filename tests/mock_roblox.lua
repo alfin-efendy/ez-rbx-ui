@@ -81,6 +81,9 @@ function M.installInto(env, mock)
     KeyCode = enumNs({ "RightControl", "E", "P", "Insert", "Unknown" }),
     UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard" }),
     ZIndexBehavior = enumNs({ "Sibling", "Global" }),
+    ScaleType = enumNs({ "Stretch", "Fit", "Crop", "Tile", "Slice" }),
+    UIFlexMode = enumNs({ "None", "Grow", "Shrink", "Fill" }),
+    UIFlexAlignment = enumNs({ "None", "Fill", "Center", "Start", "End" }),
   }
   env.Instance = { new = newInstance }
   -- Roblox typeof(): Instances/connections are userdata in real Roblox. The mock tags

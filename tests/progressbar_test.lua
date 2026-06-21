@@ -1,0 +1,12 @@
+local h = require("tests.helper")
+local R = h.loadLib(); local ProgressBar, Create = R.ProgressBar, R.Create
+h.describe("progressbar", function()
+  h.it("Set clamps and maps fill scale; Get returns value", function()
+    local pb = ProgressBar.new({ Parent = Create("Frame", {}), Default = 0.25 })
+    h.expect(pb.Get()).toBe(0.25)
+    pb.Set(2); h.expect(pb.Get()).toBe(1)
+    pb.Set(-1); h.expect(pb.Get()).toBe(0)
+    pb.Set(0.5); h.expect(pb.Get()).toBe(0.5)
+  end)
+end)
+h.run()
