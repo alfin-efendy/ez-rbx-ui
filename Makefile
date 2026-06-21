@@ -14,3 +14,8 @@ build:
 run: build
 	@echo "Running example..."
 	@lua-bundler -e $(EXAMPLE_INPUT_FILE) -o $(EXAMPLE_OUTPUT_FILE) -s -p 8081;
+
+.PHONY: test
+test:
+	@echo "Running headless tests..."
+	@for f in tests/*_test.lua; do echo "-- $$f"; lua $$f || exit 1; done
