@@ -34,7 +34,7 @@ local function newInstance(cls)
       if k == "GetAttribute" then return function(_, ak) return props["_attr_" .. ak] end end
       if k == "GetPropertyChangedSignal" then return function(_, p) signals["chg_" .. p] = signals["chg_" .. p] or makeSignal(); return signals["chg_" .. p] end end
       -- event fields created on demand
-      local ev = { MouseButton1Click = true, MouseEnter = true, MouseLeave = true, InputBegan = true, InputEnded = true, Activated = true, Completed = true, MouseButton1Down = true, MouseButton1Up = true, Changed = true }
+      local ev = { MouseButton1Click = true, MouseEnter = true, MouseLeave = true, InputBegan = true, InputEnded = true, InputChanged = true, Activated = true, Completed = true, MouseButton1Down = true, MouseButton1Up = true, Changed = true }
       if ev[k] then signals[k] = signals[k] or makeSignal(); return signals[k] end
       return nil
     end,
@@ -70,7 +70,8 @@ function M.installInto(env, mock)
     TextXAlignment = enumNs({ "Left", "Center", "Right" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
     KeyCode = enumNs({ "RightControl", "E", "P", "Insert", "Unknown" }),
-    UserInputType = enumNs({ "MouseButton1", "Touch", "Keyboard" }),
+    UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard" }),
+    ZIndexBehavior = enumNs({ "Sibling", "Global" }),
   }
   env.Instance = { new = newInstance }
   env.task = {
@@ -106,7 +107,7 @@ function M.installInto(env, mock)
       return tw
     end,
   }
-  local UserInputService = { InputBegan = makeSignal(), InputEnded = makeSignal(), TouchEnabled = false }
+  local UserInputService = { InputBegan = makeSignal(), InputChanged = makeSignal(), InputEnded = makeSignal(), TouchEnabled = false }
   local Players = {
     LocalPlayer = { Name = "Tester", UserId = 1 },
     GetPlayers = function() return { { Name = "Tester", UserId = 1 } } end,
@@ -118,6 +119,9 @@ function M.installInto(env, mock)
   local services = { HttpService = HttpService, TweenService = TweenService, UserInputService = UserInputService, Players = Players, RunService = RunService }
   env.game = { GetService = function(_, name) return services[name] end, HttpGet = function() return "" end }
   env.TweenInfo = { new = function(t, style, dir) return { Time = t, EasingStyle = style, EasingDirection = dir } end }
+  env.NumberSequence = { new = function(a) return { keypoints = a } end }
+  env.NumberSequenceKeypoint = { new = function(t, v) return { Time = t, Value = v } end }
+  env.ColorSequence = { new = function(c) return { color = c } end }
   env.mock = mock
 end
 
