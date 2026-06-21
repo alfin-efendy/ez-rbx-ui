@@ -13,6 +13,12 @@ h.describe("numberbox", function()
     nb.SetValue(-5)
     h.expect(nb.GetValue()).toBe(0)     -- clamped to Min
   end)
+  h.it("places the box on the right half with Text; Description renders", function()
+    local a = NumberBox.new({ Parent = Create("Frame", {}), Text = "Amount", Default = 1 })
+    h.expect(a.Frame:FindFirstChild("Box").Position.X.Scale).toBe(0.5)
+    local c = NumberBox.new({ Parent = Create("Frame", {}), Text = "Amount", Description = "How many", Default = 1 })
+    h.expect(c.Frame:FindFirstChild("Description").Text).toBe("How many")
+  end)
 end)
 
 h.run()

@@ -13,6 +13,8 @@ function NumberBox.new(opts)
   local minV, maxV, step = opts.Min, opts.Max, opts.Step or 1
   local value = opts.Default or 0
   local hasLabel = opts.Text ~= nil and opts.Text ~= ""
+  local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+  local rowH = (not hasLabel) and 30 or (hasDesc and 56 or 46)
 
   local function clamp(n)
     n = tonumber(n) or value
@@ -22,15 +24,24 @@ function NumberBox.new(opts)
   end
 
   local root = Create("Frame", { Name = "NumberBoxRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, hasLabel and 50 or 30), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
+    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent })
   if hasLabel then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
-      TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      Size = UDim2.new(1, 0, 0, 18), Parent = root })
+      TextYAlignment = hasDesc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
+      TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(0, 0, 0, hasDesc and 6 or 0),
+      Size = UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0), Parent = root })
+    if hasDesc then
+      Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(0.5, -8, 0, 26), Parent = root })
+    end
   end
   local box = Create("Frame", { Name = "Box", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
-    Position = UDim2.new(0, 0, 0, hasLabel and 20 or 0), Size = UDim2.new(1, 0, 0, 30),
+    Position = hasLabel and UDim2.new(0.5, 4, 0.5, -15) or UDim2.new(0, 0, 0, 0),
+    Size = hasLabel and UDim2.new(0.5, -4, 0, 30) or UDim2.new(1, 0, 0, 30),
     Parent = root, Create.corner(theme.Radius.md) })
   local function stepBtn(name, icon, x)
     local b = Create("ImageButton", { Name = name, AutoButtonColor = false, BackgroundColor3 = theme.Colors.surface,
@@ -60,6 +71,7 @@ function NumberBox.new(opts)
     box.BackgroundColor3 = theme.Colors.input
     input.TextColor3 = theme.Colors.foreground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     for _, c in ipairs(box:GetChildren()) do
       if c:IsA("ImageButton") then c.BackgroundColor3 = theme.Colors.surface
         local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.primary end end
