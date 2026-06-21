@@ -25,8 +25,16 @@ local function ensureContainer()
     Name = "ToastContainer", BackgroundTransparency = 1, ZIndex = 1800,
     AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -16), Size = UDim2.new(0, 300, 1, -32),
   })
-  container.MouseEnter:Connect(function() expanded = true; Notification.relayout() end)
-  container.MouseLeave:Connect(function() expanded = false; Notification.relayout() end)
+  container.MouseEnter:Connect(function()
+    expanded = true
+    for _, e in ipairs(order) do if e.progressTween then pcall(function() e.progressTween:Pause() end) end end
+    Notification.relayout()
+  end)
+  container.MouseLeave:Connect(function()
+    expanded = false
+    for _, e in ipairs(order) do if e.progressTween then pcall(function() e.progressTween:Play() end) end end
+    Notification.relayout()
+  end)
   Overlay.mount(container)
   return container
 end
@@ -109,6 +117,10 @@ function Notification.show(opts)
   Notification.relayout()         -- slides it from off-screen to its slot + fades in
 
   if (opts.Duration or 4000) > 0 then
+    local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
+      Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
+    order[#order].progressTween = Animate.to(bar, (opts.Duration or 4000) / 1000,
+      { Size = UDim2.new(0, 0, 0, 3) }, Enum.EasingStyle.Linear)
     task.delay((opts.Duration or 4000) / 1000, function() Notification.dismiss(id) end)
   end
   return id

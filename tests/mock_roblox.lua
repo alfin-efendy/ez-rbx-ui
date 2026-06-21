@@ -172,6 +172,7 @@ function M.installInto(env, mock, strict)
     Create = function(_, inst, info, goal)
       local tw = { Instance = inst, Info = info, Goal = goal, played = false, Completed = makeSignal() }
       function tw:Play() self.played = true; for k, v in pairs(goal) do inst[k] = v end; self.Completed:Fire() end
+      function tw:Pause() end
       function tw:Cancel() end
       mock.lastTween = tw
       return tw
