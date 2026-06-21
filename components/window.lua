@@ -62,7 +62,8 @@ function Window.new(config)
     Create.corner(theme.Radius.window),
   })
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
-  Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT })
+  Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT,
+    base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
 
   -- title bar
   local titleBar = Create("Frame", {
@@ -101,19 +102,6 @@ function Window.new(config)
   maid:Give(minBtn.MouseEnter:Connect(function() Icons.apply(minBtn, "minus", theme.Colors.primary) end))
   maid:Give(minBtn.MouseLeave:Connect(function() Icons.apply(minBtn, "minus", theme.Colors.mutedForeground) end))
 
-  -- header elevation: a 1px seam line + a soft downward shadow so content scrolls under the title bar
-  local headerShadow = Create("Frame", {
-    Name = "HeaderShadow", Active = false, BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 0, TITLE_H), ZIndex = 4, Parent = main,
-  })
-  Create("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({
-    NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1),
-  }), Parent = headerShadow })
-  Create("Frame", {
-    Name = "HeaderSeparator", Active = false, BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 0, TITLE_H), ZIndex = 5, Parent = main,
-  })
-
   -- body: sidebar + content
   local body = Create("Frame", {
     Name = "Body",
@@ -148,18 +136,25 @@ function Window.new(config)
     Create.listLayout({ Padding = 4 }),
     Create.padding({ all = 8 }),
   })
+  local cgap = theme.Spacing.gap
+  local contentPanel = Create("Frame", {
+    Name = "ContentPanel", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
+    Position = UDim2.new(0, sidebarW + cgap, 0, cgap),
+    Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
+    Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
+  })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     ScrollBarThickness = 4,
     ScrollBarImageColor3 = theme.Colors.border,
-    Position = UDim2.new(0, sidebarW, 0, 0),
-    Size = UDim2.new(1, -sidebarW, 1, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    Size = UDim2.new(1, 0, 1, 0),
     AutomaticCanvasSize = Enum.AutomaticSize.None,
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ClipsDescendants = true,
-    Parent = body,
+    Parent = contentPanel,
   })
 
   -- draggable sidebar↔content divider (with a centered grip)
@@ -167,23 +162,12 @@ function Window.new(config)
     Name = "SidebarHandle", AutoButtonColor = false, BackgroundTransparency = 1,
     ZIndex = 6, Size = UDim2.new(0, 12, 1, 0), Position = UDim2.new(0, sidebarW, 0, 0), Parent = body,
   })
-  Create("Frame", { Name = "Line", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0, ZIndex = 6,
-    Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Parent = sidebarHandle })
-  local sbGrip = Create("Frame", { Name = "Grip", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0, ZIndex = 7,
-    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 8, 0, 16),
-    Parent = sidebarHandle, Create.corner(theme.Radius.sm) })
-  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = sbGrip })
-  local sbGripIcon = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 8, 0, 8),
-    Position = UDim2.new(0.5, -4, 0.5, -4), Parent = sbGrip })
-  Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary)
-  maid:Give(sidebarHandle.MouseEnter:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.foreground) end))
-  maid:Give(sidebarHandle.MouseLeave:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary) end))
   local function applySidebarWidth(wpx)
     sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
     searchBox.Size = UDim2.new(0, sidebarW - 16, 0, 24)
-    contentScroll.Position = UDim2.new(0, sidebarW, 0, 0)
-    contentScroll.Size = UDim2.new(1, -sidebarW, 1, 0)
+    contentPanel.Position = UDim2.new(0, sidebarW + cgap, 0, cgap)
+    contentPanel.Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2)
     sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
   end
   local sbDrag
@@ -414,23 +398,19 @@ function Window.new(config)
 
   -- window-shell live re-skin (mode/accent)
   themer.register(function()
-    main.BackgroundColor3 = theme.Colors.card
+    main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
     searchBox.BackgroundColor3 = theme.Colors.input
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
-    local sep = main:FindFirstChild("HeaderSeparator"); if sep then sep.BackgroundColor3 = theme.Colors.border end
-    local shadow = main:FindFirstChild("HeaderShadow"); if shadow then shadow.BackgroundColor3 = theme.Colors.background end
-    local line = sidebarHandle:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
-    local grip = sidebarHandle:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
-    Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary)
+    contentPanel.BackgroundColor3 = theme.Colors.card
     local grad = main:FindFirstChildOfClass("UIGradient")
     if grad then
       grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, theme.Colors.surface),
-        ColorSequenceKeypoint.new(1, theme.Colors.card),
+        ColorSequenceKeypoint.new(0, theme.Colors.card),
+        ColorSequenceKeypoint.new(1, theme.Colors.background),
       })
     end
     local mstroke = main:FindFirstChildOfClass("UIStroke")

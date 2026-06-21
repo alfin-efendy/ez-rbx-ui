@@ -80,14 +80,14 @@ w:Notify({ Title = "Undo me", Type = "warning", Duration = 0, Action = { Text = 
 local w2 = EzUI:CreateWindow({ Title = "FAB", Parent = screen,
   FloatingToggle = { Type = "square", Image = "rbxassetid://1", Draggable = false },
   Config = { FileName = "Verify2", AutoSave = false } })
-assert(w2.Main:FindFirstChild("HeaderSeparator"), "no header separator")
+assert(w2.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel"), "no content panel")
 w2:SetFloatingToggle({ Type = "circle", Image = "rbxassetid://2" })
 local t2 = w2:AddTab({ Name = "T" })
 local accCard = t2:AddAccordion({ Title = "Card" }); accCard:Expand()
 assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
 
--- R4 Plan A: sidebar grip, simple pill FAB with size/pos
-assert(w.Main:FindFirstChild("Body"):FindFirstChild("SidebarHandle"):FindFirstChild("Grip"), "no sidebar grip")
+-- R4 Plan A: invisible sidebar drag handle (grip/line removed), simple pill FAB with size/pos
+assert(w.Main:FindFirstChild("Body"):FindFirstChild("SidebarHandle"), "no sidebar handle")
 local w3 = EzUI:CreateWindow({ Title = "Pill", Parent = screen, FloatingToggle = true,
   Config = { FileName = "Verify3", AutoSave = false } })
 w3:SetFloatingToggle({ Type = "simple", Size = { Width = 140, Height = 38 }, Position = { X = 20, Y = -70 } })
