@@ -23,7 +23,6 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
     Size = { Width = 560, Height = 420 },
-    Acrylic = true,
     ToggleKey = Enum.KeyCode.RightControl,   -- show/hide
     FloatingToggle = true,                    -- mobile/touch button
     Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
@@ -53,7 +52,6 @@ See [`example/main.lua`](example/main.lua) for a full playground (`make run` to 
 |---|---|---|
 | `Title` | string | title-bar text |
 | `Size` | `{ Width, Height }` | window size (px) |
-| `Acrylic` | bool | acrylic sheen panel (`false` = flat). Opaque & readable either way |
 | `ToggleKey` | `Enum.KeyCode` | show/hide key (default `RightControl`) |
 | `FloatingToggle` | bool | show a floating toggle button (auto on touch devices) |
 | `Theme` | table | override design tokens (see [Theming](#theming)) |
