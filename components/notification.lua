@@ -108,7 +108,7 @@ function Notification.show(opts)
     Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
   local closeBtn = Create("ImageButton", { Name = "Close", AutoButtonColor = false, BackgroundTransparency = 1,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0, 0), Parent = titleRow })
-  Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
+  Icons.apply(closeBtn, "x", theme.Colors.primary)
   closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
 
   if opts.Message then

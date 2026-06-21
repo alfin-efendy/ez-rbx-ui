@@ -173,6 +173,16 @@ do
   assert(fab and fab:FindFirstChildOfClass("UIStroke"), "simple FAB should have a border stroke")
 end
 
+-- R10: accent icons re-tint on mode change (accordion lead icon was the regression)
+do
+  local accT = w:AddTab({ Name = "IcoT" })
+  local acc = accT:AddAccordion({ Title = "Cfg", Icon = "settings-2" })
+  w:SetMode("light")
+  local lead = acc.Header:FindFirstChild("Icon")
+  assert(lead and lead.ImageColor3.R < 0.25, "accordion lead icon not re-tinted to the light accent")
+  w:SetMode("dark")
+end
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error

@@ -90,12 +90,12 @@ function Window.new(config)
     Position = UDim2.new(1, -18, 0.5, -9),
     Parent = titleBar,
   })
-  Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
+  Icons.apply(closeBtn, "x", theme.Colors.primary)
   local minBtn = Create("ImageButton", {
     Name = "Minimize", AutoButtonColor = false, BackgroundTransparency = 1,
     Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -44, 0.5, -9), Parent = titleBar,
   })
-  Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
+  Icons.apply(minBtn, "minus", theme.Colors.primary)
 
   -- header elevation: a 1px seam line + a soft downward shadow so content scrolls under the title bar
   local headerShadow = Create("Frame", {
@@ -171,9 +171,9 @@ function Window.new(config)
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = sbGrip })
   local sbGripIcon = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 8, 0, 8),
     Position = UDim2.new(0.5, -4, 0.5, -4), Parent = sbGrip })
-  Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground)
+  Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary)
   maid:Give(sidebarHandle.MouseEnter:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.foreground) end))
-  maid:Give(sidebarHandle.MouseLeave:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.mutedForeground) end))
+  maid:Give(sidebarHandle.MouseLeave:Connect(function() Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary) end))
   local function applySidebarWidth(wpx)
     sidebarW = math.max(SIDEBAR_MIN, math.min(SIDEBAR_MAX, wpx))
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
@@ -359,7 +359,7 @@ function Window.new(config)
     if hasIcon then
       local ic = Create("ImageLabel", { Name = "TagIcon", BackgroundTransparency = 1, Size = UDim2.new(0, 12, 0, 12),
         Position = UDim2.new(0, 0, 0.5, -6), Parent = pill })
-      Icons.apply(ic, o.Icon, theme.Colors.mutedForeground)
+      Icons.apply(ic, o.Icon, theme.Colors.primary)
     end
     local txt = Create("TextLabel", { Name = "TagText", BackgroundTransparency = 1, Text = o.Text or "",
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size,
@@ -370,7 +370,7 @@ function Window.new(config)
       pill.BackgroundColor3 = o.Color or theme.Colors.surface
       local st = pill:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
       txt.TextColor3 = theme.Colors.foreground
-      local ic = pill:FindFirstChild("TagIcon"); if ic then Icons.apply(ic, o.Icon, theme.Colors.mutedForeground) end
+      local ic = pill:FindFirstChild("TagIcon"); if ic then Icons.apply(ic, o.Icon, theme.Colors.primary) end
     end)
     return { SetText = function(s) txt.Text = s end, Destroy = function() unreg(); pill:Destroy() end }
   end
@@ -412,8 +412,8 @@ function Window.new(config)
   themer.register(function()
     main.BackgroundColor3 = theme.Colors.card
     titleLabel.TextColor3 = theme.Colors.foreground
-    Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
-    Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
+    Icons.apply(closeBtn, "x", theme.Colors.primary)
+    Icons.apply(minBtn, "minus", theme.Colors.primary)
     searchBox.BackgroundColor3 = theme.Colors.input
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
@@ -421,6 +421,7 @@ function Window.new(config)
     local shadow = main:FindFirstChild("HeaderShadow"); if shadow then shadow.BackgroundColor3 = theme.Colors.background end
     local line = sidebarHandle:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
     local grip = sidebarHandle:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
+    Icons.apply(sbGripIcon, "grip-vertical", theme.Colors.primary)
     local grad = main:FindFirstChildOfClass("UIGradient")
     if grad then
       grad.Color = ColorSequence.new({
@@ -451,13 +452,13 @@ function Window.new(config)
       Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
       local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
         Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3), Parent = fab, Create.corner(theme.Radius.md) })
-      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.foreground) end
+      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primary) end
     elseif kind == "circle" then
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
       local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
-      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
+      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primary) end
     else -- simple: 50x50 chevron square, neutral surface (follows the mode)
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
@@ -466,7 +467,7 @@ function Window.new(config)
       Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
       chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
-      Icons.apply(chev, "chevron-right", theme.Colors.foreground)
+      Icons.apply(chev, "chevron-right", theme.Colors.primary)
     end
     -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
     if fabOpts.Size then
@@ -488,10 +489,10 @@ function Window.new(config)
       local cx = fab.Position.X.Scale * vp.X + fab.Position.X.Offset + w2 / 2
       local peek = 15
       if cx < vp.X / 2 then
-        chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+        chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
         Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
       else
-        chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+        chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
         Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
       end
     end
@@ -528,7 +529,7 @@ function Window.new(config)
       else -- square + simple are neutral surface
         fab.BackgroundColor3 = theme.Colors.surface
         local st = fab:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
-        if chev then Icons.apply(chev, chevDir, theme.Colors.foreground) end
+        if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
       end
     end))
     fabMaid:Give(fab)

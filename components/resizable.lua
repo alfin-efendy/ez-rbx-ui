@@ -75,9 +75,9 @@ function Resizable.new(opts)
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = grip })
     local gi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 8, 0, 8),
       Position = UDim2.new(0.5, -4, 0.5, -4), Parent = grip })
-    Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.mutedForeground)
+    Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.primary)
     maid:Give(handle.MouseEnter:Connect(function() Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.foreground) end))
-    maid:Give(handle.MouseLeave:Connect(function() Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.mutedForeground) end))
+    maid:Give(handle.MouseLeave:Connect(function() Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.primary) end))
     handles[k] = handle
     local drag
     maid:Give(handle.InputBegan:Connect(function(input)
@@ -106,6 +106,8 @@ function Resizable.new(opts)
     for _, hd in ipairs(handles) do
       local line = hd:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
       local grip = hd:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
+      local ic = grip and grip:FindFirstChildOfClass("ImageLabel")
+      if ic then Icons.apply(ic, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.primary) end
     end
   end)) end
 
