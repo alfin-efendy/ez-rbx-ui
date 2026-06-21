@@ -147,6 +147,20 @@ local w5 = EzUI:CreateWindow({ Title = "Dock", Parent = screen, FloatingToggle =
 local fab5; for _, c in ipairs(w5.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab5 = c end end
 assert(fab5 and fab5.Position.X.Offset == -15, "simple FAB not docked at edge")
 
+-- R7: FAB reopen-button (hidden when shown) + selectbox Text title.
+-- Use a dedicated window created last so its FAB is the last FloatingToggle in the shared overlay.
+local w6 = EzUI:CreateWindow({ Title = "FabR7", Parent = screen, FloatingToggle = true,
+  Config = { FileName = "Verify6", AutoSave = false } })
+do
+  local fab; for _, c in ipairs(w6.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+  assert(fab and fab.Visible == false, "FAB should be hidden while window shown")
+  assert(not fab:FindFirstChild("FloatingToggleShadow"), "no shadow expected")
+  w6:Hide(); assert(fab.Visible == true, "FAB should show on hide"); w6:Show()
+end
+local stx = t:AddSelectBox({ Text = "Mode", Options = { "A", "B" }, Default = "A" })
+assert(stx.Frame:FindFirstChild("Title"), "selectbox Title missing")
+w:SetAccent("Violet")
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error

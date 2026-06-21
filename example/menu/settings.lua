@@ -4,8 +4,19 @@ return function(window)
   tab:AddSection("Appearance")
   tab:AddSelectBox({ Text = "Mode", Options = { "Dark", "Light" }, Default = "Dark",
     Callback = function(m) window:SetMode(m == "Light" and "light" or "dark") end })
-  tab:AddColorPicker({ Text = "Accent color", Default = Color3.fromRGB(99, 102, 241),
+  local accentPicker
+  tab:AddSelectBox({ Text = "Accent", Options = { "Mono", "Indigo", "Violet", "Emerald", "Sky", "Rose", "Custom" },
+    Default = "Mono", Callback = function(name)
+      if name == "Custom" then
+        if accentPicker then accentPicker.Frame.Visible = true end
+      else
+        if accentPicker then accentPicker.Frame.Visible = false end
+        window:SetAccent(name)
+      end
+    end })
+  accentPicker = tab:AddColorPicker({ Text = "Custom accent", Default = Color3.fromRGB(99, 102, 241),
     Callback = function(c) window:SetAccent(c) end })
+  accentPicker.Frame.Visible = false
   tab:AddSelectBox({ Text = "Floating button", Options = { "simple", "square", "circle" }, Default = "simple",
     Callback = function(t) window:SetFloatingToggle({ Type = t }) end })
   tab:AddSlider({ Text = "UI scale (%)", Min = 80, Max = 130, Default = 100,
