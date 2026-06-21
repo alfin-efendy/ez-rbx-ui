@@ -1,15 +1,13 @@
-local Create = require("core/create")
-local DefaultTheme = require("core/theme")
-local Animate = require("core/animate")
-local Maid = require("core/maid")
-local Icons = require("core/icons")
-local Overlay = require("core/overlay")
-local Acrylic = require("core/acrylic")
-local Tab = require("components/tab")
-
+-- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab
+
+function Window.Init(R)
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
+  Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab
+end
 
 local TITLE_H = 40
 local SIDEBAR_W = 150

@@ -1,5 +1,5 @@
 local h = require("tests.helper")
-local Animate = h.requireModule("core.animate")
+local Animate = h.loadLib().Animate
 
 h.describe("animate", function()
   h.it("info builds TweenInfo with Quart/Out defaults", function()

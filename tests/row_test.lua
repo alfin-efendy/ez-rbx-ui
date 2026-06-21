@@ -1,5 +1,5 @@
 local h = require("tests.helper")
-local Row = h.requireModule("primitives.row")
+local Row = h.loadLib().Row
 
 h.describe("row", function()
   h.it("builds an auto-sized surface row parented correctly", function()

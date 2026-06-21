@@ -1,6 +1,8 @@
-local Create = require("core/create")
-
+-- Deps injected via Init(R).
 local Acrylic = {}
+local Create
+
+function Acrylic.Init(R) Create = R.Create end
 
 function Acrylic.decorate(frame, theme, opts)
   opts = opts or {}

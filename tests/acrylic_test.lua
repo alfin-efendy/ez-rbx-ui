@@ -1,7 +1,6 @@
 local h = require("tests.helper")
-local Acrylic = h.requireModule("core.acrylic")
-local Theme = h.requireModule("core.theme")
-local Create = h.requireModule("core.create")
+local R = h.loadLib()
+local Acrylic, Theme, Create = R.Acrylic, R.Theme, R.Create
 
 h.describe("acrylic", function()
   h.it("decorate sets translucent card + adds gradient and stroke", function()

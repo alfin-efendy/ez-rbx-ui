@@ -1,7 +1,9 @@
-local Create = require("core/create")
-
+-- Deps injected via Init(R).
 local Overlay = {}
+local Create
 local root = nil
+
+function Overlay.Init(R) Create = R.Create end
 
 function Overlay.get(parentGui)
   if root and not root._destroyed then return root end

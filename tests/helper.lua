@@ -28,6 +28,31 @@ function H.requireModule(path)
   return mod
 end
 
+-- Load the whole library the way main.lua does: require each module once, then
+-- inject the dependency registry R via Module.Init(R). Mirrors the Init pattern the
+-- bundler requires (modules must NOT require each other). Returns R.
+function H.loadLib()
+  local R = {}
+  R.Theme = H.requireModule("core/theme")
+  R.Create = H.requireModule("core/create")
+  R.Signal = H.requireModule("core/signal")
+  R.Maid = H.requireModule("core/maid")
+  R.Icons = H.requireModule("core/icons")
+  R.Config = H.requireModule("core/config")
+  R.Animate = H.requireModule("core/animate")
+  R.Overlay = H.requireModule("core/overlay")
+  R.Acrylic = H.requireModule("core/acrylic")
+  R.Row = H.requireModule("primitives/row")
+  R.Accordion = H.requireModule("components/accordion")
+  R.Tab = H.requireModule("components/tab")
+  R.Window = H.requireModule("components/window")
+  for _, m in pairs(R) do
+    if type(m) == "table" and type(m.Init) == "function" then m.Init(R) end
+  end
+  if R.Overlay.reset then R.Overlay.reset() end
+  return R
+end
+
 function H.describe(name, fn) H._suite = name; fn(); H._suite = "" end
 function H.it(name, fn)
   H._tests[#H._tests + 1] = { name = (H._suite ~= "" and H._suite .. " > " or "") .. name, fn = fn }

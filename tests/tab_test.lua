@@ -1,6 +1,6 @@
 local h = require("tests.helper")
-local Tab = h.requireModule("components.tab")
-local Create = h.requireModule("core.create")
+local R = h.loadLib()
+local Tab, Create = R.Tab, R.Create
 
 local function rig()
   return Create("ScrollingFrame", {}), Create("ScrollingFrame", {})

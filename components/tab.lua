@@ -1,11 +1,11 @@
-local Create = require("core/create")
-local DefaultTheme = require("core/theme")
-local Animate = require("core/animate")
-local Maid = require("core/maid")
-local Icons = require("core/icons")
-local Accordion = require("components/accordion")
-
+-- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Tab = {}
+local Create, DefaultTheme, Animate, Maid, Icons, Accordion
+
+function Tab.Init(R)
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate
+  Maid = R.Maid; Icons = R.Icons; Accordion = R.Accordion
+end
 
 function Tab.new(opts)
   opts = opts or {}

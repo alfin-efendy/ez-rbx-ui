@@ -1,29 +1,32 @@
 --[[ EzUI — Easy Roblox UI Library (rewrite). Entry point. ]]
 local EzUI = {}
 
--- lua-bundler keys modules by their require STRING and resolves the path relative
--- to the FIRST file that requires that string. Requiring every module here from the
--- repo root (dependency order) pre-registers each string, so nested cross-requires
--- inside components/ (e.g. window -> "core/acrylic", "components/tab") match the
--- already-registered root-resolved module instead of resolving to components/core/...
-local Theme = require("core/theme")
-local Create = require("core/create")
-local Animate = require("core/animate")
-local Signal = require("core/signal")
-local Maid = require("core/maid")
-local Icons = require("core/icons")
-local Overlay = require("core/overlay")
-local Acrylic = require("core/acrylic")
-local Config = require("core/config")
-local Accordion = require("components/accordion")
-local Tab = require("components/tab")
-local Window = require("components/window")
+-- The bundler rewrites require() ONLY in this entry file (not inside embedded
+-- modules), so modules must NOT require each other. Load each module once here,
+-- then inject the dependency registry R via Module.Init(R).
+local R = {}
+R.Theme = require("core/theme")
+R.Create = require("core/create")
+R.Signal = require("core/signal")
+R.Maid = require("core/maid")
+R.Icons = require("core/icons")
+R.Config = require("core/config")
+R.Animate = require("core/animate")
+R.Overlay = require("core/overlay")
+R.Acrylic = require("core/acrylic")
+R.Accordion = require("components/accordion")
+R.Tab = require("components/tab")
+R.Window = require("components/window")
 
-EzUI.Theme = Theme
-EzUI.Icons = Icons
-EzUI._internal = { Create = Create, Animate = Animate, Signal = Signal, Maid = Maid, Overlay = Overlay }
+for _, m in pairs(R) do
+  if type(m) == "table" and type(m.Init) == "function" then m.Init(R) end
+end
 
-function EzUI:NewConfig(opts) return Config.new(opts) end
+EzUI.Theme = R.Theme
+EzUI.Icons = R.Icons
+EzUI._internal = R
+
+function EzUI:NewConfig(opts) return R.Config.new(opts) end
 
 function EzUI:CreateWindow(config)
   config = config or {}
@@ -31,7 +34,7 @@ function EzUI:CreateWindow(config)
     local ok, hui = pcall(function() return gethui and gethui() end)
     config.Parent = (ok and hui) or game:GetService("CoreGui")
   end
-  return Window.new(config)
+  return R.Window.new(config)
 end
 
 EzUI.Version = "2.0.0-alpha.1"

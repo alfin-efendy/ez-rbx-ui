@@ -1,5 +1,5 @@
 local h = require("tests.helper")
-local Window = h.requireModule("components.window")
+local Window = h.loadLib().Window
 
 local function newWin()
   local screen = h.roblox.Instance.new("ScreenGui")

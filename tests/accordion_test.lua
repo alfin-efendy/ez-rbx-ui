@@ -1,6 +1,6 @@
 local h = require("tests.helper")
-local Accordion = h.requireModule("components.accordion")
-local Create = h.requireModule("core.create")
+local R = h.loadLib()
+local Accordion, Create = R.Accordion, R.Create
 
 local function parentWithLayout()
   local p = Create("Frame", {})

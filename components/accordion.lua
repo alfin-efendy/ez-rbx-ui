@@ -1,10 +1,10 @@
-local Create = require("core/create")
-local DefaultTheme = require("core/theme")
-local Animate = require("core/animate")
-local Maid = require("core/maid")
-local Icons = require("core/icons")
-
+-- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Accordion = {}
+local Create, DefaultTheme, Animate, Maid, Icons
+
+function Accordion.Init(R)
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
+end
 
 local HEADER_H = 34
 

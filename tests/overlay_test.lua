@@ -1,5 +1,5 @@
 local h = require("tests.helper")
-local Overlay = h.requireModule("core.overlay")
+local Overlay = h.loadLib().Overlay
 Overlay.reset()
 
 h.describe("overlay", function()

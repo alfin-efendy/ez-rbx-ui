@@ -1,9 +1,10 @@
-local Create = require("core/create")
-local Theme = require("core/theme")
-local Animate = require("core/animate")
-local Maid = require("core/maid")
-
+-- Deps injected via Init(R).
 local Row = {}
+local Create, Theme, Animate, Maid
+
+function Row.Init(R)
+  Create = R.Create; Theme = R.Theme; Animate = R.Animate; Maid = R.Maid
+end
 
 function Row.new(opts)
   opts = opts or {}
