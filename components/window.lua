@@ -90,12 +90,16 @@ function Window.new(config)
     Position = UDim2.new(1, -18, 0.5, -9),
     Parent = titleBar,
   })
-  Icons.apply(closeBtn, "x", theme.Colors.primary)
+  Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
   local minBtn = Create("ImageButton", {
     Name = "Minimize", AutoButtonColor = false, BackgroundTransparency = 1,
     Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -44, 0.5, -9), Parent = titleBar,
   })
-  Icons.apply(minBtn, "minus", theme.Colors.primary)
+  Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
+  maid:Give(closeBtn.MouseEnter:Connect(function() Icons.apply(closeBtn, "x", theme.Colors.destructive) end))
+  maid:Give(closeBtn.MouseLeave:Connect(function() Icons.apply(closeBtn, "x", theme.Colors.mutedForeground) end))
+  maid:Give(minBtn.MouseEnter:Connect(function() Icons.apply(minBtn, "minus", theme.Colors.primary) end))
+  maid:Give(minBtn.MouseLeave:Connect(function() Icons.apply(minBtn, "minus", theme.Colors.mutedForeground) end))
 
   -- header elevation: a 1px seam line + a soft downward shadow so content scrolls under the title bar
   local headerShadow = Create("Frame", {
@@ -412,8 +416,8 @@ function Window.new(config)
   themer.register(function()
     main.BackgroundColor3 = theme.Colors.card
     titleLabel.TextColor3 = theme.Colors.foreground
-    Icons.apply(closeBtn, "x", theme.Colors.primary)
-    Icons.apply(minBtn, "minus", theme.Colors.primary)
+    Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
+    Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
     searchBox.BackgroundColor3 = theme.Colors.input
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
