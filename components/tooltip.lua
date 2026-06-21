@@ -1,7 +1,7 @@
 -- Deps injected via Init(R). Mixin-style: Tooltip.attach(target, text) wires hover.
 local Tooltip = {}
-local Create, DefaultTheme, Maid, Overlay
-function Tooltip.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay end
+local Create, DefaultTheme, Maid, Overlay, Animate
+function Tooltip.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Animate = R.Animate end
 
 function Tooltip.attach(target, text, themeArg)
   local theme = themeArg or DefaultTheme
@@ -17,6 +17,7 @@ function Tooltip.attach(target, text, themeArg)
       ZIndex = 2000, Create.corner(theme.Radius.sm), Create.padding({ left = 6, right = 6 }) })
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = tip })
     Overlay.mount(tip)
+    Animate.pop(tip, "fast")
   end
   local function hide() if tip then tip:Destroy(); tip = nil end end
   maid:Give(target.MouseEnter:Connect(show))

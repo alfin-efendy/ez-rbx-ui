@@ -1,10 +1,10 @@
 -- Deps injected via Init(R). Swatch row + an overlay HSV picker (SV square + hue slider,
 -- click/drag). Value persists as an {r,g,b} array (JSON-safe).
 local ColorPicker = {}
-local Create, DefaultTheme, Maid, Overlay, Flag
+local Create, DefaultTheme, Maid, Overlay, Flag, Animate
 local UserInputService = game:GetService("UserInputService")
 function ColorPicker.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Flag = R.Flag
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Flag = R.Flag; Animate = R.Animate
 end
 
 -- Color3 channels are .R/.G/.B (0-1 floats) in real Roblox.
@@ -129,8 +129,13 @@ function ColorPicker.new(opts)
     end))
 
     Overlay.mount(popover)
+    Overlay.trackPopover(api.Close)
+    Animate.pop(popover, "base")
   end
-  function api.Close() if popover then popover:Destroy(); popover = nil end end
+  function api.Close()
+    if popover then popover:Destroy(); popover = nil end
+    Overlay.untrackPopover(api.Close)
+  end
   function api.Destroy() api.Close(); maid:DoCleanup() end
 
   maid:Give(btn.MouseButton1Click:Connect(function() if popover then api.Close() else api.Open() end end))

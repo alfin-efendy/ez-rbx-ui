@@ -47,7 +47,8 @@ t:AddButton({ Text = "B" })
 t:AddToggle({ Text = "T", Default = true })
 t:AddTextBox({ Text = "TB", Default = "x" })
 t:AddNumberBox({ Text = "N", Default = 1, Min = 0, Max = 10 })
-t:AddSelectBox({ Text = "S", Options = { "a", "b" }, Default = "a" })
+local sb = t:AddSelectBox({ Text = "S", Options = { "alpha", "beta" }, Default = "alpha" })
+sb.Open(); sb.Filter("be"); sb.Close()  -- search box + filter under strict mock
 t:AddSlider({ Text = "Sl", Min = 0, Max = 10, Default = 5 })
 t:AddKeybind({ Text = "K", Default = _G.Enum.KeyCode.E })
 local cp = t:AddColorPicker({ Text = "C", Default = _G.Color3.fromRGB(255, 80, 80) })
@@ -71,4 +72,11 @@ g:AddTab({ Name = "Grouped" })
 w:SearchTabs("grouped"); w:SearchTabs("")
 w:Dialog({ Title = "Q", Message = "m", Buttons = { { Text = "OK" } } })
 
-print("VERIFY-BUNDLE OK: faithful require+Color3; controls + notify/reset/groups/search/dialog work")
+-- Enhancements: action toast, minimize toggle, then graceful Close (full shutdown)
+w:Notify({ Title = "Undo me", Type = "warning", Duration = 0, Action = { Text = "Undo", Callback = function() end } })
+w:Minimize(); w:Minimize()
+w:SetCloseCallback(function() end)
+w:Close()
+w:AddTab({ Name = "after-close" }) -- must be a no-op, not error
+
+print("VERIFY-BUNDLE OK: faithful require+Color3; controls + enhancements + graceful Close work")

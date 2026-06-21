@@ -1,8 +1,9 @@
 -- Deps injected via Init(R). Dialog.open(opts) builds a modal/non-modal dialog in the overlay.
 local Dialog = {}
-local Create, DefaultTheme, Maid, Overlay, Button, Acrylic
+local Create, DefaultTheme, Maid, Overlay, Button, Acrylic, Animate
 function Dialog.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Button = R.Button; Acrylic = R.Acrylic
+  Animate = R.Animate
 end
 
 function Dialog.open(opts)
@@ -42,6 +43,7 @@ function Dialog.open(opts)
   end
   maid:Give(dim)
   Overlay.mount(dim)
+  Animate.pop(card, "base") -- pop the card in
   return handle
 end
 

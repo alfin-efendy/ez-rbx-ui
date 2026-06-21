@@ -13,6 +13,7 @@ local window = EzUI:CreateWindow({
   ToggleKey = Enum.KeyCode.RightControl,
   FloatingToggle = true,
   Config = { Enabled = true, FileName = "EzUIDemo", AutoSave = true, AutoLoad = true },
+  OnClose = function() print("EzUI closed — settings saved.") end,
 })
 
 -- ── Home ──────────────────────────────────────────────────────────────────
@@ -72,6 +73,10 @@ credits:AddImage({ Lucide = "gamepad-2", Height = 64 })
 credits:AddParagraph("EzUI — a modern Roblox UI library. shadcn-inspired, Fluent acrylic, Lucide icons.")
 credits:AddButton({ Text = "Notify Me", Variant = "ghost", Callback = function()
   window:Notify({ Title = "Hello", Message = "Thanks for using EzUI!", Type = "info" })
+end })
+credits:AddButton({ Text = "Notify with Action", Variant = "ghost", Callback = function()
+  window:Notify({ Title = "Item deleted", Message = "Removed from inventory.", Type = "warning",
+    Action = { Text = "Undo", Callback = function() window:ShowSuccess({ Title = "Restored" }) end } })
 end })
 
 window:ShowInfo({ Title = "Welcome", Message = "EzUI demo loaded. Press RightControl to toggle.", Duration = 5000 })
