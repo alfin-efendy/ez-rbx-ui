@@ -358,7 +358,13 @@ function Window.new(config)
       Font = Enum.Font.BuilderSans, Size = UDim2.new(1, hasIcon and -16 or 0, 1, 0),
       Position = UDim2.new(0, hasIcon and 16 or 0, 0, 0), Parent = pill })
     tagX = tagX + width + 8
-    return { SetText = function(s) txt.Text = s end, Destroy = function() pill:Destroy() end }
+    local unreg = themer.register(function()
+      pill.BackgroundColor3 = o.Color or theme.Colors.surface
+      local st = pill:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+      txt.TextColor3 = theme.Colors.foreground
+      local ic = pill:FindFirstChild("TagIcon"); if ic then Icons.apply(ic, o.Icon, theme.Colors.mutedForeground) end
+    end)
+    return { SetText = function(s) txt.Text = s end, Destroy = function() unreg(); pill:Destroy() end }
   end
   function api:SetAccent(nameOrColor)
     local a = Themer.accent(nameOrColor)
