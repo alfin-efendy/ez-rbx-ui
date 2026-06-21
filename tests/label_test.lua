@@ -1,0 +1,25 @@
+local h = require("tests.helper")
+local R = h.loadLib()
+local Label, Create = R.Label, R.Create
+
+h.describe("label", function()
+  h.it("default label shows text in foreground", function()
+    local p = Create("Frame", {})
+    local l = Label.new({ Parent = p, Text = "Hello", LayoutOrder = 1 })
+    h.expect(l.Frame.Text).toBe("Hello")
+    h.expect(l.Frame.TextColor3.R8).toBe(250)
+    h.expect(l.Frame.Parent).toBe(p)
+  end)
+  h.it("section variant is uppercased muted", function()
+    local l = Label.new({ Text = "General", Variant = "section" })
+    h.expect(l.Frame.Text).toBe("GENERAL")
+    h.expect(l.Frame.TextColor3.R8).toBe(161)  -- mutedForeground
+  end)
+  h.it("paragraph wraps; SetText updates", function()
+    local l = Label.new({ Text = "a", Variant = "paragraph" })
+    h.expect(l.Frame.TextWrapped).toBe(true)
+    l.SetText("b"); h.expect(l.Frame.Text).toBe("b")
+  end)
+end)
+
+h.run()

@@ -76,6 +76,7 @@ function M.installInto(env, mock)
     AutomaticSize = enumNs({ "None", "X", "Y", "XY" }),
     SortOrder = enumNs({ "LayoutOrder", "Name" }),
     TextXAlignment = enumNs({ "Left", "Center", "Right" }),
+    TextYAlignment = enumNs({ "Top", "Center", "Bottom" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
     KeyCode = enumNs({ "RightControl", "E", "P", "Insert", "Unknown" }),
     UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard" }),
