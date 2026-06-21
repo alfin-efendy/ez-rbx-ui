@@ -21,6 +21,7 @@ function Window.new(config)
   -- merge a partial Theme override onto the defaults (verbatim use would crash on missing tokens)
   local theme = DefaultTheme.new(config.Theme or {})
   if config.Mode == "light" then DefaultTheme.applyMode(theme, "light") else theme.Mode = "dark" end
+  theme.AccentName = "Adaptive"
   local maid = Maid.new()
   local width = (config.Size and config.Size.Width) or 560
   local height = (config.Size and config.Size.Height) or 420
@@ -373,17 +374,37 @@ function Window.new(config)
     end)
     return { SetText = function(s) txt.Text = s end, Destroy = function() unreg(); pill:Destroy() end }
   end
+  local function fgForColor(c)
+    local lum = 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+    return (lum > 0.55) and Color3.fromRGB(24, 24, 27) or Color3.fromRGB(250, 250, 250)
+  end
   function api:SetAccent(nameOrColor)
-    local a = Themer.accent(nameOrColor)
-    if not a and typeof(nameOrColor) == "Color3" then a = { Primary = nameOrColor, Foreground = theme.Colors.primaryForeground } end
-    if not a then return end
-    theme.Colors.primary = a.Primary
-    theme.Colors.primaryForeground = a.Foreground
-    themer.setAccent(a.Primary, a.Foreground)
+    if nameOrColor == "Adaptive" then
+      theme.AccentName = "Adaptive"
+      local p = DefaultTheme.PALETTES[theme.Mode] or DefaultTheme.PALETTES.dark
+      theme.Colors.primary = p.primary
+      theme.Colors.primaryForeground = p.primaryForeground
+    elseif typeof(nameOrColor) == "Color3" then
+      theme.AccentName = "Custom"
+      theme.Colors.primary = nameOrColor
+      theme.Colors.primaryForeground = fgForColor(nameOrColor)
+    else
+      local a = Themer.accent(nameOrColor)
+      if not a then return end
+      theme.AccentName = nameOrColor
+      theme.Colors.primary = a.Primary
+      theme.Colors.primaryForeground = a.Foreground
+    end
+    themer.reskin()
   end
   function api:GetMode() return theme.Mode end
   function api:SetMode(mode)
     DefaultTheme.applyMode(theme, mode)
+    if theme.AccentName == "Adaptive" then
+      local p = DefaultTheme.PALETTES[mode] or DefaultTheme.PALETTES.dark
+      theme.Colors.primary = p.primary
+      theme.Colors.primaryForeground = p.primaryForeground
+    end
     themer.reskin()
   end
 
