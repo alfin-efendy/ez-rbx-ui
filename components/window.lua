@@ -260,6 +260,33 @@ function Window.new(config)
   end))
 
   maid:Give(closeBtn.MouseButton1Click:Connect(function() api:Hide() end))
+
+  -- responsive: clamp to viewport (best-effort; no-op headless where workspace is nil)
+  function api:AdaptToViewport()
+    local cam = workspace and workspace.CurrentCamera
+    local vp = cam and cam.ViewportSize
+    if vp then
+      width = math.min(width, vp.X - 40)
+      height = math.min(height, vp.Y - 40)
+      main.Size = UDim2.new(0, width, 0, height)
+      main.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+    end
+  end
+  if config.AutoAdapt ~= false then api:AdaptToViewport() end
+
+  -- mobile/touch floating toggle button
+  local fab
+  if config.FloatingToggle or UserInputService.TouchEnabled then
+    fab = Create("ImageButton", { Name = "FloatingToggle", BackgroundColor3 = theme.Colors.primary,
+      Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700,
+      Parent = Overlay.get(gui), Create.corner(22) })
+    local fi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
+      Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
+    Icons.apply(fi, "gamepad-2", theme.Colors.primaryForeground)
+    maid:Give(fab.MouseButton1Click:Connect(function() api:Toggle() end))
+  end
+  function api:SetFloatingToggleVisible(b) if fab then fab.Visible = b end end
+
   maid:Give(gui)
   function api.Destroy() maid:DoCleanup() end
 
