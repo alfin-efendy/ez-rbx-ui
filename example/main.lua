@@ -16,17 +16,22 @@ local window = EzUI:CreateWindow({
   OnClose = function() print("EzUI closed — settings saved.") end,
 })
 
--- literal requires (the bundler only embeds/rewrites literal-string require calls)
-local menus = {
-  require("menu/home"),
-  require("menu/controls"),
-  require("menu/components"),
-  require("menu/visuals"),
-  require("menu/players"),
-  require("menu/settings"),
-  require("menu/credits"),
-}
-for _, build in ipairs(menus) do build(window) end
+-- literal requires only (the bundler embeds/rewrites only literal-string require calls)
+require("menu/home")(window)
+
+local inputs = window:AddTabGroup("Inputs")
+require("menu/components/button")(window, inputs)
+require("menu/components/toggle")(window, inputs)
+require("menu/components/textbox")(window, inputs)
+require("menu/components/numberbox")(window, inputs)
+require("menu/components/selectbox")(window, inputs)
+require("menu/components/slider")(window, inputs)
+require("menu/components/keybind")(window, inputs)
+require("menu/components/colorpicker")(window, inputs)
+require("menu/components/playerselector")(window, inputs)
+
+require("menu/settings")(window)
+require("menu/credits")(window)
 
 window:Tag({ Text = "v3", Icon = "sparkles" })
 window:ShowInfo({ Title = "Welcome", Message = "EzUI demo loaded. Press RightControl to toggle.", Duration = 5000 })
