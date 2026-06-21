@@ -135,6 +135,14 @@ function Accordion.new(opts)
     nextOrder = function() order = order + 1; return order end,
   })
 
+  if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
+    container.BackgroundColor3 = theme.Colors.card
+    local st = container:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
+    title.TextColor3 = theme.Colors.foreground
+    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.mutedForeground)
+    divider.BackgroundColor3 = theme.Colors.border
+  end)) end
+
   -- Re-apply height when content grows (engine drives sibling reflow via parent UIListLayout).
   maid:Give(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     if expanded then container.Size = UDim2.new(1, 0, 0, HEADER_H + theme.Spacing.gap + contentHeight()) end

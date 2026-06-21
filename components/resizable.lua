@@ -55,7 +55,8 @@ function Resizable.new(opts)
     paneFrames[i] = pane
     local order = 0
     local paneApi = { Frame = pane }
-    Host.attach(paneApi, { R = REG, content = pane, theme = theme, nextOrder = function() order = order + 1; return order end })
+    Host.attach(paneApi, { R = REG, content = pane, theme = theme, accentThemer = opts.AccentThemer,
+      nextOrder = function() order = order + 1; return order end })
     panes[i] = paneApi
   end
 
@@ -99,6 +100,15 @@ function Resizable.new(opts)
   end
 
   applyLayout()
+
+  if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
+    for _, f in ipairs(paneFrames) do f.BackgroundColor3 = theme.Colors.card end
+    for _, hd in ipairs(handles) do
+      local line = hd:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
+      local grip = hd:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
+    end
+  end)) end
+
   maid:Give(container)
   return { Frame = container, Panes = panes, Destroy = function() maid:DoCleanup() end }
 end

@@ -42,6 +42,7 @@ function Host.attach(api, ctx)
       opts.Config = ctx.config
       opts.Window = ctx.window
       opts.AccentReg = ctx.accentThemer and ctx.accentThemer.register
+      opts.AccentThemer = ctx.accentThemer
       local control = ctx.R[spec.mod].new(opts)
       if opts.Tooltip and ctx.R.Tooltip and control and control.Frame then
         ctx.R.Tooltip.attach(control.Frame, opts.Tooltip, ctx.theme)

@@ -110,7 +110,17 @@ function Tab.new(opts)
     nextOrder = function() order = order + 1; return order end,
   })
 
-  if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function() indicator.BackgroundColor3 = theme.Colors.primary end)) end
+  if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
+    indicator.BackgroundColor3 = theme.Colors.primary
+    if selected then
+      label.TextColor3 = theme.Colors.foreground
+      Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
+      if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.foreground) end
+    else
+      label.TextColor3 = theme.Colors.mutedForeground
+      if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) end
+    end
+  end)) end
 
   function api:AddAccordion(accOpts)
     accOpts = accOpts or {}
