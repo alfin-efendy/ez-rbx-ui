@@ -107,9 +107,9 @@ function SelectBox.new(opts)
         Create.padding({ left = 6, right = 6 }) })
       local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
         Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), Parent = o })
-      if isSelected(opt) then Icons.apply(check, "check", theme.Colors.foreground) else check.Visible = false end
+      if isSelected(opt) then Icons.apply(check, "check", theme.Colors.primary) else check.Visible = false end
       Create("TextLabel", { BackgroundTransparency = 1, Text = opt, ZIndex = 1003,
-        TextColor3 = isSelected(opt) and theme.Colors.foreground or theme.Colors.mutedForeground,
+        TextColor3 = isSelected(opt) and theme.Colors.primary or theme.Colors.mutedForeground,
         TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size,
         Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 20, 0, 0), Parent = o })
       o.MouseButton1Click:Connect(function() pick(opt) end)

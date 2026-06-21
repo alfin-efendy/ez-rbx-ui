@@ -61,6 +61,8 @@ function Toggle.new(opts)
 
   local commit = Flag.bind(opts, opts.Default == true, apply)
 
+  if opts.AccentReg then maid:Give(opts.AccentReg(function() apply(value) end)) end
+
   local api = { Frame = btn }
   function api.Get() return value end
   function api.Set(v)

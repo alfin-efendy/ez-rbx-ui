@@ -56,6 +56,8 @@ function Slider.new(opts)
   function api.OnChanged(fn) onChanged = fn end
   function api.Destroy() maid:DoCleanup() end
 
+  if opts.AccentReg then maid:Give(opts.AccentReg(function() fill.BackgroundColor3 = theme.Colors.primary end)) end
+
   local dragging = false
   local function fromX(px)
     local ap, sz = track.AbsolutePosition, track.AbsoluteSize

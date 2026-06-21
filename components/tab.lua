@@ -27,6 +27,11 @@ function Tab.new(opts)
     Create.corner(theme.Radius.md),
     Create.padding({ left = 10, right = 10 }),
   })
+  local indicator = Create("Frame", {
+    Name = "Active", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
+    Size = UDim2.new(0, 3, 0, 18), Position = UDim2.new(0, -4, 0.5, -9), Visible = false, ZIndex = 2,
+    Parent = button, Create.corner(2),
+  })
   local icon = Create("ImageLabel", {
     Name = "Icon",
     BackgroundTransparency = 1,
@@ -67,6 +72,7 @@ function Tab.new(opts)
 
   function api:Select()
     selected = true
+    indicator.Visible = true
     -- slide up + fade in (visible tab-switch transition)
     content.GroupTransparency = 1
     content.Position = UDim2.new(0, 0, 0, 10)
@@ -80,6 +86,7 @@ function Tab.new(opts)
 
   function api:Deselect()
     selected = false
+    indicator.Visible = false
     local tw = Animate.to(content, "fast", { GroupTransparency = 1 })
     tw.Completed:Connect(function() if not selected then content.Visible = false end end)
     button.BackgroundTransparency = 1
@@ -101,6 +108,8 @@ function Tab.new(opts)
     registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
     nextOrder = function() order = order + 1; return order end,
   })
+
+  if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function() indicator.BackgroundColor3 = theme.Colors.primary end)) end
 
   function api:AddAccordion(accOpts)
     accOpts = accOpts or {}

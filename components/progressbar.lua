@@ -13,11 +13,15 @@ function ProgressBar.new(opts)
     Size = UDim2.new(1, 0, 1, 0), Parent = root, Create.corner(4) })
   local fill = Create("Frame", { Name = "Fill", BackgroundColor3 = opts.Color or theme.Colors.primary, BorderSizePixel = 0,
     Size = UDim2.new(value, 0, 1, 0), Parent = track, Create.corner(4) })
+  local unreg
+  if opts.AccentReg and not opts.Color then
+    unreg = opts.AccentReg(function() fill.BackgroundColor3 = theme.Colors.primary end)
+  end
   return {
     Frame = root,
     Get = function() return value end,
     Set = function(p) value = clamp01(p); Animate.to(fill, "fast", { Size = UDim2.new(value, 0, 1, 0) }) end,
-    Destroy = function() root:Destroy() end,
+    Destroy = function() if unreg then unreg() end; root:Destroy() end,
   }
 end
 return ProgressBar
