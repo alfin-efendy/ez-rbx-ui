@@ -20,6 +20,7 @@ local SIMPLE = {
   AddPlayerSelector = { mod = "PlayerSelector" },
   AddProgressBar = { mod = "ProgressBar" },
   AddResizable = { mod = "Resizable" },
+  AddCard = { mod = "Card" },
 }
 
 -- ctx = { R, content, theme, config, window, nextOrder }
