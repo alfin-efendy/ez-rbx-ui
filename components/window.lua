@@ -63,11 +63,14 @@ function Window.new(config)
   })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = main })
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
+  -- acrylic transparency: content panel lighter+more see-through; chrome darker+more solid (~0.6x)
+  local baseT = (config.Acrylic == false) and 0 or (acrylicT or 0.12)
+  local chromeT = (config.Acrylic == false) and 0 or baseT * 0.6
 
   -- title bar
   local titleBar = Create("Frame", {
     Name = "TitleBar",
-    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = 0,
+    BackgroundColor3 = theme.Colors.background, BackgroundTransparency = chromeT,
     Size = UDim2.new(1, 0, 0, TITLE_H),
     Parent = main,
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
@@ -109,7 +112,8 @@ function Window.new(config)
     Size = UDim2.new(1, 0, 1, -TITLE_H),
     Parent = main,
   })
-  local sidebarBg = Create("Frame", { Name = "SidebarBg", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+  local sidebarBg = Create("Frame", { Name = "SidebarBg", BackgroundColor3 = theme.Colors.background,
+    BackgroundTransparency = chromeT, BorderSizePixel = 0,
     Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(0, sidebarW, 1, 0), Parent = body })
   -- sidebar search box (pinned above the tab list)
   local searchBox = Create("Frame", {
@@ -137,14 +141,13 @@ function Window.new(config)
     Create.listLayout({ Padding = 4 }),
     Create.padding({ all = 8 }),
   })
-  local cgap = theme.Spacing.gap
   local contentPanel = Create("Frame", {
     Name = "ContentPanel", BorderSizePixel = 0,
-    Position = UDim2.new(0, sidebarW + cgap, 0, cgap),
-    Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2),
-    Parent = body, ClipsDescendants = true, Create.corner(theme.Radius.lg),
+    Position = UDim2.new(0, sidebarW, 0, 0),
+    Size = UDim2.new(1, -sidebarW, 1, 0),
+    Parent = body, ClipsDescendants = true,
   })
-  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = acrylicT,
+  Acrylic.decorate(contentPanel, theme, { solid = config.Acrylic == false, transparency = baseT,
     base = theme.Colors.card, gradientTop = theme.Colors.surface, gradientBottom = theme.Colors.card })
   local contentScroll = Create("ScrollingFrame", {
     Name = "Content",
@@ -170,8 +173,8 @@ function Window.new(config)
     sidebar.Size = UDim2.new(0, sidebarW, 1, -36)
     sidebarBg.Size = UDim2.new(0, sidebarW, 1, 0)
     searchBox.Size = UDim2.new(0, sidebarW - 16, 0, 24)
-    contentPanel.Position = UDim2.new(0, sidebarW + cgap, 0, cgap)
-    contentPanel.Size = UDim2.new(1, -(sidebarW + cgap * 2), 1, -cgap * 2)
+    contentPanel.Position = UDim2.new(0, sidebarW, 0, 0)
+    contentPanel.Size = UDim2.new(1, -sidebarW, 1, 0)
     sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
   end
   local sbDrag
@@ -297,7 +300,12 @@ function Window.new(config)
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
-  function api:SetAcrylicTransparency(n) contentPanel.BackgroundTransparency = n; return n end
+  function api:SetAcrylicTransparency(n)
+    contentPanel.BackgroundTransparency = n
+    titleBar.BackgroundTransparency = n * 0.6
+    sidebarBg.BackgroundTransparency = n * 0.6
+    return n
+  end
   function api:SetToggleKey(k) toggleKey = k; return k end
   local uiScale
   function api:SetUIScale(n)
