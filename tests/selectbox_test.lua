@@ -22,6 +22,25 @@ h.describe("selectbox", function()
     for _, c in ipairs(root:GetChildren()) do if c.Name == "SelectDropdown" then found = true end end
     h.expect(found).toBeTruthy()
   end)
+  h.it("dropdown has a search box that filters options", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local s = SelectBox.new({ Parent = Create("Frame", {}), Options = { "Alpha", "Beta", "Gamma" }, Default = "Alpha" })
+    s.Open()
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    h.expect(dd:FindFirstChild("Search") ~= nil).toBeTruthy()
+    s.Filter("be")
+    local function optVisible(text)
+      for _, o in ipairs(dd:GetChildren()) do
+        if o.Name == "Opt" then
+          for _, l in ipairs(o:GetChildren()) do
+            if l.ClassName == "TextLabel" and l.Text == text then return o.Visible end
+          end
+        end
+      end
+    end
+    h.expect(optVisible("Beta")).toBe(true)
+    h.expect(optVisible("Alpha")).toBe(false)
+  end)
   h.it("multi select returns an array and toggles", function()
     local s = SelectBox.new({ Options = { "A", "B", "C" }, Multi = true, Default = { "A" } })
     h.expect(#s.GetValue()).toBe(1)

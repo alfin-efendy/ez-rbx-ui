@@ -17,6 +17,7 @@ function SelectBox.new(opts)
   local multi = opts.Multi == true
   local value = multi and (opts.Default or {}) or (opts.Default or options[1])
   local dropdown
+  local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
   local onChanged = opts.Callback
 
   local function display()
@@ -64,37 +65,64 @@ function SelectBox.new(opts)
     end
   end
 
+  local function isSelected(opt) return multi and contains(value, opt) or (value == opt) end
+
+  function api.Filter(query)
+    query = (query or ""):lower()
+    for _, e in ipairs(optButtons) do
+      e.btn.Visible = (query == "" or e.text:lower():find(query, 1, true) ~= nil)
+    end
+  end
+
   function api.Open()
     if dropdown then return end
+    optButtons = {}
     local pos = btn.AbsolutePosition
     local sz = btn.AbsoluteSize
     dropdown = Create("Frame", {
       Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
       Position = UDim2.new(0, pos and pos.X or 0, 0, (pos and pos.Y or 0) + 36),
-      Size = UDim2.new(0, math.max(120, sz and sz.X or 120), 0, math.min(#options * 28 + 8, 200)),
+      Size = UDim2.new(0, math.max(140, sz and sz.X or 140), 0, math.min(#options * 28 + 44, 240)),
       ClipsDescendants = true, ZIndex = 1001,
       Create.corner(theme.Radius.md),
       Create.padding({ all = 4 }),
       Create.listLayout({ Padding = 2 }),
     })
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = dropdown })
+
+    -- search box (filters options live)
+    local searchBox = Create("Frame", { Name = "Search", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
+      Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 0, ZIndex = 1002, Parent = dropdown,
+      Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }) })
+    local searchInput = Create("TextBox", { Name = "Input", BackgroundTransparency = 1, Text = "",
+      PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
+      TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+      ClearTextOnFocus = false, ZIndex = 1002, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
+    searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
+
     for i, opt in ipairs(options) do
       local o = Create("TextButton", { Name = "Opt", AutoButtonColor = false, Text = "",
         BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 1, ZIndex = 1002,
         Size = UDim2.new(1, 0, 0, 26), LayoutOrder = i, Parent = dropdown, Create.corner(theme.Radius.sm),
-        Create.padding({ left = 8, right = 8 }) })
-      local selected = multi and contains(value, opt) or (value == opt)
-      Create("TextLabel", { BackgroundTransparency = 1, Text = opt, ZIndex = 1002,
-        TextColor3 = selected and theme.Colors.foreground or theme.Colors.mutedForeground,
+        Create.padding({ left = 6, right = 6 }) })
+      local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
+        Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), Parent = o })
+      if isSelected(opt) then Icons.apply(check, "check", theme.Colors.foreground) else check.Visible = false end
+      Create("TextLabel", { BackgroundTransparency = 1, Text = opt, ZIndex = 1003,
+        TextColor3 = isSelected(opt) and theme.Colors.foreground or theme.Colors.mutedForeground,
         TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size,
-        Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 1, 0), Parent = o })
+        Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 20, 0, 0), Parent = o })
       o.MouseButton1Click:Connect(function() pick(opt) end)
+      optButtons[#optButtons + 1] = { btn = o, text = opt }
     end
     Overlay.mount(dropdown)
+    Overlay.trackPopover(api.Close)
   end
 
   function api.Close()
     if dropdown then dropdown:Destroy(); dropdown = nil end
+    optButtons = {}
+    Overlay.untrackPopover(api.Close)
   end
 
   function api.Destroy() api.Close(); maid:DoCleanup() end
