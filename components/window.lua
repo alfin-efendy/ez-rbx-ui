@@ -366,6 +366,26 @@ function Window.new(config)
     theme.Colors.primaryForeground = a.Foreground
     themer.setAccent(a.Primary, a.Foreground)
   end
+  function api:GetMode() return theme.Mode end
+  function api:SetMode(mode)
+    DefaultTheme.applyMode(theme, mode)
+    themer.reskin()
+  end
+
+  -- window-shell live re-skin (mode/accent)
+  themer.register(function()
+    main.BackgroundColor3 = theme.Colors.card
+    titleLabel.TextColor3 = theme.Colors.foreground
+    Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
+    Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
+    searchBox.BackgroundColor3 = theme.Colors.input
+    local si = searchBox:FindFirstChild("SearchInput")
+    if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
+    local sep = main:FindFirstChild("HeaderSeparator"); if sep then sep.BackgroundColor3 = theme.Colors.border end
+    local shadow = main:FindFirstChild("HeaderShadow"); if shadow then shadow.BackgroundColor3 = theme.Colors.background end
+    local line = sidebarHandle:FindFirstChild("Line"); if line then line.BackgroundColor3 = theme.Colors.border end
+    local grip = sidebarHandle:FindFirstChild("Grip"); if grip then grip.BackgroundColor3 = theme.Colors.surface end
+  end)
 
   local fab
   local fabOpts = (type(config.FloatingToggle) == "table") and config.FloatingToggle or {}

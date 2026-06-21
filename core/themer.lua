@@ -31,8 +31,11 @@ function Themer.new()
     fns[fn] = true
     return function() fns[fn] = nil end
   end
+  function self.reskin()
+    for fn in pairs(fns) do pcall(fn) end
+  end
   function self.setAccent(primary, foreground)
-    for fn in pairs(fns) do pcall(fn, primary, foreground) end
+    self.reskin() -- closures read theme.Colors live; caller mutated it before calling
   end
   return self
 end
