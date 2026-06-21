@@ -24,7 +24,7 @@ function Slider.new(opts)
 
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
   local root = Create("Frame", { Name = "SliderRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
-    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 58 or 44) or 24), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 62 or 46) or 28), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
     Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
   local valueLabel
   if opts.Text then
@@ -43,7 +43,7 @@ function Slider.new(opts)
     end
   end
   local track = Create("Frame", { Name = "Track", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 1, -10), Parent = root, Create.corner(3) })
+    Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 1, -16), Parent = root, Create.corner(3) })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = track })
   local fill = Create("Frame", { Name = "Fill", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
     Size = UDim2.new(0, 0, 1, 0), Parent = track, Create.corner(3) })
