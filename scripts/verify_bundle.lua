@@ -167,6 +167,12 @@ assert(w.Main.BackgroundColor3.R > 0.9, "light shell")
 w:SetAccent(Color3.fromRGB(255, 255, 255)) -- white custom accent (luminance foreground path)
 w:SetMode("dark"); w:SetAccent("Adaptive")
 
+-- R9: simple FAB is neutral (has a UIStroke border, not a bare primary block)
+do
+  local fab; for _, c in ipairs(w.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+  assert(fab and fab:FindFirstChildOfClass("UIStroke"), "simple FAB should have a border stroke")
+end
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error

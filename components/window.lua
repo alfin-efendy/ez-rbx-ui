@@ -458,14 +458,15 @@ function Window.new(config)
       local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
-    else -- simple: reference 50x50 chevron square
+    else -- simple: 50x50 chevron square, neutral surface (follows the mode)
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
-      fab.BackgroundColor3 = theme.Colors.primary
+      fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = fab })
+      Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
       chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
-      Icons.apply(chev, "chevron-right", theme.Colors.primaryForeground)
+      Icons.apply(chev, "chevron-right", theme.Colors.foreground)
     end
     -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
     if fabOpts.Size then
@@ -483,9 +484,8 @@ function Window.new(config)
     fabSnap = function()
       local vp = Overlay.get(gui).AbsoluteSize
       if not vp or vp.X <= 0 then return end
-      local w2 = (fab.AbsoluteSize and fab.AbsoluteSize.X) or (fabFullSize and fabFullSize.X.Offset) or 50
-      local ap = fab.AbsolutePosition
-      local cx = (ap and ap.X or 0) + w2 / 2
+      local w2 = (fabFullSize and fabFullSize.X.Offset) or 50
+      local cx = fab.Position.X.Scale * vp.X + fab.Position.X.Offset + w2 / 2
       local peek = 15
       if cx < vp.X / 2 then
         chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
@@ -523,12 +523,12 @@ function Window.new(config)
       api:Show()
     end))
     fabMaid:Give(themer.register(function()
-      if kind == "square" then
+      if kind == "circle" then
+        fab.BackgroundColor3 = theme.Colors.primary
+      else -- square + simple are neutral surface
         fab.BackgroundColor3 = theme.Colors.surface
         local st = fab:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
-      else
-        fab.BackgroundColor3 = theme.Colors.primary
-        if chev then Icons.apply(chev, chevDir, theme.Colors.primaryForeground) end
+        if chev then Icons.apply(chev, chevDir, theme.Colors.foreground) end
       end
     end))
     fabMaid:Give(fab)
