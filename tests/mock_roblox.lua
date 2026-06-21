@@ -1,5 +1,27 @@
 -- Minimal Roblox API surface for headless logic tests.
 local M = {}
+M.strict = false -- when true (verify-bundle), validate cross-class property writes like Roblox
+
+-- Properties that only exist on certain classes. Writing them on another class throws
+-- in real Roblox ("X is not a valid member of <Class>"); the lenient mock would store
+-- them. Enabled only in strict mode so unit tests stay terse.
+local function set(list) local t = {} for _, n in ipairs(list) do t[n] = true end return t end
+local TEXT_PROPS = set({ "Text", "PlaceholderText", "PlaceholderColor3", "TextColor3", "TextSize", "TextWrapped",
+  "TextXAlignment", "TextYAlignment", "TextTruncate", "TextEditable", "ClearTextOnFocus", "RichText", "TextScaled",
+  "LineHeight", "Font", "FontFace", "TextTransparency", "MaxVisibleGraphemes", "CursorPosition", "MultiLine" })
+local TEXT_CLASSES = set({ "TextLabel", "TextButton", "TextBox" })
+local IMAGE_PROPS = set({ "Image", "ImageColor3", "ImageTransparency", "ImageRectOffset", "ImageRectSize",
+  "ScaleType", "ResampleMode", "SliceCenter", "SliceScale", "TileSize" })
+local IMAGE_CLASSES = set({ "ImageLabel", "ImageButton" })
+local BTN_PROPS = set({ "AutoButtonColor", "Modal", "Style" })
+local BTN_CLASSES = set({ "TextButton", "ImageButton" })
+
+local function validateProp(cls, k)
+  if not M.strict or type(k) ~= "string" or not cls then return end
+  if TEXT_PROPS[k] and not TEXT_CLASSES[cls] then error(k .. " is not a valid member of " .. cls, 3) end
+  if IMAGE_PROPS[k] and not IMAGE_CLASSES[cls] then error(k .. " is not a valid member of " .. cls, 3) end
+  if BTN_PROPS[k] and not BTN_CLASSES[cls] then error(k .. " is not a valid member of " .. cls, 3) end
+end
 
 local function enumNs(names)
   local ns = {}
@@ -51,6 +73,7 @@ local function newInstance(cls)
       return nil
     end,
     __newindex = function(_, k, v)
+      validateProp(props.ClassName, k)
       if k == "Parent" then
         if props.Parent and props.Parent.__removeChild then props.Parent.__removeChild(inst) end
         props.Parent = v
@@ -68,11 +91,21 @@ local function newInstance(cls)
   return inst
 end
 
-function M.installInto(env, mock)
+function M.installInto(env, mock, strict)
+  M.strict = strict or false
   env.Color3 = {
     fromRGB = function(r, g, b) return { R = r / 255, G = g / 255, B = b / 255, R8 = r, G8 = g, B8 = b } end,
     new = function(r, g, b) return { R = r, G = g, B = b, R8 = math.floor((r or 0) * 255), G8 = math.floor((g or 0) * 255), B8 = math.floor((b or 0) * 255) } end,
-    fromHSV = function(h, s, v) return { H = h, S = s, V = v } end,
+    fromHSV = function(h, s, v)
+      -- real Roblox returns an RGB Color3; compute it so .R/.G/.B exist
+      local r, g, b
+      local i = math.floor(h * 6); local f = h * 6 - i
+      local p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
+      i = i % 6
+      if i == 0 then r, g, b = v, t, p elseif i == 1 then r, g, b = q, v, p elseif i == 2 then r, g, b = p, v, t
+      elseif i == 3 then r, g, b = p, q, v elseif i == 4 then r, g, b = t, p, v else r, g, b = v, p, q end
+      return { R = r, G = g, B = b, R8 = math.floor(r * 255 + 0.5), G8 = math.floor(g * 255 + 0.5), B8 = math.floor(b * 255 + 0.5) }
+    end,
   }
   env.Vector2 = { new = function(x, y) return { X = x or 0, Y = y or 0 } end }
   env.UDim = { new = function(s, o) return { Scale = s or 0, Offset = o or 0 } end }
@@ -153,6 +186,7 @@ function M.installInto(env, mock)
   env.NumberSequence = { new = function(a) return { keypoints = a } end }
   env.NumberSequenceKeypoint = { new = function(t, v) return { Time = t, Value = v } end }
   env.ColorSequence = { new = function(c) return { color = c } end }
+  env.ColorSequenceKeypoint = { new = function(t, c) return { Time = t, Value = c } end }
   env.mock = mock
 end
 

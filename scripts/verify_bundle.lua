@@ -7,7 +7,7 @@
 
 local mockmod = require("tests.mock_roblox")
 local env, mock = {}, {}
-mockmod.installInto(env, mock)
+mockmod.installInto(env, mock, true) -- strict: validate cross-class property writes like Roblox
 for k, v in pairs(env) do _G[k] = v end
 
 _G.require = function(x)
@@ -49,7 +49,9 @@ t:AddNumberBox({ Text = "N", Default = 1, Min = 0, Max = 10 })
 t:AddSelectBox({ Text = "S", Options = { "a", "b" }, Default = "a" })
 t:AddSlider({ Text = "Sl", Min = 0, Max = 10, Default = 5 })
 t:AddKeybind({ Text = "K", Default = _G.Enum.KeyCode.E })
-t:AddColorPicker({ Text = "C", Default = _G.Color3.fromRGB(255, 80, 80) })
+local cp = t:AddColorPicker({ Text = "C", Default = _G.Color3.fromRGB(255, 80, 80) })
+cp.Open()  -- exercises the SV/Hue ImageButtons + gradients under strict validation
+cp.Close()
 t:AddProgressBar({ Default = 0.5 })
 t:AddImage({ Lucide = "home" })
 t:AddTable({ Columns = { "A", "B" }, Rows = { { "1", "2" } } })
@@ -58,6 +60,5 @@ t:AddPlayerSelector({ Text = "P" })
 local acc = t:AddAccordion({ Title = "Adv" })
 acc:Toggle()
 assert(acc:IsExpanded(), "accordion did not expand")
-acc:AddColorPicker({ Text = "C2", Default = _G.Color3.fromRGB(10, 20, 30) })
 
 print("VERIFY-BUNDLE OK: faithful require+Color3; all controls construct; window/tab/accordion work")

@@ -16,7 +16,10 @@ for i = 1, 20 do
   tab:AddSlider({ Text = "Speed", Min = 0, Max = 100, Default = 50, Flag = "speed_" .. i })
   tab:AddNumberBox({ Text = "Amount", Default = 10, Min = 0, Max = 100, Flag = "amount_" .. i })
   tab:AddSelectBox({ Text = "Mode", Options = { "Alpha", "Beta", "Gamma" }, Default = "Alpha", Flag = "mode_" .. i })
-  tab:AddKeybind({ Text = "Hotkey", Default = Enum.KeyCode.E, Flag = "key_" .. i })
+  tab:AddKeybind({ Text = "Hotkey", Default = Enum.KeyCode.E, Flag = "key_" .. i,
+    Callback = (i == 1) and function()
+      window:Dialog({ Title = "Hotkey fired", Message = "Your bound key was pressed.", Buttons = { { Text = "OK" } } })
+    end or nil })
   tab:AddColorPicker({ Text = "ESP Color", Default = Color3.fromRGB(255, 80, 80), Flag = "color_" .. i })
   tab:AddProgressBar({ Default = 0.4 })
   tab:AddTextBox({ Text = "Key", Default = "ABC-123", Copyable = true })
