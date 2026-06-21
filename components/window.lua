@@ -152,6 +152,24 @@ function Window.new(config)
   function api:DismissNotification(id) Notif.dismiss(id) end
   function api:ClearNotifications() Notif.clearAll() end
 
+  function api:ResetFlag(flag) if cfg then cfg:ResetFlag(flag) end end
+  function api:ResetConfiguration(o)
+    o = o or {}
+    if not cfg then return end
+    local function doReset()
+      cfg:Reset({ ClearFile = o.ClearFile })
+      api:ShowSuccess({ Title = "Reset", Message = "Settings restored to defaults." })
+    end
+    if o.Confirm == false then
+      doReset()
+    else
+      api:Dialog({ Title = "Reset settings?", Message = "This restores all options to their defaults.", Buttons = {
+        { Text = "Cancel", Variant = "secondary" },
+        { Text = "Reset", Variant = "destructive", Callback = doReset },
+      } })
+    end
+  end
+
   local minimized = false
   function api:Minimize()
     minimized = not minimized

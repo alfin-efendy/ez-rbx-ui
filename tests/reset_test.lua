@@ -1,0 +1,25 @@
+local h = require("tests.helper")
+local R = h.loadLib()
+h.describe("reset config", function()
+  h.it("ResetConfiguration(no confirm) restores control defaults + flag", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui, Config = { FileName = "RC", AutoSave = false } })
+    local tab = w:AddTab({ Name = "Home" })
+    local tog = tab:AddToggle({ Text = "F", Default = false, Flag = "f" })
+    tog.Set(true)
+    h.expect(w.Config:Get("f")).toBe(true)
+    w:ResetConfiguration({ Confirm = false })
+    h.expect(w.Config:Get("f")).toBe(false)  -- restored
+    h.expect(tog.Get()).toBe(false)           -- control re-applied
+  end)
+  h.it("ResetConfiguration(confirm) opens a dialog", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui, Config = { FileName = "RC2", AutoSave = false } })
+    w:AddTab({ Name = "Home" })
+    w:ResetConfiguration()
+    local root = R.Overlay.get(gui); local hasDialog = false
+    for _, c in ipairs(root:GetChildren()) do if c.Name == "Dialog" then hasDialog = true end end
+    h.expect(hasDialog).toBeTruthy()
+  end)
+end)
+h.run()
