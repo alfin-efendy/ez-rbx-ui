@@ -138,9 +138,10 @@ function M.installInto(env, mock)
     end,
   }
   local UserInputService = { InputBegan = makeSignal(), InputChanged = makeSignal(), InputEnded = makeSignal(), TouchEnabled = false }
+  local playerList = { { Name = "Tester", UserId = 1 } }
   local Players = {
     LocalPlayer = { Name = "Tester", UserId = 1 },
-    GetPlayers = function() return { { Name = "Tester", UserId = 1 } } end,
+    GetPlayers = function() return playerList end, -- persistent list; tests mutate the returned ref
     PlayerAdded = makeSignal(),
     PlayerRemoving = makeSignal(),
     GetUserThumbnailAsync = function() return "rbxassetid://0" end,
