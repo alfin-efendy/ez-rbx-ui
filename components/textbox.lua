@@ -41,7 +41,7 @@ function TextBox.new(opts)
   if opts.Copyable then
     local copy = Create("ImageButton", { Name = "Copy", BackgroundTransparency = 1,
       Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -16, 0.5, -8), Parent = box })
-    Icons.apply(copy, "copy", theme.Colors.mutedForeground)
+    Icons.apply(copy, "copy", theme.Colors.primary)
     maid:Give(copy.MouseButton1Click:Connect(function()
       if setclipboard then pcall(setclipboard, input.Text) end
     end))
@@ -61,7 +61,7 @@ function TextBox.new(opts)
     box.BackgroundColor3 = theme.Colors.input
     input.TextColor3 = theme.Colors.foreground; input.PlaceholderColor3 = theme.Colors.mutedForeground
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
-    local cp = box:FindFirstChild("Copy"); if cp then Icons.apply(cp, "copy", theme.Colors.mutedForeground) end
+    local cp = box:FindFirstChild("Copy"); if cp then Icons.apply(cp, "copy", theme.Colors.primary) end
   end)) end
 
   return {

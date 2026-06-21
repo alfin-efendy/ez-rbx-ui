@@ -50,7 +50,7 @@ function SelectBox.new(opts)
     Position = opts.Text and UDim2.new(0.5, 8, 0, 0) or UDim2.new(0, 0, 0, 0), Parent = btn })
   local caret = Create("ImageLabel", { Name = "Caret", BackgroundTransparency = 1,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0.5, -7), Parent = btn })
-  Icons.apply(caret, "chevron-down", theme.Colors.mutedForeground)
+  Icons.apply(caret, "chevron-down", theme.Colors.primary)
 
   local function refresh() valueLabel.Text = display() end
   local function apply(v) value = v; refresh() end
@@ -175,7 +175,7 @@ function SelectBox.new(opts)
     btn.BackgroundColor3 = theme.Colors.input
     valueLabel.TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground
     local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
-    Icons.apply(caret, "chevron-down", theme.Colors.mutedForeground)
+    Icons.apply(caret, "chevron-down", theme.Colors.primary)
   end)) end
 
   return api

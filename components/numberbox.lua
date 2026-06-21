@@ -37,7 +37,7 @@ function NumberBox.new(opts)
       Size = UDim2.new(0, 26, 1, -6), Position = x, Parent = box, Create.corner(theme.Radius.sm) })
     local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 14, 0, 14),
       Position = UDim2.new(0.5, -7, 0.5, -7), Parent = b })
-    Icons.apply(img, icon, theme.Colors.foreground)
+    Icons.apply(img, icon, theme.Colors.primary)
     return b
   end
   local minus = stepBtn("Minus", "minus", UDim2.new(0, 3, 0.5, -12))
@@ -62,7 +62,7 @@ function NumberBox.new(opts)
     local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     for _, c in ipairs(box:GetChildren()) do
       if c:IsA("ImageButton") then c.BackgroundColor3 = theme.Colors.surface
-        local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.foreground end end
+        local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.primary end end
     end
   end)) end
 

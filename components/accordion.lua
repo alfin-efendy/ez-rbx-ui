@@ -47,13 +47,13 @@ function Accordion.new(opts)
     Position = UDim2.new(0, 0, 0.5, -8),
     Parent = header,
   })
-  Icons.apply(caret, "chevron-right", theme.Colors.mutedForeground)
+  Icons.apply(caret, "chevron-right", theme.Colors.primary)
 
   local leadIcon
   if opts.Icon then
     leadIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
       Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 24, 0.5, -8), Parent = header })
-    Icons.apply(leadIcon, opts.Icon, theme.Colors.foreground)
+    Icons.apply(leadIcon, opts.Icon, theme.Colors.primary)
   end
   local titleX = opts.Icon and 46 or 24
   local title = Create("TextLabel", {
@@ -110,7 +110,7 @@ function Accordion.new(opts)
       content.Visible = expanded
       divider.Visible = expanded
     end
-    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.mutedForeground)
+    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.primary)
   end
 
   function api:Toggle() expanded = not expanded; applyHeight(true); return expanded end
@@ -118,7 +118,7 @@ function Accordion.new(opts)
   function api:Collapse() if expanded then expanded = false; applyHeight(true) end end
   function api:IsExpanded() return expanded end
   function api:SetTitle(s) title.Text = s end
-  function api:SetIcon(name) if leadIcon then Icons.apply(leadIcon, name, theme.Colors.foreground) end end
+  function api:SetIcon(name) if leadIcon then Icons.apply(leadIcon, name, theme.Colors.primary) end end
 
   function api.MountRow(child)
     order = order + 1
@@ -139,7 +139,8 @@ function Accordion.new(opts)
     container.BackgroundColor3 = theme.Colors.card
     local st = container:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
     title.TextColor3 = theme.Colors.foreground
-    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.mutedForeground)
+    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.primary)
+    if leadIcon then Icons.apply(leadIcon, opts.Icon, theme.Colors.primary) end
     divider.BackgroundColor3 = theme.Colors.border
   end)) end
 
