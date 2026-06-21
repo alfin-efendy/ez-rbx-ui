@@ -2,10 +2,10 @@ return function(window)
   local tab = window:AddTab({ Name = "Settings", Icon = "settings" })
 
   tab:AddSection("Appearance")
-  tab:AddSelectBox({ Text = "Accent theme", Options = { "Mono", "Indigo", "Violet", "Emerald", "Sky", "Rose" },
-    Default = "Mono", Callback = function(name) window:SetAccent(name) end })
-  tab:AddSelectBox({ Text = "Floating button", Options = { "simple", "square", "circle" }, Default = "simple",
-    Callback = function(t) window:SetFloatingToggle({ Type = t }) end })
+  tab:AddSelectBox({ Text = "Mode", Options = { "Dark", "Light" }, Default = "Dark",
+    Callback = function(m) window:SetMode(m == "Light" and "light" or "dark") end })
+  tab:AddColorPicker({ Text = "Accent color", Default = Color3.fromRGB(99, 102, 241),
+    Callback = function(c) window:SetAccent(c) end })
   tab:AddSlider({ Text = "UI scale (%)", Min = 80, Max = 130, Default = 100,
     Callback = function(v) window:SetUIScale(v / 100) end })
   tab:AddSlider({ Text = "Acrylic transparency (%)", Min = 0, Max = 60, Default = 12,
@@ -18,11 +18,13 @@ return function(window)
   tab:AddKeybind({ Text = "Toggle UI key", Default = Enum.KeyCode.RightControl,
     Callback = function() window:Toggle() end })
 
-  tab:AddSection("Profiles")
-  tab:AddSelectBox({ Text = "Config profile", Options = window:ConfigProfiles(), Default = "Default",
+  local cfg = tab:AddAccordion({ Title = "Configuration", Icon = "settings-2" })
+  cfg:AddSelectBox({ Text = "Profile", Options = window:ConfigProfiles(), Default = "Default",
     Callback = function(name) window:UseConfigProfile(name) end })
-
-  tab:AddSection("Danger zone")
-  tab:AddButton({ Text = "Reset all settings", Variant = "destructive",
+  cfg:AddButton({ Text = "Save", Icon = "save",
+    Callback = function() window:SaveConfiguration(); window:ShowSuccess({ Title = "Saved" }) end })
+  cfg:AddButton({ Text = "Load", Variant = "secondary",
+    Callback = function() window:LoadConfiguration(); window:ShowInfo({ Title = "Loaded" }) end })
+  cfg:AddButton({ Text = "Reset all settings", Variant = "destructive",
     Callback = function() window:ResetConfiguration({ Confirm = true }) end })
 end
