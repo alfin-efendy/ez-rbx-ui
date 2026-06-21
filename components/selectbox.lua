@@ -37,9 +37,17 @@ function SelectBox.new(opts)
     Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
+  if opts.Text then
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
+      TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans, Size = UDim2.new(0.5, -8, 1, 0), Parent = btn })
+  end
   local valueLabel = Create("TextLabel", { Name = "Value", BackgroundTransparency = 1, Text = display(),
-    TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
-    TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -20, 1, 0), Parent = btn })
+    TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground,
+    TextXAlignment = opts.Text and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+    TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+    Size = opts.Text and UDim2.new(0.5, -28, 1, 0) or UDim2.new(1, -20, 1, 0),
+    Position = opts.Text and UDim2.new(0.5, 8, 0, 0) or UDim2.new(0, 0, 0, 0), Parent = btn })
   local caret = Create("ImageLabel", { Name = "Caret", BackgroundTransparency = 1,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0.5, -7), Parent = btn })
   Icons.apply(caret, "chevron-down", theme.Colors.mutedForeground)
@@ -165,7 +173,8 @@ function SelectBox.new(opts)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     btn.BackgroundColor3 = theme.Colors.input
-    valueLabel.TextColor3 = theme.Colors.foreground
+    valueLabel.TextColor3 = opts.Text and theme.Colors.mutedForeground or theme.Colors.foreground
+    local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     Icons.apply(caret, "chevron-down", theme.Colors.mutedForeground)
   end)) end
 
