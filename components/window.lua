@@ -49,7 +49,8 @@ function Window.new(config)
     Parent = gui,
     Create.corner(theme.Radius.window),
   })
-  Acrylic.decorate(main, theme, { solid = config.Acrylic == false })
+  local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
+  Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT })
 
   -- title bar
   local titleBar = Create("Frame", {

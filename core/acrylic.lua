@@ -4,28 +4,33 @@ local Create
 
 function Acrylic.Init(R) Create = R.Create end
 
--- An OPAQUE dark panel with a subtle vertical color sheen + 1px stroke. Earlier this used
--- a Transparency gradient (0.85->1.0) which multiplied the frame's bg transparency and made
--- the whole panel see-through over the game. The "acrylic" feel now comes from the color
--- sheen + stroke, NOT see-through — readable over any background.
+-- 2D frosted paint stack (NO Lighting/Workspace mutation): translucent card fill +
+-- tiled noise grain + opaque color sheen + 1px stroke. Readable over any background,
+-- transparency tunable. (A Transparency UIGradient would multiply the bg transparency
+-- and make the panel see-through — so the sheen is a COLOR gradient only.)
+local NOISE_ID = "rbxassetid://9968344105" -- subtle grain; verify in Studio, set "" to disable
+
 function Acrylic.decorate(frame, theme, opts)
   opts = opts or {}
   frame.BackgroundColor3 = theme.Colors.card
-  frame.BackgroundTransparency = opts.transparency or 0
+  frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.12)
 
   if not frame:FindFirstChildOfClass("UIStroke") then
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = frame })
   end
 
-  if not opts.solid and not frame:FindFirstChildOfClass("UIGradient") then
-    Create("UIGradient", {
-      Rotation = 90,
-      Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, theme.Colors.surface), -- slightly lighter at top
+  if not opts.solid then
+    if NOISE_ID ~= "" and not frame:FindFirstChild("AcrylicNoise") then
+      Create("ImageLabel", { Name = "AcrylicNoise", BackgroundTransparency = 1, Image = NOISE_ID,
+        ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.new(0, 128, 0, 128), ImageTransparency = 0.92,
+        Size = UDim2.new(1, 0, 1, 0), ZIndex = 0, Parent = frame })
+    end
+    if not frame:FindFirstChildOfClass("UIGradient") then
+      Create("UIGradient", { Rotation = 90, Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, theme.Colors.surface),
         ColorSequenceKeypoint.new(1, theme.Colors.card),
-      }),
-      Parent = frame,
-    })
+      }), Parent = frame })
+    end
   end
   return frame
 end
