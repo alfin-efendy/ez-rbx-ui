@@ -56,6 +56,8 @@ function Window.new(config)
   -- solid panels (no acrylic/transparency). chrome (window/header/menu) is clearly darker than the
   -- content card in BOTH modes: dark = background (near-black), light = surface (grey, vs white card).
   local function chromeColor() return (theme.Mode == "light") and theme.Colors.surface or theme.Colors.background end
+  -- elements sitting ON the chrome (search box, selected tab) need to be a step lighter than it to stay visible
+  local function elevatedColor() return (theme.Mode == "light") and theme.Colors.card or theme.Colors.input end
 
   local main = Create("Frame", {
     Name = "Main",
@@ -115,7 +117,7 @@ function Window.new(config)
   })
   -- sidebar search box (pinned above the tab list)
   local searchBox = Create("Frame", {
-    Name = "Search", BackgroundColor3 = theme.Colors.input, BorderSizePixel = 0,
+    Name = "Search", BackgroundColor3 = elevatedColor(), BorderSizePixel = 0,
     Position = UDim2.new(0, 8, 0, 6), Size = UDim2.new(0, sidebarW - 16, 0, 24), Parent = body,
     Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }),
   })
@@ -407,7 +409,7 @@ function Window.new(config)
     titleLabel.TextColor3 = theme.Colors.foreground
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
-    searchBox.BackgroundColor3 = theme.Colors.input
+    searchBox.BackgroundColor3 = elevatedColor()
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
     contentPanel.BackgroundColor3 = theme.Colors.card

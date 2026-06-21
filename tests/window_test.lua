@@ -91,6 +91,16 @@ h.describe("window", function()
     h.expect(w:SaveConfiguration()).toBeTruthy()
     h.expect(type(w:LoadConfiguration())).toBe("boolean")
   end)
+  h.it("light mode: search box + selected tab stay visible on the chrome (elevated, not same colour)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local tab = w:AddTab({ Name = "T" })  -- first tab auto-selects
+    w:SetMode("light")
+    local search = w.Main:FindFirstChild("Body"):FindFirstChild("Search")
+    h.expect(w.Main.BackgroundColor3).toBe(R.Theme.PALETTES.light.surface)  -- chrome (grey)
+    h.expect(search.BackgroundColor3).toBe(R.Theme.PALETTES.light.card)     -- search elevated (white) — visible
+    h.expect(tab.Button.BackgroundColor3).toBe(R.Theme.PALETTES.light.card) -- selected tab elevated (white) — visible
+  end)
   h.it("light mode re-skins the window shell + content card to light tokens", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
