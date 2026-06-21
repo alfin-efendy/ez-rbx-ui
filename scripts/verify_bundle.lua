@@ -77,6 +77,16 @@ t:AddToggle({ Text = "Desc", Default = true, Description = "a description line" 
 local rz = t:AddResizable({ Panes = { { Default = 0.5 }, { Default = 0.5 } } })
 rz.Panes[1]:AddButton({ Text = "L" }); rz.Panes[2]:AddButton({ Text = "R" })
 w:Notify({ Title = "Undo me", Type = "warning", Duration = 0, Action = { Text = "Undo", Callback = function() end } })
+-- R3 Plan A: square FAB with image, card accordion divider, header separator
+local w2 = EzUI:CreateWindow({ Title = "FAB", Parent = screen,
+  FloatingToggle = { Type = "square", Image = "rbxassetid://1", Draggable = false },
+  Config = { FileName = "Verify2", AutoSave = false } })
+assert(w2.Main:FindFirstChild("HeaderSeparator"), "no header separator")
+w2:SetFloatingToggle({ Type = "circle", Image = "rbxassetid://2" })
+local t2 = w2:AddTab({ Name = "T" })
+local accCard = t2:AddAccordion({ Title = "Card" }); accCard:Expand()
+assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
+
 w:Minimize() -- hides window + shows floating toggle
 w:SetCloseCallback(function() end)
 w:Close()
