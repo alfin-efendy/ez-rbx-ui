@@ -134,6 +134,8 @@ gift
 git-branch
 globe
 grip
+grip-vertical
+grip-horizontal
 hammer
 hand
 hard-drive
