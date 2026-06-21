@@ -388,13 +388,14 @@ function Window.new(config)
       local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
-    else -- simple
+    else -- simple: labeled pill, like the old library's "Open <Name>" button
+      fab.Size = UDim2.new(0, 120, 0, 36)
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.md), Parent = fab })
       Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
-      local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, 22),
-        Position = UDim2.new(0.5, -11, 0.5, -11), Parent = fab })
-      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.foreground) end
+      Create("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = "Open " .. (config.Title or "UI"),
+        TextColor3 = theme.Colors.foreground, TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
+        TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 1, 0), Parent = fab })
     end
     -- a click toggles; a drag (>6px) moves the FAB and suppresses that click's toggle
     local moved = false
