@@ -132,6 +132,21 @@ local w4 = EzUI:CreateWindow({ Title = "FabRef", Parent = screen, FloatingToggle
 local fab4; for _, c in ipairs(w4.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab4 = c end end
 assert(fab4 and fab4:FindFirstChild("Chevron"), "no simple FAB chevron")
 
+-- R6: light-mode table/tag re-skin + simple FAB dock
+w:SetMode("light")
+do
+  local tg = w:Tag({ Text = "L" })
+  local tb = w.Main:FindFirstChild("TitleBar"); local pill
+  for _, c in ipairs(tb:GetChildren()) do if c.Name == "Tag" then pill = c end end
+  assert(pill and pill.BackgroundColor3.R > 0.9, "tag not light")
+  tg.Destroy()
+end
+w:SetMode("dark")
+local w5 = EzUI:CreateWindow({ Title = "Dock", Parent = screen, FloatingToggle = true,
+  Config = { FileName = "Verify5", AutoSave = false } })
+local fab5; for _, c in ipairs(w5.Overlay:GetChildren()) do if c.Name == "FloatingToggle" then fab5 = c end end
+assert(fab5 and fab5.Position.X.Offset == -15, "simple FAB not docked at edge")
+
 w:SetCloseCallback(function() end)
 w:Close()
 w:AddTab({ Name = "after-close" }) -- must be a no-op, not error

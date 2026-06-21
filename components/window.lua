@@ -431,6 +431,7 @@ function Window.new(config)
       if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primaryForeground) end
     else -- simple: reference-style 50x50 icon square with a shadow + edge-snap
       fab.Size = UDim2.new(0, 50, 0, 50)
+      fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = fab })
       local chev = Create("ImageLabel", { Name = "Chevron", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
