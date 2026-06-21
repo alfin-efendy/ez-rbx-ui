@@ -7,7 +7,7 @@ function Resizable.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Host = R.Host; REG = R
 end
 
-local HANDLE = 6
+local HANDLE = 12
 
 function Resizable.new(opts)
   opts = opts or {}
@@ -61,10 +61,22 @@ function Resizable.new(opts)
 
   for k = 1, n - 1 do
     local handle = Create("ImageButton", { Name = "Handle", AutoButtonColor = false,
-      BackgroundColor3 = theme.Colors.border, ZIndex = 5, Parent = container })
+      BackgroundTransparency = 1, ZIndex = 5, Parent = container })
+    Create("Frame", { Name = "Line", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0, ZIndex = 5,
+      Parent = handle,
+      Size = horizontal and UDim2.new(0, 1, 1, 0) or UDim2.new(1, 0, 0, 1),
+      Position = horizontal and UDim2.new(0.5, 0, 0, 0) or UDim2.new(0, 0, 0.5, 0),
+      AnchorPoint = horizontal and Vector2.new(0.5, 0) or Vector2.new(0, 0.5) })
+    local grip = Create("Frame", { Name = "Grip", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
+      ZIndex = 6, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
+      Size = horizontal and UDim2.new(0, 14, 0, 22) or UDim2.new(0, 22, 0, 14),
+      Parent = handle, Create.corner(theme.Radius.sm) })
+    Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = grip })
     local gi = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 10, 0, 10),
-      Position = UDim2.new(0.5, -5, 0.5, -5), Parent = handle })
+      Position = UDim2.new(0.5, -5, 0.5, -5), Parent = grip })
     Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.mutedForeground)
+    maid:Give(handle.MouseEnter:Connect(function() Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.foreground) end))
+    maid:Give(handle.MouseLeave:Connect(function() Icons.apply(gi, horizontal and "grip-vertical" or "grip-horizontal", theme.Colors.mutedForeground) end))
     handles[k] = handle
     local drag
     maid:Give(handle.InputBegan:Connect(function(input)
