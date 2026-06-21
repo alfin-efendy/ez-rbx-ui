@@ -10,7 +10,8 @@ end
 local function makeSignal()
   local handlers = {}
   local sig = {}
-  function sig:Connect(fn) handlers[fn] = true; return { Disconnect = function() handlers[fn] = nil end } end
+  -- tagged so mock typeof() reports "RBXScriptConnection" (real events return userdata)
+  function sig:Connect(fn) handlers[fn] = true; return { __isConnection = true, Disconnect = function() handlers[fn] = nil end } end
   function sig:Once(fn) local c; c = sig:Connect(function(...) c.Disconnect(); fn(...) end); return c end
   function sig:Fire(...) for fn in pairs(handlers) do fn(...) end end
   return sig
@@ -54,6 +55,7 @@ local function newInstance(cls)
     end,
   })
   rawset(inst, "__addChild", function(c) children[#children + 1] = c end)
+  rawset(inst, "__isInstance", true) -- so mock typeof() reports "Instance"
   return inst
 end
 
@@ -80,6 +82,15 @@ function M.installInto(env, mock)
     ZIndexBehavior = enumNs({ "Sibling", "Global" }),
   }
   env.Instance = { new = newInstance }
+  -- Roblox typeof(): Instances/connections are userdata in real Roblox. The mock tags
+  -- them so maid.lua's typeof-based cleanup exercises the SAME branch it will in Roblox.
+  env.typeof = function(v)
+    if type(v) == "table" then
+      if rawget(v, "__isInstance") then return "Instance" end
+      if rawget(v, "__isConnection") then return "RBXScriptConnection" end
+    end
+    return type(v)
+  end
   env.task = {
     spawn = function(fn, ...) fn(...) end,
     defer = function(fn, ...) fn(...) end,

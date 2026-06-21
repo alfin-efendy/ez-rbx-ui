@@ -21,6 +21,16 @@ h.describe("maid", function()
     m:DoCleanup()
     h.expect(inst._destroyed).toBeTruthy()
   end)
+  h.it("disconnects event connections (userdata/RBXScriptConnection path)", function()
+    local btn = h.roblox.Instance.new("TextButton")
+    local fired = 0
+    local conn = btn.MouseButton1Click:Connect(function() fired = fired + 1 end)
+    local m = Maid.new()
+    m:Give(conn)
+    m:DoCleanup()
+    btn.MouseButton1Click:Fire()
+    h.expect(fired).toBe(0)  -- disconnected before fire
+  end)
   h.it("cleanup is idempotent", function()
     local m = Maid.new(); local n = 0
     m:Give(function() n = n + 1 end)

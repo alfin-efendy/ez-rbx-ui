@@ -11,9 +11,20 @@ function Maid:Give(task)
 end
 
 local function cleanupTask(t)
-  if type(t) == "function" then t()
-  elseif type(t) == "table" and type(t.Disconnect) == "function" then t:Disconnect()
-  elseif type(t) == "table" and type(t.Destroy) == "function" then t:Destroy()
+  -- Roblox Instances and RBXScriptConnections are userdata (type()=="userdata"),
+  -- NOT tables — so type()-based branching silently skips them and leaks UI/connections.
+  -- Use typeof() (Roblox global; falls back to type() under the headless mock).
+  local kind = (typeof and typeof(t)) or type(t)
+  if kind == "function" then
+    t()
+  elseif kind == "Instance" then
+    t:Destroy()
+  elseif kind == "RBXScriptConnection" then
+    t:Disconnect()
+  elseif kind == "table" then
+    if type(t.Disconnect) == "function" then t:Disconnect()
+    elseif type(t.Destroy) == "function" then t:Destroy()
+    end
   end
 end
 
