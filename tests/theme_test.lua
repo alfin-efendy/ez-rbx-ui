@@ -1,0 +1,28 @@
+local h = require("tests.helper")
+local Theme = h.requireModule("core.theme")
+
+h.describe("theme", function()
+  h.it("has exact zinc background", function()
+    h.expect(Theme.Colors.background.R8).toBe(9)
+    h.expect(Theme.Colors.background.G8).toBe(9)
+    h.expect(Theme.Colors.background.B8).toBe(11)
+  end)
+  h.it("primary is mono white", function()
+    h.expect(Theme.Colors.primary.R8).toBe(250)
+    h.expect(Theme.Colors.primaryForeground.R8).toBe(24)
+  end)
+  h.it("radius base-10 scale", function()
+    h.expect(Theme.Radius.sm).toBe(6)
+    h.expect(Theme.Radius.md).toBe(8)
+    h.expect(Theme.Radius.lg).toBe(10)
+    h.expect(Theme.Radius.xl).toBe(14)
+  end)
+  h.it("new() overrides primary without mutating default", function()
+    local t = Theme.new({ Colors = { primary = h.roblox.Color3.fromRGB(59,130,246) } })
+    h.expect(t.Colors.primary.R8).toBe(59)
+    h.expect(Theme.Colors.primary.R8).toBe(250) -- default untouched
+    h.expect(t.Colors.background.R8).toBe(9)     -- inherited
+  end)
+end)
+
+h.run()
