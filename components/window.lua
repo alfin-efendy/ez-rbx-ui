@@ -281,6 +281,15 @@ function Window.new(config)
   function api:SetTitle(s) titleLabel.Text = s end
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
+  function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
+  function api:SetAcrylicTransparency(n) main.BackgroundTransparency = n; return n end
+  function api:SetToggleKey(k) toggleKey = k; return k end
+  local uiScale
+  function api:SetUIScale(n)
+    if not uiScale then uiScale = Instance.new("UIScale"); uiScale.Parent = main end
+    uiScale.Scale = n
+    return n
+  end
   function api:ShowSuccess(o) o = o or {}; o.Type = "success"; return api:Notify(o) end
   function api:ShowWarning(o) o = o or {}; o.Type = "warning"; return api:Notify(o) end
   function api:ShowError(o) o = o or {}; o.Type = "error"; return api:Notify(o) end

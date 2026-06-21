@@ -12,6 +12,9 @@ function Notification.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Animate = R.Animate; Icons = R.Icons
 end
 
+local enabled = true
+function Notification.setEnabled(b) enabled = b ~= false end
+
 local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive" }
 local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert" }
 local GAP, PEEK = 8, 10
@@ -55,6 +58,7 @@ end
 local function indexOf(id) for i, e in ipairs(order) do if e.id == id then return i end end end
 
 function Notification.show(opts)
+  if not enabled then return nil end
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
   ensureContainer()
