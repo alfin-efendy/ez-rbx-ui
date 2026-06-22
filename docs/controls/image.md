@@ -19,7 +19,7 @@ tab:AddImage({ Image = "rbxassetid://0", Height = 80 })
 | `Image` | `string` | `""` | Roblox asset ID string (e.g. `"rbxassetid://…"`). Mutually exclusive with `Lucide`. |
 | `Lucide` | `string` | — | Name of a Lucide icon (e.g. `"gamepad-2"`). Renders the glyph using the icon sheet. |
 | `Height` | `number` | `80` | Height in pixels. Width is always 100%. |
-| `Color` | `Color3` | foreground | Tint applied when using `Lucide`. Defaults to the theme foreground color. |
+| `Color` | `Color3` | varies | Tint color. Defaults to the theme foreground color for `Lucide` glyphs, or white (`Color3.fromRGB(255, 255, 255)`) for raw `Image` assets. |
 
 ## API
 

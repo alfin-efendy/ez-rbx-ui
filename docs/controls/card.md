@@ -18,7 +18,7 @@ tab:AddCard({
 | `Title` | `string` | — | Bold label rendered above the body. |
 | `Body` | `string` | — | Wrapped muted paragraph rendered below the title. |
 | `Banner` | `string` | — | Roblox asset ID (e.g. `"rbxassetid://…"`). Renders a cropped 80 px banner at the top of the card. Omit to show no banner. |
-| `Buttons` | `{ { Text, Variant?, Callback? } }` | — | List of action buttons rendered in a horizontal row at the bottom of the card. Each entry maps to an [Button](/controls/button) with the same `Variant` values (`"default"`, `"secondary"`, `"ghost"`, `"destructive"`). |
+| `Buttons` | `{ { Text, Variant?, Callback? } }` | — | List of action buttons rendered in a horizontal row at the bottom of the card. Each entry maps to a [Button](/controls/button) with the same `Variant` values (`"default"`, `"secondary"`, `"outline"`, `"ghost"`, `"destructive"`). |
 
 ## API
 

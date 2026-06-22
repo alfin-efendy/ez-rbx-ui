@@ -26,12 +26,17 @@ v3 keeps the full v2 public API — no renames, no removals. The following addit
 
 ### `AddCard`
 
-Windows and tabs now expose `AddCard`, which wraps its children in a styled card surface. Available via the host module (`components/host.lua`).
+Windows and tabs now expose `AddCard`, a new v3 control that renders a styled card surface with an optional banner image, title, body paragraph, and action buttons. It is **not** a host — it does not accept child controls. Pass all content via an options table and see [Card](/controls/card) for the full option set.
 
 ```lua
-local card = tab:AddCard()
-card:AddLabel("Inside a card")
-card:AddButton({ Text = "Action" })
+tab:AddCard({
+  Title = "Welcome",
+  Body  = "A rich card with action buttons.",
+  Buttons = {
+    { Text = "Confirm", Callback = function() end },
+    { Text = "Dismiss", Variant = "ghost" },
+  },
+})
 ```
 
 ### `TextBox` — `LeadingIcon`, `Password`, and `Validate`

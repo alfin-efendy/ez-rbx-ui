@@ -37,4 +37,6 @@ Any control that accepts a `Flag` option automatically saves and restores its va
 
 ## Common handle members
 
-Every control handle exposes a `Destroy()` method that removes it from the UI. Controls hosted inside an [Accordion](/controls/accordion) also receive a host-injected `SetLocked(b)` method used by the accordion's lock behavior to block or restore user interaction.
+Every control handle exposes a `Destroy()` method that removes it from the UI, and receives a host-injected `SetLocked(b)` (used by the accordion lock behavior) — this is injected on every control with a `.Frame`, not only those inside an Accordion.
+
+Most controls use dot-call style (`ctl.Method()` — e.g. SelectBox, Keybind, ColorPicker, Table), while Accordion uses colon-call style (`acc:Method()`).
