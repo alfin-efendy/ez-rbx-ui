@@ -402,6 +402,18 @@ h.describe("window", function()
     h.expect(br.Position.X.Scale).toBe(1); h.expect(br.Position.X.Offset).toBe(-60)        -- 44 + 16 margin
     h.expect(br.Position.Y.Scale).toBe(1); h.expect(br.Position.Y.Offset).toBe(-60)
   end)
+  h.it("a single sliding active indicator lives in the body and shows on the selected tab", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local body = w.Main:FindFirstChild("Body")
+    local function indicator() return body:FindFirstChild("ActiveIndicator") end
+    h.expect(indicator() ~= nil).toBeTruthy()
+    local t1 = w:AddTab({ Name = "A" })
+    h.expect(indicator().Visible).toBe(true)   -- first tab auto-selected
+    local t2 = w:AddTab({ Name = "B" })
+    t2.Button.MouseButton1Click:Fire()
+    h.expect(indicator().Visible).toBe(true)
+  end)
 end)
 
 h.run()

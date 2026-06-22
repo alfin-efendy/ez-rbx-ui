@@ -268,6 +268,24 @@ function Window.new(config)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = false end
   end))
 
+  -- single active-tab indicator that slides between sidebar buttons (lives in Body so the
+  -- sidebar's UIListLayout does not lay it out; Body positions its children manually).
+  local activeIndicator = Create("Frame", {
+    Name = "ActiveIndicator", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
+    Size = UDim2.new(0, 3, 0, 18), Position = UDim2.new(0, 2, 0, 0), Visible = false, ZIndex = 5,
+    Parent = body, Create.corner(2),
+  })
+  local activeTabButton
+  local function moveIndicatorTo(btn)
+    activeTabButton = btn
+    if not btn or btn.Visible == false then activeIndicator.Visible = false; return end
+    activeIndicator.Visible = true
+    local bp, sp = btn.AbsolutePosition, body.AbsolutePosition
+    local by = (bp and sp and (bp.Y - sp.Y)) or 0
+    local bh = (btn.AbsoluteSize and btn.AbsoluteSize.Y) or 34
+    Animate.springTo(activeIndicator, "base", { Position = UDim2.new(0, 2, 0, by + bh / 2 - 9) })
+  end
+
   Overlay.get(gui)
 
   local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
@@ -297,13 +315,14 @@ function Window.new(config)
       for _, t in ipairs(tabs) do
         if t == selectedTab then t:Select() else t:Deselect() end
       end
+      moveIndicatorTo(selectedTab.Button)
     end
     local tab = Tab.new(tabOpts)
     entry.tab = tab
     entry.button = tab.Button
     tabs[#tabs + 1] = tab
     tabEntries[#tabEntries + 1] = entry
-    if #tabs == 1 then tab:Select() end
+    if #tabs == 1 then tab:Select(); moveIndicatorTo(tab.Button) end
     return tab
   end
 
@@ -355,6 +374,7 @@ function Window.new(config)
       for _, e in ipairs(g._entries) do if e.button.Visible then anyVisible = true break end end
       g._header.Visible = anyVisible
     end
+    if activeTabButton then moveIndicatorTo(activeTabButton) end
   end
 
   maid:Give(searchInput:GetPropertyChangedSignal("Text"):Connect(function()
@@ -501,6 +521,7 @@ function Window.new(config)
     local si = searchBox:FindFirstChild("SearchInput")
     if si then si.TextColor3 = theme.Colors.foreground; si.PlaceholderColor3 = theme.Colors.mutedForeground end
     contentPanel.BackgroundColor3 = theme.Colors.card
+    activeIndicator.BackgroundColor3 = theme.Colors.primary
     local grad = main:FindFirstChildOfClass("UIGradient")
     if grad then
       grad.Color = ColorSequence.new({
