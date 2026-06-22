@@ -48,6 +48,7 @@ function Accordion.new(opts)
     Parent = header,
   })
   Icons.apply(caret, "chevron-right", theme.Colors.primary)
+  caret.Rotation = expanded and 90 or 0
 
   local leadIcon
   if opts.Icon then
@@ -101,16 +102,23 @@ function Accordion.new(opts)
     local target = HEADER_H + (expanded and (theme.Spacing.gap + contentHeight()) or 0)
     if expanded then content.Visible = true; divider.Visible = true end
     if animated then
-      local tw = Animate.to(container, "base", { Size = UDim2.new(1, 0, 0, target) })
-      tw.Completed:Connect(function()
-        if not expanded then content.Visible = false; divider.Visible = false end
-      end)
+      Animate.rotateTo(caret, "base", expanded and 90 or 0)
+      if expanded then
+        -- spring the height open (slight overshoot) and slide the content down into place
+        content.Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap + 8)
+        Animate.springTo(container, "base", { Size = UDim2.new(1, 0, 0, target) })
+        Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap) })
+      else
+        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, target) }, function()
+          if not expanded then content.Visible = false; divider.Visible = false end
+        end)
+      end
     else
       container.Size = UDim2.new(1, 0, 0, target)
       content.Visible = expanded
       divider.Visible = expanded
+      caret.Rotation = expanded and 90 or 0
     end
-    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.primary)
   end
 
   function api:Toggle() expanded = not expanded; applyHeight(true); return expanded end
@@ -139,7 +147,8 @@ function Accordion.new(opts)
     container.BackgroundColor3 = theme.Colors.card
     local st = container:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
     title.TextColor3 = theme.Colors.foreground
-    Icons.apply(caret, expanded and "chevron-down" or "chevron-right", theme.Colors.primary)
+    Icons.apply(caret, "chevron-right", theme.Colors.primary)
+    caret.Rotation = expanded and 90 or 0
     if leadIcon then Icons.apply(leadIcon, opts.Icon, theme.Colors.primary) end
     divider.BackgroundColor3 = theme.Colors.border
   end)) end
