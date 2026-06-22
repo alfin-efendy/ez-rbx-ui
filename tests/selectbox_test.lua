@@ -153,6 +153,23 @@ h.describe("selectbox", function()
       Options = { { Value = "Bow", Icon = "target" }, { Value = "Shield", Icon = "shield" } } })
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("FieldIcon").Visible).toBe(true)
   end)
+  h.it("Loading shows a spinner + Loading row; SetLoading(false) restores options", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A", Loading = true })
+    local field = sb.Frame:FindFirstChild("Field")
+    h.expect(field:FindFirstChild("Spinner").Visible).toBe(true)
+    h.expect(field:FindFirstChild("Caret").Visible).toBe(false)
+    sb.Open()
+    local function dd() for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then return c end end end
+    h.expect(dd():FindFirstChild("Loading") ~= nil).toBeTruthy()
+    local opts0 = 0; for _, o in ipairs(dd():GetChildren()) do if o.Name == "Opt" then opts0 = opts0 + 1 end end
+    h.expect(opts0).toBe(0)
+    sb.SetLoading(false)
+    h.expect(field:FindFirstChild("Spinner").Visible).toBe(false)
+    h.expect(field:FindFirstChild("Caret").Visible).toBe(true)
+    local n = 0; for _, o in ipairs(dd():GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    h.expect(n).toBe(2)
+  end)
   h.it("OnOpen fires on open and can refresh options", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
     local calls = 0

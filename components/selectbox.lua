@@ -1,4 +1,5 @@
 -- Deps injected via Init(R).
+local TweenService = game:GetService("TweenService")
 local SelectBox = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Flag
 
@@ -97,6 +98,9 @@ function SelectBox.new(opts)
   local clearBtn = Create("ImageButton", { Name = "Clear", BackgroundTransparency = 1, Visible = false,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -38, 0.5, -7), Parent = field })
   Icons.apply(clearBtn, "x", theme.Colors.mutedForeground)
+  local spinner = Create("ImageLabel", { Name = "Spinner", BackgroundTransparency = 1, Visible = false,
+    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -20, 0.5, -7), Parent = field })
+  Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
 
   local function selectedIcon()
     if multi then return nil end
@@ -116,6 +120,21 @@ function SelectBox.new(opts)
     valueLabel.TextColor3 = disabled and theme.Colors.mutedForeground or theme.Colors.foreground
     Icons.apply(caret, "chevron-down", disabled and theme.Colors.mutedForeground or theme.Colors.primary)
     field.BackgroundTransparency = disabled and 0.4 or 0
+  end
+
+  local loading = false
+  local spinTween
+  local function setLoading(b)
+    loading = b and true or false
+    caret.Visible = not loading
+    spinner.Visible = loading
+    if spinTween then spinTween:Cancel(); spinTween = nil end
+    if loading then
+      spinTween = TweenService:Create(spinner,
+        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
+      spinTween:Play()
+    end
+    if dropdown then rebuild() end
   end
 
   local function refresh()
@@ -152,6 +171,7 @@ function SelectBox.new(opts)
     if dropdown then rebuild() end
   end
   function api.SetDisabled(b) setDisabled(b) end
+  function api.SetLoading(b) setLoading(b) end
 
   local function pick(opt)
     if multi then
@@ -185,14 +205,16 @@ function SelectBox.new(opts)
 
   function buildDropdown()
     optButtons = {}
-    local searchable
-    if opts.Searchable ~= nil then searchable = opts.Searchable == true
-    else searchable = countOptions(options) > 5 end
+    local searchable = false
+    if not loading then
+      if opts.Searchable ~= nil then searchable = opts.Searchable == true
+      else searchable = countOptions(options) > 5 end
+    end
     local pos = btn.AbsolutePosition or { X = 0, Y = 0 }
     local sz = btn.AbsoluteSize or { X = 140, Y = 38 }
     local vp = Overlay.viewport()
     local width = math.max(140, sz.X or 140)
-    local ddH = math.min(#options * 28 + (searchable and 44 or 8), 240)
+    local ddH = math.min((loading and 28 or (#options * 28)) + (searchable and 44 or 8), 240)
     local below = (pos.Y or 0) + (sz.Y or 38) + 4
     local openUp = (below + ddH > (vp.Y or 1080)) and ((pos.Y or 0) - 4 - ddH >= 0)
     local y = openUp and ((pos.Y or 0) - 4 - ddH) or below
@@ -220,6 +242,12 @@ function SelectBox.new(opts)
       searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
     end
 
+    if loading then
+      Create("TextLabel", { Name = "Loading", BackgroundTransparency = 1, Text = "Loading…", ZIndex = 1002,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Center,
+        TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 1, Parent = dropdown })
+    else
     for i, raw in ipairs(options) do
       local e = normOpt(raw)
       if e.divider then
@@ -258,6 +286,7 @@ function SelectBox.new(opts)
         optButtons[#optButtons + 1] = { btn = o, text = tostring(e.value) .. " " .. tostring(e.label or "") .. " " .. tostring(e.desc or "") }
       end
     end
+    end
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
   end
@@ -286,8 +315,10 @@ function SelectBox.new(opts)
   end))
   maid:Give(clearBtn.MouseButton1Click:Connect(function() if multi then api.SetValue({}) end end))
   maid:Give(btn)
+  maid:Give(function() if spinTween then spinTween:Cancel(); spinTween = nil end end)
   maid:Give(function() api.Close() end)
   if opts.Disabled then setDisabled(true) end
+  if opts.Loading then setLoading(true) end
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     btn.BackgroundColor3 = theme.Colors.surface
@@ -300,6 +331,7 @@ function SelectBox.new(opts)
     Icons.apply(clearBtn, "x", theme.Colors.mutedForeground)
     if fieldIcon.Visible then local ic = selectedIcon(); if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground) end end
     setDisabled(disabled)
+    Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
   end)) end
 
   return api
