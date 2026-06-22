@@ -109,7 +109,17 @@ function TextBox.new(opts)
 
   -- ---- value machinery ------------------------------------------------------
   local function display() return (masked and not revealed) and string.rep("*", #real) or real end
-  local function render() suppress = true; input.Text = display(); suppress = false end
+  -- Only reassign Input.Text when the rendered value actually differs from what's
+  -- already shown. Reassigning on every keystroke resets the caret and makes it
+  -- flicker/jump; with this guard, ordinary (unmasked) typing never touches Text.
+  local function render()
+    local d = display()
+    if input.Text == d then return end
+    suppress = true
+    input.Text = d
+    if masked and not revealed then input.CursorPosition = #d + 1 end
+    suppress = false
+  end
   local function apply(v)
     real = tostring(v or "")
     if opts.MaxLength and #real > opts.MaxLength then real = real:sub(1, opts.MaxLength) end
