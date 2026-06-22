@@ -32,4 +32,9 @@ Any control that accepts a `Flag` option automatically saves and restores its va
 | [ProgressBar](/controls/progressbar) | Animated fill bar (0–1) |
 | [Table](/controls/table) | Scrollable data table |
 | [Card](/controls/card) | Rich content card with banner, title, body, and action buttons |
+| [Resizable](/controls/resizable) | Draggable split-pane container; each pane hosts its own controls |
 | [Accordion](/controls/accordion) | Collapsible section that hosts nested controls |
+
+## Common handle members
+
+Every control handle exposes a `Destroy()` method that removes it from the UI. Controls hosted inside an [Accordion](/controls/accordion) also receive a host-injected `SetLocked(b)` method used by the accordion's lock behavior to block or restore user interaction.

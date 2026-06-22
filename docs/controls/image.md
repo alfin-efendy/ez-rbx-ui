@@ -21,6 +21,13 @@ tab:AddImage({ Image = "rbxassetid://0", Height = 80 })
 | `Height` | `number` | `80` | Height in pixels. Width is always 100%. |
 | `Color` | `Color3` | foreground | Tint applied when using `Lucide`. Defaults to the theme foreground color. |
 
+## API
+
+| Method | Returns | Notes |
+|---|---|---|
+| `SetImage(v)` | `nil` | Swaps the displayed image at runtime. Pass an `rbxassetid://…` string. |
+| `Destroy()` | `nil` | Removes the image from the UI. |
+
 ## Examples
 
 ```lua
@@ -29,6 +36,10 @@ tab:AddImage({ Lucide = "gamepad-2", Height = 64 })
 
 -- Asset image (replace 0 with a real asset ID)
 tab:AddImage({ Image = "rbxassetid://0", Height = 80 })
+
+-- Swap the image at runtime
+local img = tab:AddImage({ Image = "rbxassetid://0", Height = 80 })
+img:SetImage("rbxassetid://12345678")
 
 -- Inside an accordion
 local acc = tab:AddAccordion({ Title = "Preview", Icon = "rows-3" })
