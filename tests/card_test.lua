@@ -1,0 +1,16 @@
+local h = require("tests.helper")
+local R = h.loadLib(); local Card = R.Card
+h.describe("card", function()
+  h.it("builds a card with banner, title, body, and an action button", function()
+    local c = Card.new({ Parent = R.Create("Frame", {}), Title = "News", Body = "Body text",
+      Banner = "rbxassetid://1", Buttons = { { Text = "OK" } }, Theme = R.Theme })
+    local banner = c.Frame:FindFirstChild("Banner")
+    h.expect(banner.Image).toBe("rbxassetid://1")
+    h.expect(c.Frame:FindFirstChild("Title").Text).toBe("News")
+    h.expect(c.Frame:FindFirstChild("Body").Text).toBe("Body text")
+    local row = c.Frame:FindFirstChild("Actions")
+    h.expect(row ~= nil).toBeTruthy()
+    h.expect(row:FindFirstChildOfClass("TextButton") ~= nil).toBeTruthy()
+  end)
+end)
+h.run()

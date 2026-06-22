@@ -1,0 +1,17 @@
+local h = require("tests.helper")
+local R = h.loadLib(); local Slider, Create, Config = R.Slider, R.Create, R.Config
+h.describe("slider", function()
+  h.it("maps value to fill scale, clamps, snaps, persists", function()
+    local cfg = Config.new({ FileName = "SL", AutoSave = false })
+    local s = Slider.new({ Parent = Create("Frame", {}), Text = "Speed", Min = 0, Max = 100, Default = 50, Flag = "spd", Config = cfg })
+    h.expect(s.GetValue()).toBe(50)
+    s.SetValue(150); h.expect(s.GetValue()).toBe(100)
+    h.expect(cfg:Get("spd")).toBe(100)
+    s.SetValue(-5); h.expect(s.GetValue()).toBe(0)
+  end)
+  h.it("step snaps to nearest", function()
+    local s = Slider.new({ Min = 0, Max = 10, Step = 2, Default = 0 })
+    s.SetValue(5); h.expect(s.GetValue()).toBe(6)  -- 5 snaps to nearest even -> 6
+  end)
+end)
+h.run()

@@ -1,389 +1,153 @@
---[[
-	NumberBox Component
-	EzUI Library - Modular Component
-	
-	Creates a numeric input field with increment/decrement buttons
-]]
+-- Deps injected via Init(R).
+local RunService = game:GetService("RunService")
 local NumberBox = {}
+local Create, DefaultTheme, Maid, Icons, Flag, Numfmt
 
-local Colors
-
-function NumberBox:Init(_colors)
-	Colors = _colors
+function NumberBox.Init(R)
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Numfmt = R.Numfmt
 end
 
-function NumberBox:Create(config)
-	local name = config.Name or config.Title or ""
-	local placeholder = config.Placeholder or "Enter number..."
-	local defaultValue = config.Default or 0
-	local callback = config.Callback or function() end
-	local minValue = config.Min or -math.huge
-	local maxValue = config.Max or math.huge
-	local increment = config.Increment or 1
-	local decimals = config.Decimals or 0
-	local flag = config.Flag
-	local parentContainer = config.Parent
-	local currentY = config.Y or 0
-	local isForAccordion = config.IsForAccordion or false
-	local EzUI = config.EzUI
-	local saveConfiguration = config.SaveConfiguration
-	local registerComponent = config.RegisterComponent
-	local settings = config.Settings
-	
-	-- Handle case where Parent might be a component API object instead of Instance
-	if parentContainer and type(parentContainer) == "table" then
-		-- Look for common GUI object properties in component APIs
-		if parentContainer.Frame then
-			parentContainer = parentContainer.Frame
-		elseif parentContainer.Button then
-			parentContainer = parentContainer.Button
-		elseif parentContainer.Label then
-			parentContainer = parentContainer.Label
-		elseif parentContainer.Container then
-			parentContainer = parentContainer.Container
-		else
-			-- List available keys for debugging
-			local keys = {}
-			for k, v in pairs(parentContainer) do
-				table.insert(keys, tostring(k))
-			end
-			warn("NumberBox:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
-			parentContainer = nil
-		end
-	end
-	
-	-- Validate parent is an Instance
-	if parentContainer and not typeof(parentContainer) == "Instance" then
-		warn("NumberBox:Create - Parent must be an Instance, got:", typeof(parentContainer))
-		parentContainer = nil
-	end
-	
-	-- NumberBox state
-	local currentValue = defaultValue
-	
-	-- Load from flag (supports both EzUI.Flags and custom config)
-	if flag then
-		local flagValue = nil
-		
-		-- Check if using custom config object
-		if settings and type(settings.GetValue) == "function" then
-			flagValue = settings:GetValue(flag)
-		end
-		
-		if flagValue ~= nil then
-			currentValue = flagValue
-			defaultValue = currentValue
-		end
-	end
-	
-	-- Main numberbox container
-	local numberBoxContainer = Instance.new("Frame")
-	if isForAccordion then
-		numberBoxContainer.Size = UDim2.new(1, -10, 0, 25)
-		-- Don't set Position for accordion numberboxes - let UIListLayout handle it
-		numberBoxContainer.ZIndex = 6
-	else
-		numberBoxContainer.Size = UDim2.new(1, -20, 0, 30)
-		numberBoxContainer.Position = UDim2.new(0, 10, 0, currentY)
-		numberBoxContainer.ZIndex = 3
-		numberBoxContainer:SetAttribute("ComponentStartY", currentY)
-	end
-	numberBoxContainer.BackgroundTransparency = 1
-	numberBoxContainer.ClipsDescendants = true -- Ensure text doesn't overflow container
-	numberBoxContainer.Parent = parentContainer
-	
-	-- Number input box
-	local numberBox = Instance.new("TextBox")
-	if isForAccordion then
-		numberBox.Size = UDim2.new(1, -45, 1, 0)
-		numberBox.TextSize = 12
-		numberBox.ZIndex = 7
-	else
-		numberBox.Size = UDim2.new(1, -60, 1, 0)
-		numberBox.TextSize = 14
-		numberBox.ZIndex = 4
-	end
-	numberBox.Position = UDim2.new(0, 0, 0, 0)
-	numberBox.BackgroundColor3 = Colors.Input.Background
-	numberBox.BorderColor3 = Colors.Input.Border
-	numberBox.BorderSizePixel = 1
-	numberBox.Text = decimals > 0 and string.format("%." .. decimals .. "f", defaultValue) or tostring(defaultValue)
-	numberBox.PlaceholderText = placeholder
-	numberBox.TextColor3 = Colors.Input.Text
-	numberBox.PlaceholderColor3 = Colors.Input.Placeholder
-	numberBox.Font = Enum.Font.SourceSans
-	numberBox.TextXAlignment = Enum.TextXAlignment.Center
-	numberBox.TextYAlignment = Enum.TextYAlignment.Center
-	numberBox.TextScaled = false -- Prevent text from scaling down automatically
-	numberBox.ClipsDescendants = true -- Clip text that overflows the TextBox
-	numberBox.ClearTextOnFocus = false
-	numberBox.Parent = numberBoxContainer
-	
-	-- Add padding to NumberBox
-	local padding = Instance.new("UIPadding")
-	padding.PaddingLeft = UDim.new(0, 8)
-	padding.PaddingRight = UDim.new(0, 8)
-	padding.PaddingTop = UDim.new(0, 0)
-	padding.PaddingBottom = UDim.new(0, 0)
-	padding.Parent = numberBox
-	
-	-- Round corners for number box
-	local numberCorner = Instance.new("UICorner")
-	numberCorner.CornerRadius = UDim.new(0, 4)
-	numberCorner.Parent = numberBox
-	
-	-- Increment button (up arrow)
-	local incrementBtn = Instance.new("TextButton")
-	if isForAccordion then
-		incrementBtn.Size = UDim2.new(0, 20, 0, 12)
-		incrementBtn.Position = UDim2.new(1, -22, 0, 1)
-		incrementBtn.TextSize = 8
-		incrementBtn.ZIndex = 7
-	else
-		incrementBtn.Size = UDim2.new(0, 25, 0, 14)
-		incrementBtn.Position = UDim2.new(1, -30, 0, 1)
-		incrementBtn.TextSize = 10
-		incrementBtn.ZIndex = 4
-	end
-	incrementBtn.BackgroundColor3 = Colors.Surface.Default
-	incrementBtn.BorderColor3 = Colors.Border.Default
-	incrementBtn.BorderSizePixel = 1
-	incrementBtn.Text = "▲"
-	incrementBtn.TextColor3 = Colors.Text.Secondary
-	incrementBtn.Font = Enum.Font.SourceSans
-	incrementBtn.Parent = numberBoxContainer
-	
-	-- Decrement button (down arrow)
-	local decrementBtn = Instance.new("TextButton")
-	if isForAccordion then
-		decrementBtn.Size = UDim2.new(0, 20, 0, 12)
-		decrementBtn.Position = UDim2.new(1, -22, 0, 13)
-		decrementBtn.TextSize = 8
-		decrementBtn.ZIndex = 7
-	else
-		decrementBtn.Size = UDim2.new(0, 25, 0, 14)
-		decrementBtn.Position = UDim2.new(1, -30, 0, 15)
-		decrementBtn.TextSize = 10
-		decrementBtn.ZIndex = 4
-	end
-	decrementBtn.BackgroundColor3 = Colors.Surface.Default
-	decrementBtn.BorderColor3 = Colors.Border.Default
-	decrementBtn.BorderSizePixel = 1
-	decrementBtn.Text = "▼"
-	decrementBtn.TextColor3 = Colors.Text.Secondary
-	decrementBtn.Font = Enum.Font.SourceSans
-	decrementBtn.Parent = numberBoxContainer
-	
-	-- Calculate heights based on whether we have a title label
-	local hasTitle = name and name ~= ""
-	local labelHeight = hasTitle and 18 or 0
-	local inputHeight = isForAccordion and 25 or 30
-	local totalHeight = labelHeight + inputHeight + (hasTitle and 2 or 0) -- 2px spacing between label and input
+function NumberBox.new(opts)
+  opts = opts or {}
+  local theme = opts.Theme or DefaultTheme
+  local maid = Maid.new()
+  local minV, maxV, step = opts.Min, opts.Max, opts.Step or 1
+  local value = opts.Default or 0
+  local hasLabel = opts.Text ~= nil and opts.Text ~= ""
+  local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+  local rowH = (not hasLabel) and 30 or (hasDesc and 56 or 46)
 
-	-- Adjust container size
-	if isForAccordion then
-		numberBoxContainer.Size = UDim2.new(1, -10, 0, totalHeight)
-	else
-		numberBoxContainer.Size = UDim2.new(1, -20, 0, totalHeight)
-	end
+  local function clamp(n)
+    n = tonumber(n) or value
+    if minV then n = math.max(minV, n) end
+    if maxV then n = math.min(maxV, n) end
+    return n
+  end
 
-	-- Title label (if name is provided)
-	if hasTitle then
-		local titleLabel = Instance.new("TextLabel")
-		titleLabel.Size = UDim2.new(1, 0, 0, labelHeight)
-		titleLabel.Position = UDim2.new(0, 0, 0, 0)
-		titleLabel.BackgroundTransparency = 1
-		titleLabel.Text = name
-		titleLabel.TextColor3 = Colors.Text.Primary
-		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-		titleLabel.Font = Enum.Font.SourceSans
-		titleLabel.TextSize = isForAccordion and 12 or 14
-		titleLabel.ZIndex = isForAccordion and 7 or 4
-		titleLabel.Parent = numberBoxContainer
-	end
+  local root = Create("Frame", { Name = "NumberBoxRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
+    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
+  if hasLabel then
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
+      TextYAlignment = hasDesc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
+      TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(0, 0, 0, hasDesc and 6 or 0),
+      Size = UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0), Parent = root })
+    if hasDesc then
+      Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(0.5, -8, 0, 26), Parent = root })
+    end
+  end
+  local box = Create("Frame", { Name = "Box", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+    Position = hasLabel and UDim2.new(0.5, 4, 0.5, -15) or UDim2.new(0, 0, 0, 0),
+    Size = hasLabel and UDim2.new(0.5, -4, 0, 30) or UDim2.new(1, 0, 0, 30),
+    Parent = root, Create.corner(theme.Radius.md) })
+  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = box })
+  local function stepBtn(name, icon, x)
+    local b = Create("ImageButton", { Name = name, AutoButtonColor = false, BackgroundColor3 = theme.Colors.surface,
+      Size = UDim2.new(0, 26, 1, -6), Position = x, Parent = box, Create.corner(theme.Radius.sm) })
+    local img = Create("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(0, 14, 0, 14),
+      Position = UDim2.new(0.5, -7, 0.5, -7), Parent = b })
+    Icons.apply(img, icon, theme.Colors.primary)
+    return b
+  end
+  local minus = stepBtn("Minus", "minus", UDim2.new(0, 3, 0.5, -12))
+  local plus = stepBtn("Plus", "plus", UDim2.new(1, -29, 0.5, -12))
+  local input = Create("TextBox", { Name = "Input", BackgroundTransparency = 1, Text = tostring(value),
+    TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Center,
+    TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
+    Position = UDim2.new(0, 32, 0, 0), Size = UDim2.new(1, -64, 1, 0), Parent = box })
 
-	-- Adjust numberBox position and size
-	if hasTitle then
-		numberBox.Position = UDim2.new(0, 0, 0, labelHeight + 2) -- Add spacing below title
-		numberBox.Size = UDim2.new(1, -60, 0, inputHeight)
-	else
-		numberBox.Position = UDim2.new(0, 0, 0, 0)
-	end
+  local atMin, atMax = false, false
+  local function dim(btn, off)
+    local img = btn:FindFirstChildOfClass("ImageLabel")
+    if img then img.ImageColor3 = off and theme.Colors.mutedForeground or theme.Colors.primary end
+  end
+  local function updateBounds()
+    atMin = minV ~= nil and value <= minV
+    atMax = maxV ~= nil and value >= maxV
+    dim(minus, atMin); minus.Active = not atMin
+    dim(plus, atMax); plus.Active = not atMax
+  end
 
-	-- Adjust increment and decrement button positions
-	if hasTitle then
-		-- Position buttons relative to numberBox when title exists
-		local buttonY = labelHeight + 2
-		if isForAccordion then
-			incrementBtn.Position = UDim2.new(1, -22, 0, buttonY + 1)
-			decrementBtn.Position = UDim2.new(1, -22, 0, buttonY + 13)
-		else
-			incrementBtn.Position = UDim2.new(1, -30, 0, buttonY + 1)
-			decrementBtn.Position = UDim2.new(1, -30, 0, buttonY + 15)
-		end
-	else
-		-- Keep original positions when no title
-		if isForAccordion then
-			incrementBtn.Position = UDim2.new(1, -22, 0, 1)
-			decrementBtn.Position = UDim2.new(1, -22, 0, 13)
-		else
-			incrementBtn.Position = UDim2.new(1, -30, 0, 1)
-			decrementBtn.Position = UDim2.new(1, -30, 0, 15)
-		end
-	end
+  local function fmt(n)
+    return Numfmt.format(n, { Format = opts.Format, Decimals = opts.Decimals, Prefix = opts.Prefix, Suffix = opts.Suffix })
+  end
+  local focused = false
+  local function render() input.Text = focused and tostring(value) or fmt(value) end
+  local function apply(n) value = clamp(n); render(); updateBounds() end
+  local commit = Flag.bind(opts, clamp(opts.Default or 0), apply)
+  local function set(n) commit(clamp(n)); if opts.Callback then opts.Callback(value) end end
 
-	-- Function to validate and update value
-	local function updateValue(newValue)
-		-- Clamp to min/max
-		newValue = math.max(minValue, math.min(maxValue, newValue))
-		
-		-- Round to decimal places
-		if decimals > 0 then
-			local multiplier = 10 ^ decimals
-			newValue = math.floor(newValue * multiplier + 0.5) / multiplier
-		else
-			newValue = math.floor(newValue + 0.5)
-		end
-		
-		currentValue = newValue
-	
-		-- Update text box display
-		if decimals > 0 then
-			numberBox.Text = string.format("%." .. decimals .. "f", newValue)
-		else
-			numberBox.Text = tostring(newValue)
-		end
-		
-		-- Save to configuration
-		if flag then
-			settings:SetValue(flag, currentValue)
-		end
-		-- Call user callback
-		local success, errorMsg = pcall(function()
-			callback(currentValue)
-		end)
-		
-		if not success then
-			warn("NumberBox callback error:", errorMsg)
-		end
-		
-		return newValue
-	end 
-	
-	-- Text change handler with validation
-	numberBox.FocusLost:Connect(function()
-		local inputText = numberBox.Text
-		local numValue = tonumber(inputText)
-		
-		if numValue then
-			updateValue(numValue)
-		else
-			-- Invalid input, revert to current value
-			if decimals > 0 then
-				numberBox.Text = string.format("%." .. decimals .. "f", currentValue)
-			else
-				numberBox.Text = tostring(currentValue)
-			end
-		end
-	end)
-	
-	-- Increment button handler
-	incrementBtn.MouseButton1Click:Connect(function()
-		updateValue(currentValue + increment)
-	end)
-	
-	-- Decrement button handler
-	decrementBtn.MouseButton1Click:Connect(function()
-		updateValue(currentValue - increment)
-	end)
-	
-	-- Button hover effects
-	incrementBtn.MouseEnter:Connect(function()
-		incrementBtn.BackgroundColor3 = Colors.Surface.Hover
-	end)
-	
-	incrementBtn.MouseLeave:Connect(function()
-		incrementBtn.BackgroundColor3 = Colors.Surface.Default
-	end)
-	
-	decrementBtn.MouseEnter:Connect(function()
-		decrementBtn.BackgroundColor3 = Colors.Surface.Hover
-	end)
-	
-	decrementBtn.MouseLeave:Connect(function()
-		decrementBtn.BackgroundColor3 = Colors.Surface.Default
-	end)
-	
-	-- Focus effects
-	numberBox.Focused:Connect(function()
-		numberBox.BorderColor3 = Colors.Input.BorderFocus
-	end)
-	
-	numberBox.FocusLost:Connect(function()
-		numberBox.BorderColor3 = Colors.Input.Border
-	end)
-	
-	-- Return NumberBox API
-	local numberBoxAPI = {
-		NumberBox = numberBoxContainer
-	}
-	
-	function numberBoxAPI:GetValue()
-		return currentValue
-	end
-	
-	function numberBoxAPI:SetValue(newValue)
-		local numValue = tonumber(newValue)
-		if numValue then
-			updateValue(numValue)
-		else
-			warn("NumberBox SetValue: Expected number, got " .. type(newValue))
-		end
-	end
-	
-	function numberBoxAPI:SetMin(newMin)
-		minValue = tonumber(newMin) or -math.huge
-		updateValue(currentValue)
-	end
-	
-	function numberBoxAPI:SetMax(newMax)
-		maxValue = tonumber(newMax) or math.huge
-		updateValue(currentValue)
-	end
-	
-	function numberBoxAPI:SetIncrement(newIncrement)
-		increment = tonumber(newIncrement) or 1
-	end
-	
-	function numberBoxAPI:Clear()
-		updateValue(0)
-	end
-	
-	function numberBoxAPI:Focus()
-		numberBox:CaptureFocus()
-	end
-	
-	function numberBoxAPI:Blur()
-		numberBox:ReleaseFocus()
-	end
-	
-	function numberBoxAPI:SetCallback(newCallback)
-		callback = newCallback or function() end
-	end
-	
-	function numberBoxAPI:Set(newValue)
-		local numValue = tonumber(newValue)
-		if numValue then
-			updateValue(numValue)
-		end
-	end
-	
-	-- Register component for flag-based updates
-	if registerComponent then
-		registerComponent(flag, numberBoxAPI)
-	end
-	
-	return numberBoxAPI
+  local function holdRepeat(btn, stepFn, atBoundFn)
+    local conn, held
+    local function stop()
+      held = false
+      if conn then conn:Disconnect(); conn = nil end
+    end
+    maid:Give(btn.MouseButton1Down:Connect(function()
+      if atBoundFn() then return end
+      held = true
+      stepFn()                                  -- immediate first step
+      local elapsed, since = 0, 0
+      conn = RunService.Heartbeat:Connect(function(dt)
+        if not held then return end
+        elapsed = elapsed + dt
+        if elapsed < 0.35 then return end       -- initial hold delay
+        since = since + dt
+        local interval = math.max(0.03, 0.12 - (elapsed - 0.35) * 0.06)  -- accelerate
+        if since >= interval then
+          since = 0
+          if atBoundFn() then stop(); return end
+          stepFn()
+        end
+      end)
+    end))
+    maid:Give(btn.MouseButton1Up:Connect(stop))
+    maid:Give(btn.MouseLeave:Connect(stop))
+    maid:Give(stop)
+  end
+  holdRepeat(minus, function() set(value - step) end, function() return atMin end)
+  holdRepeat(plus, function() set(value + step) end, function() return atMax end)
+  maid:Give(input.Focused:Connect(function() focused = true; input.Text = tostring(value) end))
+  maid:Give(input.FocusLost:Connect(function()
+    focused = false
+    local parsed = Numfmt.parse(input.Text, { Prefix = opts.Prefix, Suffix = opts.Suffix })
+    if parsed ~= nil then set(parsed) else render() end
+  end))
+  maid:Give(box.InputChanged:Connect(function(io)
+    if io.UserInputType == Enum.UserInputType.MouseWheel then
+      local dir = (io.Position.Z >= 0) and 1 or -1
+      set(value + step * dir)
+    end
+  end))
+  maid:Give(root)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    root.BackgroundColor3 = theme.Colors.surface
+    box.BackgroundColor3 = theme.Colors.background
+    local bs = box:FindFirstChildOfClass("UIStroke"); if bs then bs.Color = theme.Colors.border end
+    input.TextColor3 = theme.Colors.foreground
+    local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
+    local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
+    for _, c in ipairs(box:GetChildren()) do
+      if c:IsA("ImageButton") then c.BackgroundColor3 = theme.Colors.surface
+        local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.primary end end
+    end
+    updateBounds()
+  end)) end
+
+  return {
+    Frame = root,
+    GetValue = function() return value end,
+    SetValue = function(n) set(n) end,
+    SetMin = function(n) minV = n; set(value) end,
+    SetMax = function(n) maxV = n; set(value) end,
+    Destroy = function() maid:DoCleanup() end,
+  }
 end
 
 return NumberBox

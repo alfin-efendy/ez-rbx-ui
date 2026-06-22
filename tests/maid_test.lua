@@ -1,0 +1,42 @@
+local h = require("tests.helper")
+local Maid = h.requireModule("core.maid")
+
+h.describe("maid", function()
+  h.it("runs function tasks on cleanup", function()
+    local m = Maid.new(); local ran = false
+    m:Give(function() ran = true end)
+    m:DoCleanup()
+    h.expect(ran).toBeTruthy()
+  end)
+  h.it("disconnects connection tasks", function()
+    local m = Maid.new(); local disc = false
+    m:Give({ Disconnect = function() disc = true end })
+    m:DoCleanup()
+    h.expect(disc).toBeTruthy()
+  end)
+  h.it("destroys Instance tasks and clears", function()
+    local m = Maid.new()
+    local inst = h.roblox.Instance.new("Frame")
+    m:Give(inst)
+    m:DoCleanup()
+    h.expect(inst._destroyed).toBeTruthy()
+  end)
+  h.it("disconnects event connections (userdata/RBXScriptConnection path)", function()
+    local btn = h.roblox.Instance.new("TextButton")
+    local fired = 0
+    local conn = btn.MouseButton1Click:Connect(function() fired = fired + 1 end)
+    local m = Maid.new()
+    m:Give(conn)
+    m:DoCleanup()
+    btn.MouseButton1Click:Fire()
+    h.expect(fired).toBe(0)  -- disconnected before fire
+  end)
+  h.it("cleanup is idempotent", function()
+    local m = Maid.new(); local n = 0
+    m:Give(function() n = n + 1 end)
+    m:DoCleanup(); m:DoCleanup()
+    h.expect(n).toBe(1)
+  end)
+end)
+
+h.run()

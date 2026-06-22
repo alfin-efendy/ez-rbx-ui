@@ -1,216 +1,108 @@
---[[
-	Button Component
-	EzUI Library - Modular Component
-	
-	Creates a clickable button with hover effects
-]]
+-- Deps injected via Init(R).
 local Button = {}
+local Create, DefaultTheme, Animate, Maid, Icons
 
-local Colors
-
-function Button:Init(_colors)
-	Colors = _colors
+function Button.Init(R)
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
 end
 
-function Button:Create(config)
-	local text = config.Text or config.Label or config.Title or config.Name or "Button"
-	local callback = config.Callback or function() end
-	local variant = config.Variant or "primary"
-	local parentContainer = config.Parent
-	local currentY = config.Y or 0
-	local isForAccordion = config.IsForAccordion or false
-	
-	-- Handle case where Parent might be a component API object instead of Instance
-	if parentContainer and type(parentContainer) == "table" then
-		-- Look for common GUI object properties in component APIs
-		if parentContainer.Frame then
-			parentContainer = parentContainer.Frame
-		elseif parentContainer.Button then
-			parentContainer = parentContainer.Button
-		elseif parentContainer.Label then
-			parentContainer = parentContainer.Label
-		elseif parentContainer.Container then
-			parentContainer = parentContainer.Container
-		else
-			-- List available keys for debugging
-			local keys = {}
-			for k, v in pairs(parentContainer) do
-				table.insert(keys, tostring(k))
-			end
-			warn("Button:Create - Parent is a table but no GUI object found. Keys:", table.concat(keys, ", "))
-			parentContainer = nil
-		end
-	end
-	
-	-- Validate parent is an Instance
-	if parentContainer and not typeof(parentContainer) == "Instance" then
-		warn("Button:Create - Parent must be an Instance, got:", typeof(parentContainer))
-		parentContainer = nil
-	end
-	
-	-- Function to get variant colors
-	local function getVariantColors(variantName)
-		local variants = {
-			primary = {
-				background = Colors.Button.Primary,
-				backgroundHover = Colors.Button.PrimaryHover,
-				text = Colors.Text.Primary,
-				border = Colors.Text.Primary
-			},
-			secondary = {
-				background = Color3.fromRGB(108, 117, 125),
-				backgroundHover = Color3.fromRGB(90, 98, 104),
-				text = Color3.fromRGB(255, 255, 255),
-				border = Color3.fromRGB(108, 117, 125)
-			},
-			success = {
-				background = Color3.fromRGB(40, 167, 69),
-				backgroundHover = Color3.fromRGB(34, 142, 58),
-				text = Color3.fromRGB(255, 255, 255),
-				border = Color3.fromRGB(40, 167, 69)
-			},
-			warning = {
-				background = Color3.fromRGB(255, 193, 7),
-				backgroundHover = Color3.fromRGB(217, 164, 6),
-				text = Color3.fromRGB(33, 37, 41),
-				border = Color3.fromRGB(255, 193, 7)
-			},
-			danger = {
-				background = Color3.fromRGB(220, 53, 69),
-				backgroundHover = Color3.fromRGB(187, 45, 59),
-				text = Color3.fromRGB(255, 255, 255),
-				border = Color3.fromRGB(220, 53, 69)
-			},
-			info = {
-				background = Color3.fromRGB(13, 202, 240),
-				backgroundHover = Color3.fromRGB(11, 172, 204),
-				text = Color3.fromRGB(255, 255, 255),
-				border = Color3.fromRGB(13, 202, 240)
-			},
-			light = {
-				background = Color3.fromRGB(248, 249, 250),
-				backgroundHover = Color3.fromRGB(211, 212, 213),
-				text = Color3.fromRGB(33, 37, 41),
-				border = Color3.fromRGB(248, 249, 250)
-			},
-			dark = {
-				background = Color3.fromRGB(33, 37, 41),
-				backgroundHover = Color3.fromRGB(28, 31, 35),
-				text = Color3.fromRGB(255, 255, 255),
-				border = Color3.fromRGB(33, 37, 41)
-			}
-		}
-		
-		return variants[variantName] or variants.primary
-	end
-	
-	local variantColors = getVariantColors(variant)
-	
-	local button = Instance.new("TextButton")
-	if isForAccordion then
-		-- Make button width responsive to content (takes full available width)
-		button.Size = UDim2.new(1, -10, 0, 25)
-		-- Don't set Position for accordion buttons - let UIListLayout handle it
-		button.BorderColor3 = variantColors.border
-		button.BorderSizePixel = 2
-		button.TextSize = 12
-		button.ZIndex = 5
-		
-		-- Round corners for accordion button
-		local buttonCorner = Instance.new("UICorner")
-		buttonCorner.CornerRadius = UDim.new(0, 4)
-		buttonCorner.Parent = button
-		
-		-- Button hover effects for accordion
-		button.MouseEnter:Connect(function()
-			button.BackgroundColor3 = variantColors.backgroundHover
-		end)
-		
-		button.MouseLeave:Connect(function()
-			button.BackgroundColor3 = variantColors.background
-		end)
-	else
-		button.Size = UDim2.new(0, 120, 0, 30)
-		button.Position = UDim2.new(0, 10, 0, currentY)
-		button.BorderSizePixel = 0
-		button.TextSize = 14
-		button.ZIndex = 3
-		button:SetAttribute("ComponentStartY", currentY)
-	end
-	button.BackgroundColor3 = variantColors.background
-	button.Text = text
-	button.TextColor3 = variantColors.text
-	button.Font = Enum.Font.SourceSans
-	button.TextScaled = false  -- Keep original text size
-	button.TextWrapped = false -- Don't wrap text to new lines
-	button.TextTruncate = Enum.TextTruncate.AtEnd -- Add ... at end if text is too long
-	button.Parent = parentContainer
+local function palette(theme, variant)
+  if variant == "destructive" then return theme.Colors.destructive, theme.Colors.primaryForeground, nil end
+  if variant == "secondary" then return theme.Colors.surface, theme.Colors.foreground, nil end
+  if variant == "outline" then return theme.Colors.card, theme.Colors.foreground, theme.Colors.border end
+  if variant == "ghost" then return theme.Colors.surface, theme.Colors.foreground, nil end
+  return theme.Colors.primary, theme.Colors.primaryForeground, nil -- default
+end
 
-	-- Add hover effects for non-accordion buttons
-	if not isForAccordion then
-		button.MouseEnter:Connect(function()
-			button.BackgroundColor3 = variantColors.backgroundHover
-		end)
-		
-		button.MouseLeave:Connect(function()
-			button.BackgroundColor3 = variantColors.background
-		end)
-	end
+function Button.new(opts)
+  opts = opts or {}
+  local theme = opts.Theme or DefaultTheme
+  local variant = opts.Variant or "default"
+  local maid = Maid.new()
+  local bg, fg, stroke = palette(theme, variant)
+  local transparent = (variant == "ghost")
 
-	if callback then
-		button.MouseButton1Click:Connect(callback)
-	end
-	
-	-- Create Button API
-	local buttonAPI = {
-		Button = button
-	}
+  -- btn: fixed-size hit area, laid out by UIListLayout. It never scales, so the press
+  -- animation can't change its AbsoluteSize and siblings never reflow.
+  local btn = Create("TextButton", {
+    Name = "Button", AutoButtonColor = false, Text = "",
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, 34), LayoutOrder = opts.LayoutOrder or 0,
+    Parent = opts.Parent,
+  })
+  -- surface: the visible button. Centred (AnchorPoint 0.5) so the press UIScale shrinks
+  -- toward the middle; Active=false so clicks fall through to btn.
+  local surface = Create("Frame", {
+    Name = "Surface", BackgroundColor3 = bg, BackgroundTransparency = transparent and 1 or 0,
+    AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
+    Size = UDim2.new(1, 0, 1, 0), Active = false, Parent = btn,
+    Create.corner(theme.Radius.md),
+  })
+  local scale = Create("UIScale", { Scale = 1, Parent = surface })
+  if stroke then Create("UIStroke", { Color = stroke, Thickness = 1, Parent = surface }) end
 
-	function buttonAPI:SetText(newText)
-		button.Text = newText or ""
-	end
+  local hovering = false
+  local bgNormal = transparent and 1 or 0
+  -- ghost rests fully transparent; on hover/press it reveals a clearly-visible muted 'surface'
+  -- wash (its palette bg is surface, not card -- card matched the panel behind it and looked
+  -- dead). Kept lighter than 'secondary' (a full opaque surface fill) so it still reads as ghost.
+  local bgHover = transparent and 0.4 or 0.12
+  local bgPressed = transparent and 0.25 or 0.2
 
-	function buttonAPI:GetText()
-		return button.Text
-	end
+  local hasIcon = opts.Icon ~= nil
+  if hasIcon then
+    local img = Create("ImageLabel", {
+      Name = "Icon", BackgroundTransparency = 1,
+      Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0.5, -44, 0.5, -8),
+      Parent = surface,
+    })
+    Icons.apply(img, opts.Icon, fg)
+  end
+  local label = Create("TextLabel", {
+    Name = "Label", BackgroundTransparency = 1,
+    Text = opts.Text or "Button", TextColor3 = fg, TextSize = theme.Font.label.Size,
+    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 1, 0),
+    Position = UDim2.new(0, hasIcon and 12 or 0, 0, 0),
+    Parent = surface,
+  })
 
-	function buttonAPI:SetCallback(newCallback)
-		callback = newCallback or function() end
-		button.MouseButton1Click:Connect(callback)
-	end
+  maid:Give(btn.MouseEnter:Connect(function()
+    hovering = true
+    Animate.to(surface, "fast", { BackgroundTransparency = bgHover })
+  end))
+  maid:Give(btn.MouseLeave:Connect(function()
+    hovering = false
+    Animate.to(surface, "fast", { BackgroundTransparency = bgNormal })
+    Animate.to(scale, "fast", { Scale = 1 })
+  end))
+  maid:Give(btn.MouseButton1Down:Connect(function()
+    Animate.to(scale, "fast", { Scale = 0.97 })
+    Animate.to(surface, "fast", { BackgroundTransparency = bgPressed })
+  end))
+  maid:Give(btn.MouseButton1Up:Connect(function()
+    Animate.to(scale, "base", { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    Animate.to(surface, "fast", { BackgroundTransparency = hovering and bgHover or bgNormal })
+  end))
+  maid:Give(btn.MouseButton1Click:Connect(function()
+    if opts.Action == "ResetConfig" and opts.Window and opts.Window.ResetConfiguration then opts.Window:ResetConfiguration() end
+    if opts.Callback then opts.Callback() end
+  end))
+  maid:Give(btn)
 
-	function buttonAPI:SetEnabled(enabled)
-		button.Active = enabled
-		if enabled then
-			button.BackgroundColor3 = variantColors.background
-		else
-			-- Create a disabled version by reducing opacity/brightness
-			local r, g, b = variantColors.background.R, variantColors.background.G, variantColors.background.B
-			button.BackgroundColor3 = Color3.fromRGB(
-				math.floor(r * 255 * 0.5),
-				math.floor(g * 255 * 0.5),
-				math.floor(b * 255 * 0.5)
-			)
-		end
-	end
-	
-	function buttonAPI:SetVariant(newVariant)
-		variant = newVariant or "primary"
-		variantColors = getVariantColors(variant)
-		
-		-- Update button colors
-		button.BackgroundColor3 = variantColors.background
-		button.TextColor3 = variantColors.text
-		if isForAccordion then
-			button.BorderColor3 = variantColors.border
-		end
-	end
-	
-	function buttonAPI:GetVariant()
-		return variant
-	end
-	
-	return buttonAPI
+  if opts.AccentReg then maid:Give(opts.AccentReg(function()
+    local nbg, nfg, nstroke = palette(theme, variant)
+    if not transparent then surface.BackgroundColor3 = nbg end
+    label.TextColor3 = nfg
+    if hasIcon then Icons.apply(surface:FindFirstChild("Icon"), opts.Icon, nfg) end
+    local st = surface:FindFirstChildOfClass("UIStroke"); if st and nstroke then st.Color = nstroke end
+  end)) end
+
+  return {
+    Frame = btn,
+    SetText = function(s) label.Text = s end,
+    SetEnabled = function(en) btn.Active = en; label.TextColor3 = en and fg or theme.Colors.mutedForeground end,
+    Destroy = function() maid:DoCleanup() end,
+  }
 end
 
 return Button

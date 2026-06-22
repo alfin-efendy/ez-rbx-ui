@@ -1,0 +1,16 @@
+return function(window, host)
+  host = host or window
+  local tab = host:AddTab({ Name = "Slider", Icon = "sliders-horizontal" })
+  tab:AddSection("Basic")
+  local readout = tab:AddLabel("Speed: 16")
+  local s = tab:AddSlider({ Text = "Speed", Min = 16, Max = 200, Default = 16 })
+  s.OnChanged(function(v) readout.SetText("Speed: " .. tostring(v)) end)
+  tab:AddSlider({ Text = "With description", Description = "Drag to adjust.", Min = 0, Max = 100, Default = 30 })
+  tab:AddSection("Persistence (Flag)")
+  tab:AddSlider({ Text = "Saved volume", Flag = "ex_slider", Min = 0, Max = 100, Default = 50 })
+  tab:AddParagraph("Sliders fire OnChanged; Flag-bound sliders auto-save and restore.")
+  local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
+  acc:AddSlider({ Text = "Nested", Min = 0, Max = 10, Default = 5 })
+  local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
+  acc2:AddSlider({ Text = "Nested", Min = 0, Max = 10, Default = 5 })
+end

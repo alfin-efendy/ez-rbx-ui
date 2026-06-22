@@ -1,119 +1,66 @@
---[[
-	EzUI - Easy Roblox UI Library
-	Main Entry Point
-	
-	A modern, modular UI library for Roblox with:
-	- Centralized color palette system
-	- Configuration management with auto-save/load
-	- 10+ UI components
-	- Tab system with icons
-	- Window management with drag & resize
-	
-	Usage:
-		local EzUI = require(game.ReplicatedStorage.main)
-		
-		local window = EzUI.({
-			Name = "My UI",
-			Size = {Width = 500, Height = 400}
-		})
-		
-		local tab = window:AddTab("Home")
-		tab:AddButton("Click Me", function()
-			print("Button clicked!")
-		end)
-]]
-
+--[[ EzUI — Easy Roblox UI Library (rewrite). Entry point. ]]
 local EzUI = {}
 
--- Import utility modules
-local ColorsModule = require("utils/colors")
-local ConfigModule = require("utils/config")
+-- The bundler rewrites require() ONLY in this entry file (not inside embedded
+-- modules), so modules must NOT require each other. Load each module once here,
+-- then inject the dependency registry R via Module.Init(R).
+local R = {}
+R.Theme = require("core/theme")
+R.Create = require("core/create")
+R.Signal = require("core/signal")
+R.Maid = require("core/maid")
+R.Icons = require("core/icons")
+R.Config = require("core/config")
+R.Flag = require("core/flag")
+R.Animate = require("core/animate")
+R.Overlay = require("core/overlay")
+R.Acrylic = require("core/acrylic")
+R.Asset = require("core/asset")
+R.Numfmt = require("core/numfmt")
+R.Themer = require("core/themer")
+R.Separator = require("components/separator")
+R.Label = require("components/label")
+R.Button = require("components/button")
+R.Card = require("components/card")
+R.Toggle = require("components/toggle")
+R.TextBox = require("components/textbox")
+R.NumberBox = require("components/numberbox")
+R.SelectBox = require("components/selectbox")
+R.Image = require("components/image")
+R.ProgressBar = require("components/progressbar")
+R.Slider = require("components/slider")
+R.Keybind = require("components/keybind")
+R.Tooltip = require("components/tooltip")
+R.Dialog = require("components/dialog")
+R.Notification = require("components/notification")
+R.Table = require("components/table")
+R.ColorPicker = require("components/colorpicker")
+R.Host = require("components/host")
+R.Resizable = require("components/resizable")
+R.Accordion = require("components/accordion")
+R.Tab = require("components/tab")
+R.Window = require("components/window")
 
--- Debug: Verify Colors loaded
-if ColorsModule then
-	print("✅ Colors module loaded successfully")
-	if ColorsModule.Background then
-		print("✅ Colors.Background exists")
-	else
-		warn("❌ Colors.Background is nil!")
-	end
-else
-	warn("❌ Colors module is nil!")
+for _, m in pairs(R) do
+  if type(m) == "table" and type(m.Init) == "function" then m.Init(R) end
 end
 
--- Import components
-local Accordion = require("components/accordion")
-local Button = require("components/button")
-local Label = require("components/label")
-local NumberBox = require("components/numberbox")
-local Notification = require("components/notification")
-local SelectBox = require("components/selectbox")
-local Separator = require("components/separator")
-local Tab = require("components/tab")
-local TextBox = require("components/textbox")
-local Toggle = require("components/toggle")
-local Window = require("components/window")
+EzUI.Theme = R.Theme
+EzUI.Icons = R.Icons
+EzUI._internal = R
 
--- Custom Configuration System
-function EzUI:NewConfig(config)
-	return ConfigModule:NewConfig(config)
+function EzUI:NewConfig(opts) return R.Config.new(opts) end
+
+function EzUI:CreateWindow(config)
+  config = config or {}
+  if config.Parent == nil then
+    local ok, hui = pcall(function() return gethui and gethui() end)
+    config.Parent = (ok and hui) or game:GetService("CoreGui")
+  end
+  return R.Window.new(config)
 end
 
--- Initialize Components
-print("🔧 Initializing components...")
-Accordion:Init(ColorsModule, Button, Toggle, TextBox, NumberBox, SelectBox, Label, Separator)
-Button:Init(ColorsModule)
-Label:Init(ColorsModule)
-NumberBox:Init(ColorsModule)
-SelectBox:Init(ColorsModule)
-Separator:Init(ColorsModule)
-Tab:Init(ColorsModule, Accordion, Button, Toggle, TextBox, NumberBox, SelectBox, Label, Separator)
-TextBox:Init(ColorsModule)
-Toggle:Init(ColorsModule)
-Window:Init(ColorsModule, Accordion, Button, Label, NumberBox, Notification, SelectBox, Separator, Tab, TextBox, Toggle)
-print("✅ All components initialized")
-
--- Main Window Creation Function
-function EzUI:CreateNew(config)
-	if not config or type(config) ~= "table" then
-		config = {}
-		warn("EzUI:CreateNew - Config table is required, using defaults")
-	end
-
-	print("🪟 Creating window...")
-	
-	-- Pass all required modules and config to Window component
-	local windowSetup = {
-		Title = config.Title or config.Name or "EzUI Window",
-		Width = config.Width or (config.Size and config.Size.Width) or 600,
-		Height = config.Height or (config.Size and config.Size.Height) or 400,
-		Opacity = config.Opacity or 0.9,
-		AutoShow = config.AutoShow or true,
-		AutoAdapt = config.AutoAdapt or true,
-		Draggable = config.Draggable,
-		BackgroundColor = config.BackgroundColor,
-		CornerRadius = config.CornerRadius,
-	}
-
-	-- Create config system
-	local configSystem = ConfigModule:NewConfig({
-		FolderName = config.FolderName or "EzUI",
-		FileName = config.FileName or "Settings",
-	})
-
-	configSystem:Load()
-
-	local allKeys = configSystem:GetAllKeys()
-	print("EzUI:CreateNew - Loaded config keys:", table.concat(allKeys, ", "))
-
-	-- Store config in EzUI for global access
-	windowSetup.Settings = configSystem
-
-	return Window:Create(windowSetup)
-end
-
--- Expose version info
-EzUI.Version = "2.0.0"
-EzUI.Author = "EzUI Library"
+EzUI.Version = "2.0.0-alpha.1"
+EzUI.Author = "alfin-efendy"
 
 return EzUI

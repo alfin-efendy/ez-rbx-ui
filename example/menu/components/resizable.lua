@@ -1,0 +1,17 @@
+return function(window, host)
+  host = host or window
+  local tab = host:AddTab({ Name = "Resizable", Icon = "columns-2" })
+  tab:AddSection("Split panes")
+  local rz = tab:AddResizable({ Direction = "Horizontal", Panes = { { Default = 0.4 }, { Default = 0.6 } }, Height = 140 })
+  rz.Panes[1]:AddLabel("Left pane")
+  rz.Panes[1]:AddButton({ Text = "Action" })
+  rz.Panes[2]:AddLabel("Right pane")
+  rz.Panes[2]:AddToggle({ Text = "Option" })
+  tab:AddParagraph("Drag the centre grip to resize; each pane hosts its own controls.")
+  local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
+  local r1 = acc:AddResizable({ Panes = { {}, {} }, Height = 100 })
+  r1.Panes[1]:AddLabel("Left"); r1.Panes[2]:AddLabel("Right")
+  local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
+  local r2 = acc2:AddResizable({ Panes = { {}, {} }, Height = 100 })
+  r2.Panes[1]:AddLabel("Left"); r2.Panes[2]:AddLabel("Right")
+end
