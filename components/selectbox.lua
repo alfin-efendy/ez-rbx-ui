@@ -30,7 +30,14 @@ function SelectBox.new(opts)
   local onChanged = opts.Callback
 
   local function display()
-    if multi then return (#value == 0) and "None" or table.concat(value, ", ") end
+    if multi then
+      if #value == 0 then return "None" end
+      local shown = {}
+      for i = 1, math.min(2, #value) do shown[i] = tostring(value[i]) end
+      local s = table.concat(shown, ", ")
+      if #value > 2 then s = s .. " +" .. (#value - 2) end
+      return s
+    end
     return tostring(value or "Select")
   end
 
@@ -69,7 +76,32 @@ function SelectBox.new(opts)
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -20, 0.5, -7), Parent = field })
   Icons.apply(caret, "chevron-down", theme.Colors.primary)
 
-  local function refresh() valueLabel.Text = display() end
+  local fieldIcon = Create("ImageLabel", { Name = "FieldIcon", BackgroundTransparency = 1, Visible = false,
+    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, 8, 0.5, -7), Parent = field })
+  local clearBtn = Create("ImageButton", { Name = "Clear", BackgroundTransparency = 1, Visible = false,
+    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -38, 0.5, -7), Parent = field })
+  Icons.apply(clearBtn, "x", theme.Colors.mutedForeground)
+
+  local function selectedIcon()
+    if multi then return nil end
+    for _, raw in ipairs(options) do local e = normOpt(raw); if e.value == value then return e.icon end end
+    return nil
+  end
+  local function relayout()
+    local left = fieldIcon.Visible and 26 or 8
+    local right = clearBtn.Visible and 38 or 24
+    valueLabel.Position = UDim2.new(0, left, 0, 0)
+    valueLabel.Size = UDim2.new(1, -(left + right), 1, 0)
+  end
+
+  local function refresh()
+    local ic = selectedIcon()
+    if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground); fieldIcon.Visible = true
+    else fieldIcon.Visible = false end
+    clearBtn.Visible = multi and #value > 0
+    relayout()
+    valueLabel.Text = display()
+  end
   local function apply(v) value = v; refresh() end
   local commit = Flag.bind(opts, value, apply)
 
@@ -202,6 +234,7 @@ function SelectBox.new(opts)
   function api.Destroy() api.Close(); maid:DoCleanup() end
 
   maid:Give(btn.MouseButton1Click:Connect(function() if dropdown then api.Close() else api.Open() end end))
+  maid:Give(clearBtn.MouseButton1Click:Connect(function() if multi then api.SetValue({}) end end))
   maid:Give(btn)
   maid:Give(function() api.Close() end)
 
@@ -213,6 +246,8 @@ function SelectBox.new(opts)
     local ti = btn:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
     local de = btn:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(caret, "chevron-down", theme.Colors.primary)
+    Icons.apply(clearBtn, "x", theme.Colors.mutedForeground)
+    if fieldIcon.Visible then local ic = selectedIcon(); if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground) end end
   end)) end
 
   return api
