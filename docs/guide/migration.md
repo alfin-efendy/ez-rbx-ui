@@ -1,28 +1,14 @@
 # Migration
 
-## v1 → v2
+The current published release is **v2**. This documentation covers **v3**, which is in active development on this branch and **not yet released**. This page lists what changes when you move from the published v2 to v3.
 
-v2 is a full rewrite with a clean-break API. The table below maps every changed surface.
-
-| v1 | v2 |
-|---|---|
-| `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
-| `Size = { Width, Height }` | unchanged |
-| `tab = window:AddTab({ Name, Icon = "🏠" })` | `Icon = "home"` (Lucide name, not emoji) |
-| `tab:AddLabel/AddButton/AddToggle/AddTextBox/AddNumberBox/AddSelectBox/AddSeparator` | same names |
-| `window:ShowNotification/ShowSuccess/ShowError(...)` | `window:Notify/ShowSuccess/ShowError(...)` |
-| `Colors` module (`utils/colors`) | `EzUI.Theme` tokens / `Theme` override |
-| `EzUI:NewConfig(...)` | unchanged |
-| flags (`Flag = "..."`) | unchanged |
-| — | **new:** `AddSlider`, `AddKeybind`, `AddColorPicker`, `AddImage`, `AddProgressBar`, `AddTable`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
-
-v2 internals are a clean rewrite: engine-driven layout (`UIListLayout` + `AutomaticSize` + `UIFlex`) instead of manual Y positioning, a single-tween accordion (no O(n²) reflow), and `CanvasGroup` tab transitions.
-
----
+::: info v3 is unreleased
+The install snippets throughout these docs pull the **latest GitHub release**, which is still **v2** until v3 ships. Treat the v3-only features below as forthcoming.
+:::
 
 ## v2 → v3
 
-v3 keeps the full v2 public API — no renames, no removals. The following additive features were confirmed in `components/` during implementation:
+v3 keeps the v2 window and control API — every method documented for v2 is still present, with no renames or removals — and adds the following.
 
 ### `AddCard`
 
@@ -39,11 +25,21 @@ tab:AddCard({
 })
 ```
 
+### `AddResizable`
+
+A new split-pane container control. Each pane is itself a control host, so you add controls into `Panes[i]` just like a tab or accordion. See [Resizable](/controls/resizable).
+
+```lua
+local rz = tab:AddResizable({ Direction = "Horizontal", Panes = { { Default = 0.4 }, { Default = 0.6 } } })
+rz.Panes[1]:AddLabel("Left pane")
+rz.Panes[2]:AddToggle({ Text = "Option" })
+```
+
 ### `TextBox` — `LeadingIcon`, `Password`, and `Validate`
 
-`AddTextBox` gained three new options (`components/textbox.lua`):
+`AddTextBox` gained several new options (`components/textbox.lua`):
 
-- **`LeadingIcon`** — Lucide icon name rendered inside the left edge of the input field.
+- **`LeadingIcon`** / **`TrailingIcon`** — Lucide icon names rendered inside the left/right edge of the input field.
 - **`Password`** — when `true`, masks the input and shows a reveal toggle button.
 - **`Validate`** — a function `(value) -> ok, message` called on focus-lost. Displays an inline error message when `ok` is `false`.
 
@@ -59,7 +55,9 @@ tab:AddTextBox({
 })
 ```
 
-### `Description` on Controls
+See [TextBox](/controls/textbox) for the full option and method set (input-group buttons, `Clearable`, `SetLoading`, `SetValid`/`SetInvalid`, and more).
+
+### `Description` on controls
 
 Many controls now accept a `Description` option that renders a secondary muted-text line below the label. Confirmed on: `AddToggle`, `AddSlider`, `AddTextBox`, `AddSelectBox`, `AddKeybind`, `AddColorPicker`, `AddNumberBox`.
 
@@ -71,3 +69,7 @@ tab:AddToggle({
     Default = false,
 })
 ```
+
+### New `CreateWindow` options
+
+v3 adds `Mode` (`"dark"` / `"light"`), `AutoAdapt`, `ConfirmClose`, `OnClose`, and `Parent`, plus live `GetMode()` / `SetMode()` methods for switching the color mode at runtime. See [Window & Tabs](/guide/window-and-tabs).
