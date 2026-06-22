@@ -12,15 +12,19 @@ cfg:Set("coins", 1000)
 print(cfg:Get("coins"))  -- 1000
 ```
 
-### Config Options
+### Window Config table options
+
+The `Config` table you pass to `EzUI:CreateWindow({ Config = {...} })` supports the following keys:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `Enabled` | `bool` | `true` | Enable or disable persistence entirely |
+| `Enabled` | `bool` | `true` | Gate: when false (or omitted with no FileName), the window skips persistence setup entirely |
 | `FileName` | `string` | `"Settings"` | Name of the saved file (no extension) |
 | `FolderName` | `string` | `"EzUI"` | Subfolder inside the executor's workspace |
 | `AutoSave` | `bool` | `true` | Write to disk whenever a flag changes |
 | `AutoLoad` | `bool` | `true` | Read from disk on startup and apply values |
+
+Note: `EzUI:NewConfig(opts)` accepts `FileName`, `FolderName`, `AutoSave`, and `AutoLoad`, but not `Enabled` — the `Enabled` key only applies to the window-level `Config` table.
 
 ## Flags
 
