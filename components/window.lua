@@ -43,6 +43,8 @@ function Window.new(config)
   -- merge a partial Theme override onto the defaults (verbatim use would crash on missing tokens)
   local theme = DefaultTheme.new(config.Theme or {})
   if config.Mode == "light" then DefaultTheme.applyMode(theme, "light") else theme.Mode = "dark" end
+  -- reduced-motion toggle. Process-wide by design (single-window norm; last writer wins) —
+  -- see api:SetAnimationsEnabled. Don't "fix" into per-window state without revisiting the spec.
   if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
