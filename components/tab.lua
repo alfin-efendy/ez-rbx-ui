@@ -83,14 +83,14 @@ function Tab.new(opts)
 
   function api:Select()
     selected = true
-    -- materialize into place: gentle scale-settle + short slide, smooth (Quint Out), no overshoot
-    content.Position = UDim2.new(0, 0, 0, 8)
-    contentScale.Scale = 0.98
+    -- materialize into place: a clearly visible rise + scale-settle, smooth (Quint Out), no overshoot
+    content.Position = UDim2.new(0, 0, 0, 36)
+    contentScale.Scale = 0.95
     content.Visible = true
     if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
     syncCanvas()
-    Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, 0) }, Animate.EASING.smooth)
-    Animate.to(contentScale, "base", { Scale = 1 }, Animate.EASING.smooth)
+    Animate.to(content, "slow", { Position = UDim2.new(0, 0, 0, 0) }, Animate.EASING.smooth)
+    Animate.to(contentScale, "slow", { Scale = 1 }, Animate.EASING.smooth)
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
