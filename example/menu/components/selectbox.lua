@@ -26,10 +26,18 @@ return function(window, host)
     for id, name in pairs(WEAPON_DB) do out[#out + 1] = { Value = id, Text = name } end
     return out
   end
-  -- the Value (wpn_xxx) persists to the flag; the Text (name) is shown in the UI
+  -- the Value (wpn_xxx) persists to the flag; the Text (name) is shown in the UI.
+  -- OnOpen refreshes the options every time the dropdown opens.
   local wsel = tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", Loading = true, Options = {},
     OnOpen = function(api) api.SetOptions(weaponOptions()) end })
-  task.delay(1.2, function() wsel.SetOptions(weaponOptions()); wsel.SetLoading(false) end)
+  local function loadWeapons()
+    wsel.SetLoading(true)
+    task.delay(1.5, function() wsel.SetOptions(weaponOptions()); wsel.SetLoading(false) end)
+  end
+  loadWeapons() -- initial async load
+  -- click any time to re-trigger loading: spinner shows on the field; open the Weapon
+  -- select to see the "Loading…" row, then options appear ~1.5s later
+  tab:AddButton({ Text = "Reload weapons (loading demo)", Variant = "secondary", Callback = loadWeapons })
   local big = {}; for i = 1, 24 do big[i] = "Item " .. i end
   tab:AddSelectBox({ Text = "Long list", Options = big, Default = "Item 1" })
   tab:AddSelectBox({ Text = "Notify", Options = { "Red", "Green", "Blue" }, Default = "Red",
