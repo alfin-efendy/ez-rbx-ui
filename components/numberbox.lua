@@ -89,6 +89,12 @@ function NumberBox.new(opts)
     local parsed = Numfmt.parse(input.Text, { Prefix = opts.Prefix, Suffix = opts.Suffix })
     if parsed ~= nil then set(parsed) else render() end
   end))
+  maid:Give(box.InputChanged:Connect(function(io)
+    if io.UserInputType == Enum.UserInputType.MouseWheel then
+      local dir = (io.Position.Z >= 0) and 1 or -1
+      set(value + step * dir)
+    end
+  end))
   maid:Give(root)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
