@@ -6,6 +6,9 @@ A modern, modular UI library for Roblox scripts. shadcn-inspired design, Fluent-
 
 📖 **Documentation:** https://alfin-efendy.github.io/ez-rbx-ui/
 
+🤖 **AI agent skill:** install the EzUI skill so your coding agent builds UIs correctly:
+`npx skills add alfin-efendy/ez-rbx-ui` (published on [skills.sh](https://skills.sh)).
+
 ---
 
 ## Install
