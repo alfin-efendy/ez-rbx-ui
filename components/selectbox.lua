@@ -33,8 +33,9 @@ function SelectBox.new(opts)
   local function firstValue() return options[1] ~= nil and normOpt(options[1]).value or nil end
   local value = multi and (opts.Default or {}) or (opts.Default ~= nil and opts.Default or firstValue())
   local dropdown
+  local posConn -- repositions the open dropdown when the control scrolls
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
-  local buildDropdown, rebuild
+  local buildDropdown, rebuild, computePos
   local onChanged = opts.Callback
 
   local function labelFor(v)
@@ -80,6 +81,18 @@ function SelectBox.new(opts)
         Position = UDim2.new(0, 0, 0, 28), Size = UDim2.new(0.5, -8, 0, 18), Parent = btn })
     end
   end
+  -- flip-aware, viewport-clamped dropdown position for the current control bounds
+  function computePos(width, ddH)
+    local pos = btn.AbsolutePosition or { X = 0, Y = 0 }
+    local sz = btn.AbsoluteSize or { X = 140, Y = 38 }
+    local vp = Overlay.viewport()
+    local below = (pos.Y or 0) + (sz.Y or 38) + 4
+    local openUp = (below + ddH > (vp.Y or 1080)) and ((pos.Y or 0) - 4 - ddH >= 0)
+    local y = openUp and ((pos.Y or 0) - 4 - ddH) or below
+    local x = math.max(0, math.min(pos.X or 0, (vp.X or 1920) - width - 4))
+    return x, y
+  end
+
   local field = Create("Frame", { Name = "Field", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0, Active = false,
     Size = opts.Text and UDim2.new(0.5, -4, 0, 26) or UDim2.new(1, 0, 0, 26),
     Position = opts.Text and UDim2.new(0.5, 4, 0.5, -13) or UDim2.new(0, 0, 0.5, -13),
@@ -210,15 +223,10 @@ function SelectBox.new(opts)
       if opts.Searchable ~= nil then searchable = opts.Searchable == true
       else searchable = countOptions(options) > 5 end
     end
-    local pos = btn.AbsolutePosition or { X = 0, Y = 0 }
     local sz = btn.AbsoluteSize or { X = 140, Y = 38 }
-    local vp = Overlay.viewport()
     local width = math.max(140, sz.X or 140)
     local ddH = math.min((loading and 28 or (#options * 28)) + (searchable and 44 or 8), 240)
-    local below = (pos.Y or 0) + (sz.Y or 38) + 4
-    local openUp = (below + ddH > (vp.Y or 1080)) and ((pos.Y or 0) - 4 - ddH >= 0)
-    local y = openUp and ((pos.Y or 0) - 4 - ddH) or below
-    local x = math.max(0, math.min(pos.X or 0, (vp.X or 1920) - width - 4))
+    local x, y = computePos(width, ddH)
     dropdown = Create("ScrollingFrame", {
       Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
       Position = UDim2.new(0, x, 0, y),
@@ -289,6 +297,10 @@ function SelectBox.new(opts)
       end
     end
     end
+    -- keep the dropdown stuck to the control as it scrolls
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+      if dropdown then local nx, ny = computePos(width, ddH); dropdown.Position = UDim2.new(0, nx, 0, ny) end
+    end)
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
   end
@@ -304,6 +316,7 @@ function SelectBox.new(opts)
   end
 
   function api.Close()
+    if posConn then posConn:Disconnect(); posConn = nil end
     if dropdown then dropdown:Destroy(); dropdown = nil end
     optButtons = {}
     Overlay.untrackPopover(api.Close)
