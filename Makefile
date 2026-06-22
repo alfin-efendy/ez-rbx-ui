@@ -38,3 +38,13 @@ check: build test verify-bundle
 stress: build
 	@echo "Serving stress scene on :8081..."
 	@lua-bundler -e ./example/stress.lua -o ./output/stress.lua -s -p 8081;
+
+.PHONY: docs
+docs:
+	@echo "Serving docs (VitePress dev)..."
+	@npm run docs:dev
+
+.PHONY: docs-build
+docs-build:
+	@echo "Building docs site..."
+	@npm run docs:build
