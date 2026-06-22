@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           # token: ${{ secrets.RELEASE_TOKEN }}   # aktifkan bila main diproteksi (lihat spec Bagian 9)
@@ -39,7 +39,7 @@ jobs:
         run: lua5.1 -e "assert(loadfile('./release/ez-rbx-ui.lua')); print('bundle syntax ok')"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
