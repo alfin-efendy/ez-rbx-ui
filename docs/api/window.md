@@ -1,3 +1,214 @@
 # Window API
 
-Placeholder — fleshed out in a later task.
+The `Window` object is returned by `EzUI:CreateWindow(config)`. All tab management, visibility control, notifications, and dialogs are methods on this object.
+
+## `EzUI:CreateWindow(config)`
+
+Creates and displays a new window. Returns a `Window` object.
+
+```lua
+local Window = EzUI:CreateWindow({
+    Title = "My Hub",
+    Size = { Width = 560, Height = 420 },
+    Acrylic = true,
+    ToggleKey = Enum.KeyCode.RightControl,
+    FloatingToggle = true,
+    Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
+})
+```
+
+### Config Table
+
+| Key | Type | Description |
+|---|---|---|
+| `Title` | `string` | Title-bar text |
+| `Size` | `{ Width, Height }` | Window size in pixels |
+| `Acrylic` | `bool` | Acrylic sheen panel (`false` = flat). Opaque and readable either way |
+| `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
+| `FloatingToggle` | `bool` | Show a floating toggle button (auto-enabled on touch devices) |
+| `Theme` | `table` | Override design tokens (see [Theming](/guide/theming)) |
+| `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | Flag persistence options (see [Config & Flags](/guide/config-and-flags)) |
+
+---
+
+## Tab Methods
+
+### `AddTab(opts)`
+
+Adds a tab to the sidebar and returns a tab object. The tab object supports all [Controls](/controls/) methods.
+
+```lua
+local tab = Window:AddTab({ Name = "Home", Icon = "home" })
+```
+
+| Key | Type | Description |
+|---|---|---|
+| `Name` | `string` | Tab label shown in the sidebar |
+| `Icon` | `string` | Lucide icon name (see [Icons](/guide/icons)) |
+
+### `AddTabGroup(name)`
+
+Adds a named sidebar category group and returns a group object. Call `group:AddTab(opts)` to add tabs inside the group.
+
+```lua
+local group = Window:AddTabGroup("Main")
+group:AddTab({ Name = "Home", Icon = "home" })
+```
+
+### `SearchTabs(query)`
+
+Filters the sidebar tabs and their controls by the given text string. An empty string clears the filter. The built-in sidebar search field calls this method automatically.
+
+```lua
+Window:SearchTabs("farm")
+```
+
+---
+
+## Visibility Methods
+
+### `Show()`
+
+Makes the window visible.
+
+### `Hide()`
+
+Hides the window without destroying it.
+
+### `Toggle()`
+
+Toggles visibility: shows if hidden, hides if visible.
+
+### `IsVisible()`
+
+Returns `true` if the window is currently visible, `false` otherwise.
+
+### `Minimize()`
+
+Hides the window and reveals the floating toggle button so the user can reopen it.
+
+---
+
+## Window Control Methods
+
+### `SetTitle(s)`
+
+Sets the window title-bar text to `s`.
+
+### `AdaptToViewport()`
+
+Clamps the window position and size to fit within the current viewport. Called automatically on creation unless `AutoAdapt = false` is passed.
+
+### `SetFloatingToggleVisible(b)`
+
+Shows (`b = true`) or hides (`b = false`) the floating toggle button.
+
+### `Destroy()`
+
+Closes the window, disconnects all connections, and destroys the UI. Equivalent to `Window:Close()`.
+
+---
+
+## Notification Methods
+
+See [Notifications & Dialog](/guide/notifications-dialog) for full option details and examples.
+
+### `Notify(opts)`
+
+Shows a toast notification with full control over all options. Returns an `id` that can be passed to `DismissNotification`.
+
+```lua
+local id = Window:Notify({
+    Title = "Item deleted",
+    Type = "warning",
+    Duration = 5000,
+    Action = { Text = "Undo", Callback = function() end },
+    OnDismiss = function() end,
+})
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | required | Notification heading |
+| `Message` | `string` | `nil` | Optional body text |
+| `Type` | `string` | `"default"` | One of `"success"`, `"warning"`, `"error"`, `"info"` |
+| `Duration` | `number` | `4000` | Auto-dismiss delay in milliseconds |
+| `Action` | `{ Text, Callback }` | `nil` | Optional action button shown in the toast |
+| `OnDismiss` | `function` | `nil` | Called when the toast is dismissed |
+
+### `ShowSuccess(opts)`
+
+Shorthand for `Notify` with `Type = "success"`.
+
+### `ShowWarning(opts)`
+
+Shorthand for `Notify` with `Type = "warning"`.
+
+### `ShowError(opts)`
+
+Shorthand for `Notify` with `Type = "error"`.
+
+### `ShowInfo(opts)`
+
+Shorthand for `Notify` with `Type = "info"`.
+
+### `DismissNotification(id)`
+
+Dismisses the notification identified by `id` (the value returned by `Notify`).
+
+### `ClearNotifications()`
+
+Dismisses all active notifications immediately.
+
+---
+
+## Dialog Method
+
+See [Notifications & Dialog](/guide/notifications-dialog) for full option details and examples.
+
+### `Dialog(opts)`
+
+Opens a dimmed modal overlay with a title, optional message, and one or more buttons.
+
+```lua
+Window:Dialog({
+    Title = "Delete item?",
+    Message = "This cannot be undone.",
+    Buttons = {
+        { Text = "Cancel", Variant = "secondary" },
+        { Text = "Delete", Variant = "destructive", Callback = function()
+            Window:ShowSuccess({ Title = "Deleted" })
+        end },
+    },
+})
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | required | Dialog heading |
+| `Message` | `string` | `nil` | Optional body text |
+| `Buttons` | `array` | required | One or more button descriptors (`{ Text, Variant?, Callback? }`) |
+| `Modal` | `bool` | `true` | Dim the background while the dialog is open |
+
+---
+
+## Config Methods
+
+See [Config & Flags](/guide/config-and-flags) for full details.
+
+### `ResetConfiguration(opts)`
+
+Restores all flagged controls to their default values. With `Confirm = true` (the default) it shows a confirmation dialog first, then toasts success.
+
+| Option | Default | Description |
+|---|---|---|
+| `Confirm` | `true` | Show a confirmation dialog before resetting |
+| `ClearFile` | `false` | Also delete the saved file from disk |
+
+### `ResetFlag(flag)`
+
+Resets a single flag to its default value without confirmation.
+
+### `.Config`
+
+The config object attached to this window (`EzUI:NewConfig` instance). Use it to call `cfg:Get(k)`, `cfg:Set(k, v)`, or other [Config API](/api/core#config) methods directly.
