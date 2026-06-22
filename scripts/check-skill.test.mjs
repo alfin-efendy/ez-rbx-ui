@@ -2,7 +2,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { extractSourceInventory } from './check-skill.mjs'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { extractSourceInventory, extractSkillInventory, diffInventories } from './check-skill.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -28,4 +30,49 @@ test('extractSourceInventory finds containers and entry points', () => {
   }
   // union has 17 + 3 + 2 = 22 distinct names
   assert.equal(all.size, 22)
+})
+
+function makeSkill(controlsMd, windowMd) {
+  const dir = mkdtempSync(join(tmpdir(), 'ezui-skill-'))
+  mkdirSync(join(dir, 'reference'))
+  writeFileSync(join(dir, 'reference', 'controls.md'), controlsMd)
+  writeFileSync(join(dir, 'reference', 'window.md'), windowMd)
+  return dir
+}
+
+test('diff is clean when the skill documents the full inventory', () => {
+  const source = {
+    all: new Set(['AddToggle', 'AddTab', 'CreateWindow']),
+    controls: new Set(['AddToggle']),
+    containers: new Set(['AddTab']),
+  }
+  const dir = makeSkill('## AddToggle\n', '## AddTab\n## CreateWindow\n')
+  const d = diffInventories(source, extractSkillInventory(dir))
+  assert.deepEqual(d, { missingInSkill: [], hallucinated: [], ok: true })
+})
+
+test('diff flags a control missing from the skill', () => {
+  const source = {
+    all: new Set(['AddToggle', 'AddSlider']),
+    controls: new Set(['AddToggle', 'AddSlider']),
+    containers: new Set(),
+  }
+  const dir = makeSkill('## AddToggle\n', '')
+  const d = diffInventories(source, extractSkillInventory(dir))
+  assert.deepEqual(d.missingInSkill, ['AddSlider'])
+  assert.equal(d.ok, false)
+})
+
+test('diff flags a hallucinated control in controls.md', () => {
+  const source = { all: new Set(['AddToggle']), controls: new Set(['AddToggle']), containers: new Set() }
+  const dir = makeSkill('## AddToggle\n## AddDropdown\n', '')
+  const d = diffInventories(source, extractSkillInventory(dir))
+  assert.deepEqual(d.hallucinated, ['AddDropdown'])
+  assert.equal(d.ok, false)
+})
+
+test('extractSkillInventory tolerates a missing reference file', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ezui-empty-'))
+  const skill = extractSkillInventory(dir) // no reference/ dir at all
+  assert.equal(skill.documented.size, 0)
 })

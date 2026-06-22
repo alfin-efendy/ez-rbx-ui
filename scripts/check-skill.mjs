@@ -35,3 +35,34 @@ export function extractSourceInventory(repoRoot) {
   const all = new Set([...controls, ...containers, ...entries])
   return { controls, containers, entries, all }
 }
+
+const METHOD_RE = /\b(Add\w+|CreateWindow|NewConfig)\b/g
+
+export function extractSkillInventory(skillDir) {
+  const documented = new Set()
+  const controlsMdAdds = new Set()
+  for (const rel of ['reference/controls.md', 'reference/window.md']) {
+    let text
+    try {
+      text = readFileSync(join(skillDir, rel), 'utf8')
+    } catch (e) {
+      if (e.code === 'ENOENT') continue
+      throw e
+    }
+    for (const line of text.split('\n')) {
+      if (!/^#{1,6}\s/.test(line)) continue
+      for (const m of line.matchAll(METHOD_RE)) {
+        documented.add(m[1])
+        if (rel.endsWith('controls.md') && m[1].startsWith('Add')) controlsMdAdds.add(m[1])
+      }
+    }
+  }
+  return { documented, controlsMdAdds }
+}
+
+export function diffInventories(source, skill) {
+  const missingInSkill = [...source.all].filter((n) => !skill.documented.has(n)).sort()
+  const allowed = new Set([...source.controls, ...source.containers])
+  const hallucinated = [...skill.controlsMdAdds].filter((n) => !allowed.has(n)).sort()
+  return { missingInSkill, hallucinated, ok: missingInSkill.length === 0 && hallucinated.length === 0 }
+}
