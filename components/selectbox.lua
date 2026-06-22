@@ -14,6 +14,12 @@ local function normOpt(o)
   return { value = o }
 end
 
+local function countOptions(arr)
+  local n = 0
+  for _, raw in ipairs(arr) do if not normOpt(raw).divider then n = n + 1 end end
+  return n
+end
+
 function SelectBox.new(opts)
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
@@ -169,12 +175,15 @@ function SelectBox.new(opts)
   function api.Open()
     if dropdown then return end
     optButtons = {}
+    local searchable
+    if opts.Searchable ~= nil then searchable = opts.Searchable == true
+    else searchable = countOptions(options) > 5 end
     local pos = btn.AbsolutePosition
     local sz = btn.AbsoluteSize
     dropdown = Create("Frame", {
       Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
       Position = UDim2.new(0, pos and pos.X or 0, 0, (pos and pos.Y or 0) + 36),
-      Size = UDim2.new(0, math.max(140, sz and sz.X or 140), 0, math.min(#options * 28 + 44, 240)),
+      Size = UDim2.new(0, math.max(140, sz and sz.X or 140), 0, math.min(#options * 28 + (searchable and 44 or 8), 240)),
       ClipsDescendants = true, ZIndex = 1001,
       Create.corner(theme.Radius.md),
       Create.padding({ all = 4 }),
@@ -182,15 +191,17 @@ function SelectBox.new(opts)
     })
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = dropdown })
 
-    -- search box (filters options live)
-    local searchBox = Create("Frame", { Name = "Search", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
-      Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 0, ZIndex = 1002, Parent = dropdown,
-      Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }) })
-    local searchInput = Create("TextBox", { Name = "Input", BackgroundTransparency = 1, Text = "",
-      PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
-      TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      ClearTextOnFocus = false, ZIndex = 1002, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
-    searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
+    -- search box (filters options live) — only for longer lists, or when forced
+    if searchable then
+      local searchBox = Create("Frame", { Name = "Search", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 0, ZIndex = 1002, Parent = dropdown,
+        Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }) })
+      local searchInput = Create("TextBox", { Name = "Input", BackgroundTransparency = 1, Text = "",
+        PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
+        TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        ClearTextOnFocus = false, ZIndex = 1002, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
+      searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
+    end
 
     for i, raw in ipairs(options) do
       local e = normOpt(raw)
