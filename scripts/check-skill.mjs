@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const CONTAINER_METHODS = ['AddTab', 'AddTabGroup', 'AddAccordion']
@@ -6,15 +6,22 @@ const CONTAINER_METHODS = ['AddTab', 'AddTabGroup', 'AddAccordion']
 export function extractSourceInventory(repoRoot) {
   const componentsDir = join(repoRoot, 'components')
 
+  // Guard: ensure components/ directory exists
+  if (!existsSync(componentsDir)) {
+    throw new Error(`components/ dir not found under ${repoRoot}`)
+  }
+
   // 1) Control methods = keys of the SIMPLE table in host.lua
   const host = readFileSync(join(componentsDir, 'host.lua'), 'utf8')
+  // Note: this assumes each SIMPLE table entry is on a single line (e.g. "AddButton = { mod = "Button" }").
+  // Multi-line entry values would cause truncation at the first "\n}".
   const simple = host.match(/local SIMPLE = \{([\s\S]*?)\n\}/)
   if (!simple) throw new Error('SIMPLE table not found in components/host.lua')
   const controls = new Set([...simple[1].matchAll(/^\s*(Add\w+)\s*=/gm)].map((m) => m[1]))
 
   // 2) Container methods = AddTab/AddTabGroup/AddAccordion defined anywhere in components/
   const containers = new Set()
-  for (const file of readdirSync(componentsDir).filter((f) => f.endsWith('.lua'))) {
+  for (const file of readdirSync(componentsDir).filter((f) => f.endsWith('.lua')).sort()) {
     const src = readFileSync(join(componentsDir, file), 'utf8')
     for (const m of src.matchAll(/function\s+\w+[:.](\w+)/g)) {
       if (CONTAINER_METHODS.includes(m[1])) containers.add(m[1])

@@ -9,8 +9,11 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 test('extractSourceInventory finds all 17 control methods', () => {
   const { controls } = extractSourceInventory(repoRoot)
   assert.equal(controls.size, 17)
-  for (const m of ['AddLabel', 'AddButton', 'AddToggle', 'AddSlider', 'AddSelectBox',
-                   'AddNumberBox', 'AddColorPicker', 'AddCard', 'AddResizable']) {
+  const expectedControls = ['AddLabel', 'AddParagraph', 'AddSection', 'AddSeparator', 'AddButton',
+                            'AddToggle', 'AddTextBox', 'AddNumberBox', 'AddSelectBox', 'AddSlider',
+                            'AddKeybind', 'AddColorPicker', 'AddImage', 'AddTable', 'AddProgressBar',
+                            'AddResizable', 'AddCard']
+  for (const m of expectedControls) {
     assert.ok(controls.has(m), `controls missing ${m}`)
   }
 })
