@@ -76,3 +76,14 @@ test('extractSkillInventory tolerates a missing reference file', () => {
   const skill = extractSkillInventory(dir) // no reference/ dir at all
   assert.equal(skill.documented.size, 0)
 })
+
+test('extractSkillInventory skips a single missing reference file', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ezui-single-file-'))
+  mkdirSync(join(dir, 'reference'))
+  writeFileSync(join(dir, 'reference', 'controls.md'), '## AddToggle\n')
+  // window.md is intentionally not created
+  const skill = extractSkillInventory(dir)
+  assert.doesNotThrow(() => extractSkillInventory(dir))
+  assert.ok(skill.documented.has('AddToggle'), 'AddToggle should be in documented')
+  assert.ok(skill.controlsMdAdds.has('AddToggle'), 'AddToggle should be in controlsMdAdds')
+})

@@ -36,6 +36,8 @@ export function extractSourceInventory(repoRoot) {
   return { controls, containers, entries, all }
 }
 
+// METHOD_RE intentionally uses /g flag because it is consumed via line.matchAll(...),
+// which resets lastIndex each call; do not switch to RegExp.exec in a loop.
 const METHOD_RE = /\b(Add\w+|CreateWindow|NewConfig)\b/g
 
 export function extractSkillInventory(skillDir) {
@@ -53,6 +55,7 @@ export function extractSkillInventory(skillDir) {
       if (!/^#{1,6}\s/.test(line)) continue
       for (const m of line.matchAll(METHOD_RE)) {
         documented.add(m[1])
+        // controls.md Add* names only; CreateWindow/NewConfig (also matched by METHOD_RE) are excluded here
         if (rel.endsWith('controls.md') && m[1].startsWith('Add')) controlsMdAdds.add(m[1])
       }
     }
