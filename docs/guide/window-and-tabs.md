@@ -7,10 +7,11 @@ Call `EzUI:CreateWindow(config)` once to create the main window frame. All contr
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Size = { Width = 560, Height = 420 },
-    Acrylic = true,
+    Ratio = 16/10,
+    Subtitle = "v3.0",
+    Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,
-    FloatingToggle = true,
+    FloatingToggle = { Type = "simple", AutoHide = true },
     Theme = { Colors = { primary = Color3.fromRGB(59, 130, 246) } },
     Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
 })
@@ -21,12 +22,13 @@ local Window = EzUI:CreateWindow({
 | Key | Type | Notes |
 |---|---|---|
 | `Title` | `string` | Title-bar text |
-| `Size` | `{ Width, Height }` | Window size in pixels |
-| `Acrylic` | `bool` | Acrylic sheen panel (`false` = flat). Opaque and readable either way |
+| `Subtitle` | `string` | Secondary line under the title (grows the title bar) |
+| `Image` | `string` | Title-bar logo — `rbxassetid://` or an `http(s)://` URL |
+| `Ratio` | `number` \| `{ Width, Height }` | Window aspect ratio; auto-fits the viewport and stays responsive. Default `4/3` |
+| `Transparency` | `number` | Window background transparency `0..1` (default `0.12`) |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
-| `FloatingToggle` | `bool` | Show a floating toggle button (auto-enabled on touch devices) |
+| `FloatingToggle` | `table` | `{ Type, Position, Image, Size, Draggable, AutoHide }` (or `false` to disable) |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](/guide/theming#color-mode-dark-light) |
-| `AutoAdapt` | `bool` | Auto-fit the window to the viewport on creation; default `true`. Pass `false` to skip |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
 | `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
@@ -46,7 +48,10 @@ local Window = EzUI:CreateWindow({
 | `IsVisible()` | Returns `true` if the window is visible |
 | `Minimize()` | Collapse the window |
 | `SetTitle(s)` | Update the title-bar text |
-| `AdaptToViewport()` | Reposition/resize to fit the current screen |
+| `SetSubtitle(s)` | Update the subtitle text |
+| `SetImage(v)` | Update the title-bar image (`rbxassetid://` or URL) |
+| `SetTransparency(n)` | Set the window background transparency `0..1` |
+| `AdaptToViewport()` | Re-fit to the current viewport (also runs automatically on viewport changes) |
 | `GetMode()` | Returns the current color mode (`"dark"` or `"light"`) |
 | `SetMode(mode)` | Switch the color palette live (`"dark"` / `"light"`) |
 | `SetFloatingToggleVisible(b)` | Show or hide the floating toggle button |

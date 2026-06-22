@@ -7,7 +7,7 @@ v3 is a full rewrite with a clean-break API. The table below maps every changed 
 | v2 | v3 |
 |---|---|
 | `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
-| `Size = { Width, Height }` | unchanged |
+| `Size = { Width, Height }` | `Ratio = w/h` (aspect ratio; window auto-fits the viewport) |
 | `tab = window:AddTab({ Name, Icon = "🏠" })` | `Icon = "home"` (Lucide name, not emoji) |
 | `tab:AddLabel/AddButton/AddToggle/AddTextBox/AddNumberBox/AddSelectBox/AddSeparator` | same names |
 | `window:ShowNotification/ShowSuccess/ShowError(...)` | `window:Notify/ShowSuccess/ShowError(...)` |
@@ -82,4 +82,4 @@ tab:AddToggle({
 
 ### New `CreateWindow` options
 
-v3 adds `Mode` (`"dark"` / `"light"`), `AutoAdapt`, `ConfirmClose`, `OnClose`, and `Parent`, plus live `GetMode()` / `SetMode()` methods for switching the color mode at runtime. See [Window & Tabs](/guide/window-and-tabs).
+v3 adds `Subtitle`, `Image` (title-bar logo), `Ratio` (aspect ratio — replaces `Size`; always responsive), `Transparency` (replaces `Acrylic`), `Mode` (`"dark"` / `"light"`), `ConfirmClose`, `OnClose`, `Parent`, and a richer `FloatingToggle` table (`{ Type, Position, Image, Size, Draggable, AutoHide }`, or `false` to disable), plus live `GetMode()` / `SetMode()` / `SetTransparency()` methods. See [Window & Tabs](/guide/window-and-tabs).

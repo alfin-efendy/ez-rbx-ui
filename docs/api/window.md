@@ -9,10 +9,12 @@ Creates and displays a new window. Returns a `Window` object.
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Size = { Width = 560, Height = 420 },
-    Acrylic = true,
+    Subtitle = "v3.0",
+    Image = "rbxassetid://0",
+    Ratio = 16/10,
+    Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,
-    FloatingToggle = true,
+    FloatingToggle = { Type = "simple", AutoHide = true },
     Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
 })
 ```
@@ -22,12 +24,13 @@ local Window = EzUI:CreateWindow({
 | Key | Type | Description |
 |---|---|---|
 | `Title` | `string` | Title-bar text |
-| `Size` | `{ Width, Height }` | Window size in pixels |
-| `Acrylic` | `bool` | Acrylic sheen panel (`false` = flat). Opaque and readable either way |
+| `Subtitle` | `string` | Secondary line shown under the title (grows the title bar) |
+| `Image` | `string` | Title-bar logo image — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
+| `Ratio` | `number` \| `{ Width, Height }` | Window aspect ratio (shape); the window auto-fits the viewport and stays responsive. Default `4/3` |
+| `Transparency` | `number` | Window background transparency `0..1`; `0` = opaque, higher = more see-through. Default `0.12` |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
-| `FloatingToggle` | `bool` | Show a floating toggle button (auto-enabled on touch devices) |
+| `FloatingToggle` | `table` | Floating toggle button config — see [FloatingToggle config](#floatingtoggle-config). Pass `false` to disable |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](#color-mode) |
-| `AutoAdapt` | `bool` | Auto-fit the window to the viewport on creation; default `true`. Pass `false` to skip |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
 | `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
@@ -100,9 +103,21 @@ Hides the window and reveals the floating toggle button so the user can reopen i
 
 Sets the window title-bar text to `s`.
 
+### `SetSubtitle(s)`
+
+Sets the subtitle line shown under the title. Requires the window to have been created with a `Subtitle` (the slot is built at creation).
+
+### `SetImage(v)`
+
+Updates the title-bar image. Accepts an `rbxassetid://` id or an `http(s)://` URL. Requires the window to have been created with an `Image`.
+
+### `SetTransparency(n)`
+
+Sets the window background transparency, `n` in `0..1` (`0` = opaque).
+
 ### `AdaptToViewport()`
 
-Clamps the window position and size to fit within the current viewport. Called automatically on creation unless the `AutoAdapt = false` config key is passed.
+Re-fits the window to the current viewport, preserving the configured `Ratio` and re-centering. Called automatically on creation and whenever the viewport size changes — the window is always responsive.
 
 ### `GetMode()`
 
@@ -115,6 +130,21 @@ Switches the color palette live. Pass `"dark"` or `"light"`. Controls re-skin im
 ### `SetFloatingToggleVisible(b)`
 
 Shows (`b = true`) or hides (`b = false`) the floating toggle button.
+
+### FloatingToggle config
+
+The `FloatingToggle` config key accepts a table:
+
+| Key | Type | Description |
+|---|---|---|
+| `Type` | `string` | `"simple"` (default), `"circle"`, or `"square"` |
+| `Position` | `{ X, Y }` \| `UDim2` | Button position |
+| `Image` | `string` | Image for the button (`rbxassetid://` or URL) |
+| `Size` | `{ Width, Height }` \| `UDim2` | Button size |
+| `Draggable` | `bool` | Allow dragging the button (default `true`) |
+| `AutoHide` | `bool` | `true` (default) hides the button while the window is shown; `false` keeps it always visible |
+
+Pass `FloatingToggle = false` to disable the button entirely (mobile users then reopen only via `ToggleKey`).
 
 ### `Destroy()`
 

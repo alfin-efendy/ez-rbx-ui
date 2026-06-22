@@ -29,10 +29,11 @@ The example below creates a window, adds a tab with three controls, and wires up
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Size = { Width = 560, Height = 420 },
-    Acrylic = true,
+    Ratio = 16/10,                            -- window shape; auto-fits the viewport
+    Subtitle = "v3.0",
+    Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,   -- show/hide
-    FloatingToggle = true,                    -- mobile/touch button
+    FloatingToggle = { Type = "simple", AutoHide = true },  -- mobile/touch button
     Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
 })
 
