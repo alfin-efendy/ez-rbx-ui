@@ -22,19 +22,17 @@ h.describe("tab", function()
     t:Select()
     h.expect(t.Content.Visible).toBe(true)
     h.expect(t:IsSelected()).toBe(true)
-    h.expect(t.Content.Position.Y.Offset).toBe(0)  -- slide settled at 0
-    h.expect(t.Content:FindFirstChildOfClass("UIScale").Scale).toBe(1)  -- scale settled at 1
+    h.expect(t.Content.Position.Y.Offset).toBe(0)  -- carousel slide settled at 0
     h.expect(t.Button.BackgroundTransparency).toBe(0)
   end)
-  h.it("Deselect cuts content instantly (no overlapping slide) and resets it", function()
+  h.it("Deselect slides the outgoing page out then hides + resets it", function()
     local side, body = rig()
     local t = Tab.new({ SidebarParent = side, ContentParent = body, Name = "Home" })
     t:Select()
     t:Deselect()
     h.expect(t:IsSelected()).toBe(false)
     h.expect(t.Content.Visible).toBe(false)
-    h.expect(t.Content.Position.Y.Offset).toBe(0)   -- reset, not left mid-slide
-    h.expect(t.Content:FindFirstChildOfClass("UIScale").Scale).toBe(1)
+    h.expect(t.Content.Position.Y.Offset).toBe(0)   -- reset after the exit tween, not left mid-slide
     h.expect(t.Button.BackgroundTransparency).toBe(1)
   end)
   h.it("hovering an unselected tab tints the button, leaving clears it", function()

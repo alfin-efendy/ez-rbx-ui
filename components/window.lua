@@ -79,6 +79,7 @@ function Window.new(config)
   local width, height = computeSize()
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
+  local selectedIndex = 0  -- index of the active tab; drives the carousel direction on switch
   local visible = true
   local fab, fabScale, fabFullSize, fabSnap, fabMaid, showFab, hideFab
   local fabEnabled, autoHide
@@ -316,8 +317,13 @@ function Window.new(config)
     end
     tabOpts.OnActivate = function(selectedTab)
       Overlay.closeAll()
+      local newIndex = selectedIndex
+      for i, t in ipairs(tabs) do if t == selectedTab then newIndex = i break end end
+      -- carousel direction: +1 going to a lower/later tab, -1 going to a higher/earlier one
+      local dir = (selectedIndex == 0 or newIndex >= selectedIndex) and 1 or -1
+      selectedIndex = newIndex
       for _, t in ipairs(tabs) do
-        if t == selectedTab then t:Select() else t:Deselect() end
+        if t == selectedTab then t:Select(dir) else t:Deselect(dir) end
       end
       moveIndicatorTo(selectedTab.Button)
     end
@@ -326,7 +332,7 @@ function Window.new(config)
     entry.button = tab.Button
     tabs[#tabs + 1] = tab
     tabEntries[#tabEntries + 1] = entry
-    if #tabs == 1 then tab:Select(); moveIndicatorTo(tab.Button) end
+    if #tabs == 1 then tab:Select(1); selectedIndex = 1; moveIndicatorTo(tab.Button) end
     return tab
   end
 

@@ -66,8 +66,13 @@ function Tab.new(opts)
   -- AutomaticCanvasSize is unreliable here because the CanvasGroup starts hidden (measured 0).
   local contentLayout = content:FindFirstChildOfClass("UIListLayout")
   local contentPad = theme.Spacing.pad
-  -- visual-only settle for the tab-switch transition (does not affect layout once settled at 1)
-  local contentScale = Create("UIScale", { Scale = 1, Parent = content })
+  -- carousel travel distance = the visible panel height (so a switch reads as a full page swap);
+  -- fall back to a sensible constant before the scroll frame has an AbsoluteSize (first paint / headless)
+  local function panelH()
+    local sf = content.Parent
+    local s = sf and sf.AbsoluteSize
+    return (s and s.Y and s.Y > 0 and s.Y) or 360
+  end
   local function syncCanvas()
     local sf = content.Parent
     if selected and sf then
@@ -81,29 +86,30 @@ function Tab.new(opts)
 
   function api:IsSelected() return selected end
 
-  function api:Select()
+  -- vertical carousel: the incoming page slides in from sign*panelH, the outgoing exits to
+  -- -sign*panelH, both in sync — so the two pages move as one filmstrip, never colliding.
+  -- dir +1 = navigating to a later tab (filmstrip scrolls up); -1 = earlier tab (scrolls down).
+  function api:Select(dir)
     selected = true
-    -- materialize into place: a clearly visible rise + scale-settle, smooth (Quint Out), no overshoot
-    content.Position = UDim2.new(0, 0, 0, 36)
-    contentScale.Scale = 0.95
+    local sign = (dir == -1) and -1 or 1
+    content.Position = UDim2.new(0, 0, 0, sign * panelH())
     content.Visible = true
     if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
     syncCanvas()
     Animate.to(content, "slow", { Position = UDim2.new(0, 0, 0, 0) }, Animate.EASING.smooth)
-    Animate.to(contentScale, "slow", { Scale = 1 }, Animate.EASING.smooth)
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.foreground) end
   end
 
-  function api:Deselect()
+  function api:Deselect(dir)
+    if not selected then content.Visible = false; return end  -- already inactive: nothing to animate out
     selected = false
-    -- cut instantly so the outgoing content never overlaps the incoming slide (the old
-    -- competing slide looked janky); reset transform so the next Select starts clean
-    content.Visible = false
-    content.Position = UDim2.new(0, 0, 0, 0)
-    contentScale.Scale = 1
+    local sign = (dir == -1) and -1 or 1
+    Animate.toThen(content, "slow", { Position = UDim2.new(0, 0, 0, -sign * panelH()) }, function()
+      if not selected then content.Visible = false; content.Position = UDim2.new(0, 0, 0, 0) end
+    end)
     button.BackgroundTransparency = 1
     label.TextColor3 = theme.Colors.mutedForeground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) end
