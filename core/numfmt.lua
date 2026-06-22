@@ -51,4 +51,26 @@ function Numfmt.format(n, opts)
   return (opts.Prefix or "") .. body .. (opts.Suffix or "")
 end
 
+local MULT = { k = 1e3, m = 1e6, b = 1e9, t = 1e12 }
+
+function Numfmt.parse(s, opts)
+  opts = opts or {}
+  s = tostring(s or "")
+  if opts.Prefix and opts.Prefix ~= "" and s:sub(1, #opts.Prefix) == opts.Prefix then
+    s = s:sub(#opts.Prefix + 1)
+  end
+  if opts.Suffix and opts.Suffix ~= "" and s:sub(-#opts.Suffix) == opts.Suffix then
+    s = s:sub(1, #s - #opts.Suffix)
+  end
+  s = s:gsub(",", "")
+  s = s:gsub("%s", "")
+  s = s:gsub("^%+", "")
+  local mult = 1
+  local low = s:sub(-1):lower()
+  if MULT[low] then mult = MULT[low]; s = s:sub(1, #s - 1) end
+  local num = tonumber(s)
+  if num == nil then return nil end
+  return num * mult
+end
+
 return Numfmt
