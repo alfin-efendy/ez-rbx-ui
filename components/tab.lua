@@ -27,11 +27,6 @@ function Tab.new(opts)
     Create.corner(theme.Radius.md),
     Create.padding({ left = 10, right = 10 }),
   })
-  local indicator = Create("Frame", {
-    Name = "Active", BackgroundColor3 = theme.Colors.primary, BorderSizePixel = 0,
-    Size = UDim2.new(0, 3, 0, 18), Position = UDim2.new(0, -10, 0.5, -9), Visible = false, ZIndex = 2,
-    Parent = button, Create.corner(2),
-  })
   local icon = Create("ImageLabel", {
     Name = "Icon",
     BackgroundTransparency = 1,
@@ -86,13 +81,12 @@ function Tab.new(opts)
 
   function api:Select()
     selected = true
-    indicator.Visible = true
     -- slide up into place (visible tab-switch transition)
-    content.Position = UDim2.new(0, 0, 0, 10)
+    content.Position = UDim2.new(0, 0, 0, 12)
     content.Visible = true
     if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
     syncCanvas()
-    Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, 0) })
+    Animate.springTo(content, "slow", { Position = UDim2.new(0, 0, 0, 0) })
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
@@ -101,8 +95,9 @@ function Tab.new(opts)
 
   function api:Deselect()
     selected = false
-    indicator.Visible = false
-    content.Visible = false
+    Animate.toThen(content, "base", { Position = UDim2.new(0, 0, 0, -8) }, function()
+      if not selected then content.Visible = false end
+    end)
     button.BackgroundTransparency = 1
     label.TextColor3 = theme.Colors.mutedForeground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) end
@@ -125,7 +120,6 @@ function Tab.new(opts)
   })
 
   if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
-    indicator.BackgroundColor3 = theme.Colors.primary
     if selected then
       label.TextColor3 = theme.Colors.foreground
       Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
@@ -153,6 +147,12 @@ function Tab.new(opts)
   function api:SetIcon(name) opts.Icon = name; Icons.apply(icon, name, selected and theme.Colors.foreground or theme.Colors.mutedForeground); icon.Visible = true end
   function api:SetTitle(s) label.Text = s end
 
+  maid:Give(button.MouseEnter:Connect(function()
+    if not selected then Animate.to(button, "fast", { BackgroundTransparency = 0.92 }) end
+  end))
+  maid:Give(button.MouseLeave:Connect(function()
+    if not selected then Animate.to(button, "fast", { BackgroundTransparency = 1 }) end
+  end))
   maid:Give(button.MouseButton1Click:Connect(function() if opts.OnActivate then opts.OnActivate(api) end end))
   maid:Give(button)
   maid:Give(content)
