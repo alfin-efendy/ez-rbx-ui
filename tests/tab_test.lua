@@ -7,21 +7,22 @@ local function rig()
 end
 
 h.describe("tab", function()
-  h.it("content is a CanvasGroup with UIListLayout + AutomaticSize.Y, hidden by default", function()
+  h.it("content is a Frame with UIListLayout + AutomaticSize.Y, hidden by default", function()
     local side, body = rig()
     local t = Tab.new({ SidebarParent = side, ContentParent = body, Name = "Home", Icon = "home" })
-    h.expect(t.Content.ClassName).toBe("CanvasGroup")
+    -- a plain Frame (not CanvasGroup) so focused TextBox carets render
+    h.expect(t.Content.ClassName).toBe("Frame")
     h.expect(t.Content.AutomaticSize.Name).toBe("Y")
     h.expect(t.Content:FindFirstChildOfClass("UIListLayout") ~= nil).toBeTruthy()
     h.expect(t.Content.Visible).toBe(false)
   end)
-  h.it("Select shows + cross-fades GroupTransparency to 0", function()
+  h.it("Select shows + slides the content into place", function()
     local side, body = rig()
     local t = Tab.new({ SidebarParent = side, ContentParent = body, Name = "Home" })
     t:Select()
     h.expect(t.Content.Visible).toBe(true)
     h.expect(t:IsSelected()).toBe(true)
-    h.expect(t.Content.GroupTransparency).toBe(0)  -- cross-fade tween applied
+    h.expect(t.Content.Position.Y.Offset).toBe(0)  -- slide tween settled at 0
   end)
   h.it("MountRow parents to content with incrementing order (no Position set)", function()
     local side, body = rig()

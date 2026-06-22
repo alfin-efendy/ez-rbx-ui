@@ -53,11 +53,12 @@ function Tab.new(opts)
     Parent = button,
   })
 
-  -- content (CanvasGroup for cross-fade)
-  local content = Create("CanvasGroup", {
+  -- content (plain Frame + slide transition; NOT a CanvasGroup, so a focused TextBox's
+  -- caret/selection renders — CanvasGroups composite children to a buffer that omits
+  -- the caret overlay, which made text cursors invisible/non-blinking).
+  local content = Create("Frame", {
     Name = "TabContent",
     BackgroundTransparency = 1,
-    GroupTransparency = 1,
     Visible = false,
     Size = UDim2.new(1, 0, 0, 0),
     AutomaticSize = Enum.AutomaticSize.Y,
@@ -86,13 +87,12 @@ function Tab.new(opts)
   function api:Select()
     selected = true
     indicator.Visible = true
-    -- slide up + fade in (visible tab-switch transition)
-    content.GroupTransparency = 1
+    -- slide up into place (visible tab-switch transition)
     content.Position = UDim2.new(0, 0, 0, 10)
     content.Visible = true
     if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
     syncCanvas()
-    Animate.to(content, "base", { GroupTransparency = 0, Position = UDim2.new(0, 0, 0, 0) })
+    Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, 0) })
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
@@ -102,8 +102,7 @@ function Tab.new(opts)
   function api:Deselect()
     selected = false
     indicator.Visible = false
-    local tw = Animate.to(content, "fast", { GroupTransparency = 1 })
-    tw.Completed:Connect(function() if not selected then content.Visible = false end end)
+    content.Visible = false
     button.BackgroundTransparency = 1
     label.TextColor3 = theme.Colors.mutedForeground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) end
