@@ -1,6 +1,6 @@
 # Button
 
-A clickable action element available in five visual variants. Buttons support an optional leading icon, a tooltip, and a built-in `"ResetConfig"` action that resets all saved flags without extra wiring.
+A clickable action element available in five visual variants. Buttons support an optional leading icon and a built-in `"ResetConfig"` action that resets all saved flags without extra wiring.
 
 ## Basic usage
 
@@ -20,7 +20,6 @@ tab:AddButton({
 | `Text` | `string` | `"Button"` | Label displayed on the button. |
 | `Variant` | `string` | `"default"` | Visual style — see the table below. |
 | `Icon` | `string` | — | Lucide icon name (e.g. `"play"`). Rendered to the left of the label. |
-| `Tooltip` | `string` | — | Short description shown on hover. |
 | `Callback` | `function` | — | Called with no arguments when the button is clicked. |
 | `Action` | `string` | — | Pass `"ResetConfig"` to wire the built-in config-reset without a callback. |
 

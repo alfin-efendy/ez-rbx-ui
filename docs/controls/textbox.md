@@ -25,6 +25,8 @@ print(tb.GetText())
 | `LeadingIcon` | `string` | — | Lucide icon name rendered at the left edge of the input box (e.g. `"search"`, `"lock"`). |
 | `Prefix` | `string` | — | Non-editable text rendered immediately before the caret (e.g. `"$"`, `"https://"`). |
 | `Suffix` | `string` | — | Non-editable text rendered immediately after the editable area (e.g. `"USD"`, `".com"`). |
+| `TrailingIcon` | `string` | — | Lucide icon name rendered at the trailing (right) edge of the input box, after any `Suffix`. Behaves like `LeadingIcon` on the opposite side. No dedicated built-in example; usage mirrors `LeadingIcon`. |
+| `Loading` | `boolean` | `false` | When `true`, the field starts in the loading/spinner state at construction — identical to calling `SetLoading(true)` immediately after creation. |
 | `FullWidth` | `boolean` | `false` | Stacks the label above the input box instead of placing them side-by-side. Recommended when `Prefix`/`Suffix`/`Buttons` need room. |
 | `Password` | `boolean` | `false` | Masks the value with `•` characters and adds an eye/eye-off reveal button. `GetText()` always returns the real value. |
 | `Clearable` | `boolean` | `false` | Shows an `×` icon button when the field is non-empty; clicking it clears the value. |
