@@ -1,5 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
 
 const CONTAINER_METHODS = ['AddTab', 'AddTabGroup', 'AddAccordion']
 
@@ -69,3 +71,21 @@ export function diffInventories(source, skill) {
   const hallucinated = [...skill.controlsMdAdds].filter((n) => !allowed.has(n)).sort()
   return { missingInSkill, hallucinated, ok: missingInSkill.length === 0 && hallucinated.length === 0 }
 }
+
+function runCli() {
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const source = extractSourceInventory(repoRoot)
+  const skill = extractSkillInventory(join(repoRoot, 'skills', 'ezui'))
+  const { missingInSkill, hallucinated, ok } = diffInventories(source, skill)
+  if (ok) {
+    console.log(`check-skill: OK — ${source.all.size} API methods documented and in sync.`)
+    return
+  }
+  if (missingInSkill.length)
+    console.error('check-skill: in the library but missing from skills/ezui/reference/: ' + missingInSkill.join(', '))
+  if (hallucinated.length)
+    console.error('check-skill: documented in controls.md but not in the library: ' + hallucinated.join(', '))
+  process.exit(1)
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) runCli()
