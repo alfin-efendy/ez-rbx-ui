@@ -28,12 +28,15 @@ function TextBox.new(opts)
   -- FullWidth boxes are taller (36) with breathing room above and below the box;
   -- compact boxes stay 30 and vertically centered in their fixed row.
   local boxH = fullWidth and 36 or 30
-  local boxX, boxW, boxTop, baseH
+  local boxX, boxW, boxTop, baseH, titleTop, descTop
   if not hasLabel then
     boxX, boxW, boxTop, baseH = UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, boxH), 0, boxH
   elseif fullWidth then
-    boxTop = hasDesc and 46 or 28
-    boxX, boxW, baseH = UDim2.new(0, 0, 0, boxTop), UDim2.new(1, 0, 0, boxH), boxTop + boxH + 10
+    -- top margin so the label doesn't hug the row's top edge
+    titleTop = 12
+    descTop = titleTop + 22
+    boxTop = titleTop + (hasDesc and 44 or 26)
+    boxX, boxW, baseH = UDim2.new(0, 0, 0, boxTop), UDim2.new(1, 0, 0, boxH), boxTop + boxH + 12
   else
     baseH = hasDesc and 56 or 46
     boxTop = math.floor((baseH - boxH) / 2)
@@ -64,7 +67,7 @@ function TextBox.new(opts)
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
       TextYAlignment = (hasDesc or fullWidth) and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
       TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
-      Position = fullWidth and UDim2.new(0, 0, 0, 0) or UDim2.new(0, 0, 0, hasDesc and 6 or 0),
+      Position = fullWidth and UDim2.new(0, 0, 0, titleTop) or UDim2.new(0, 0, 0, hasDesc and 6 or 0),
       Size = fullWidth and UDim2.new(1, 0, 0, 18)
         or UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0),
       Parent = root })
@@ -73,7 +76,7 @@ function TextBox.new(opts)
       local desc = Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
         TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
         TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        Position = fullWidth and UDim2.new(0, 0, 0, 22) or UDim2.new(0, 0, 0, 26),
+        Position = fullWidth and UDim2.new(0, 0, 0, descTop) or UDim2.new(0, 0, 0, 26),
         Size = fullWidth and UDim2.new(1, 0, 0, 18) or UDim2.new(0.5, -8, 0, 26), Parent = root })
       themed[#themed + 1] = function() desc.TextColor3 = theme.Colors.mutedForeground end
     end
