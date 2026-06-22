@@ -39,7 +39,7 @@ function TextBox.new(opts)
 
   -- ---- shared state ---------------------------------------------------------
   local real = opts.Default or ""
-  local masked = false                 -- Password task sets this from opts.Password
+  local masked = opts.Password and true or false
   local revealed = false
   local suppress = false
   local state = { focused = false, invalid = false }
@@ -228,6 +228,15 @@ function TextBox.new(opts)
     end
   end
   if opts.Loading then setLoading(true) end
+
+  if opts.Password then
+    local eye = mkIconButton("Eye", "eye", "muted", 28, nil)
+    maid:Give(eye.MouseButton1Click:Connect(function()
+      revealed = not revealed
+      Icons.apply(eye, revealed and "eye-off" or "eye", theme.Colors.mutedForeground)
+      render()
+    end))
+  end
 
   if opts.Copyable then
     mkIconButton("Copy", "copy", "primary", 30, function()
