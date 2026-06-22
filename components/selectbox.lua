@@ -178,12 +178,19 @@ function SelectBox.new(opts)
     local searchable
     if opts.Searchable ~= nil then searchable = opts.Searchable == true
     else searchable = countOptions(options) > 5 end
-    local pos = btn.AbsolutePosition
-    local sz = btn.AbsoluteSize
+    local pos = btn.AbsolutePosition or { X = 0, Y = 0 }
+    local sz = btn.AbsoluteSize or { X = 140, Y = 38 }
+    local vp = Overlay.viewport()
+    local width = math.max(140, sz.X or 140)
+    local ddH = math.min(#options * 28 + (searchable and 44 or 8), 240)
+    local below = (pos.Y or 0) + (sz.Y or 38) + 4
+    local openUp = (below + ddH > (vp.Y or 1080)) and ((pos.Y or 0) - 4 - ddH >= 0)
+    local y = openUp and ((pos.Y or 0) - 4 - ddH) or below
+    local x = math.max(0, math.min(pos.X or 0, (vp.X or 1920) - width - 4))
     dropdown = Create("Frame", {
       Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
-      Position = UDim2.new(0, pos and pos.X or 0, 0, (pos and pos.Y or 0) + 36),
-      Size = UDim2.new(0, math.max(140, sz and sz.X or 140), 0, math.min(#options * 28 + (searchable and 44 or 8), 240)),
+      Position = UDim2.new(0, x, 0, y),
+      Size = UDim2.new(0, width, 0, ddH),
       ClipsDescendants = true, ZIndex = 1001,
       Create.corner(theme.Radius.md),
       Create.padding({ all = 4 }),

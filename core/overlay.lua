@@ -57,6 +57,15 @@ function Overlay.closeAll()
   removeCatcher()
 end
 
+-- Screen size for popover placement; falls back when unmeasured (mock / first frame).
+function Overlay.viewport()
+  if root then
+    local s = root.AbsoluteSize
+    if s and (s.X or 0) > 0 and (s.Y or 0) > 0 then return s end
+  end
+  return { X = 1920, Y = 1080 }
+end
+
 function Overlay.reset() root = nil; catcher = nil; popovers = {} end
 
 return Overlay
