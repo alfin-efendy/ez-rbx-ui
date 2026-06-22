@@ -43,6 +43,7 @@ function Window.new(config)
   -- merge a partial Theme override onto the defaults (verbatim use would crash on missing tokens)
   local theme = DefaultTheme.new(config.Theme or {})
   if config.Mode == "light" then DefaultTheme.applyMode(theme, "light") else theme.Mode = "dark" end
+  if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
   local function aspectFromRatio(r)
@@ -413,6 +414,7 @@ function Window.new(config)
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetTransparency(n) main.BackgroundTransparency = n; return n end
+  function api:SetAnimationsEnabled(b) Animate.setEnabled(b and true or false); return b end
   function api:SetToggleKey(k) toggleKey = k; return k end
   function api:SetUIScale(n)
     userScale = n
