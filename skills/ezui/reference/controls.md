@@ -19,7 +19,7 @@ Identical API on both. Any control with a `Flag` auto-persists when the window h
 ```lua
 local t = tab:AddToggle({ Text = "Auto Farm", Default = false, Flag = "autofarm",
   Callback = function(on) print(on) end })
-t:Set(true)
+t.Set(true)
 ```
 
 ## AddSelectBox
@@ -29,7 +29,7 @@ t:Set(true)
 |---|---|---|---|
 | Text | string | — | label |
 | Options | table | `{}` | array of strings, or `{ Value, Text/Label, Icon?, Desc? }`, or `{ Divider = true }` |
-| Default | any | nil | matches `Value` |
+| Default | any | — | matches `Value` |
 | Multi | boolean | `false` | multi-select |
 | AllowNone | boolean | `false` | allow empty selection |
 | Searchable | boolean | auto | search box (auto-shows for lists longer than 5 items) |
@@ -341,7 +341,8 @@ tab:AddCard({
 | Icon | string | nil | Lucide icon name shown left of title |
 | Expanded | boolean | `false` | when `true` the accordion starts open |
 
-**Returns:** `{ Toggle() -> boolean, Expand(), Collapse(), IsExpanded() -> boolean, SetTitle(s), SetIcon(name), Destroy() }` plus all `Add*` control methods
+**Returns:** `{ Toggle() -> boolean, Expand(), Collapse(), IsExpanded() -> boolean, SetTitle(s), SetIcon(name)† , Destroy() }` plus all `Add*` control methods
+† Only applies when an Icon was set at creation.
 
 ```lua
 local acc = tab:AddAccordion({ Title = "Advanced", Icon = "settings-2", Expanded = false })
