@@ -61,8 +61,8 @@ function Window.new(config)
     Parent = gui,
     Create.corner(theme.Radius.window),
   })
-  local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
-  Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT,
+  local transp = type(config.Transparency) == "number" and config.Transparency or 0.12
+  Acrylic.decorate(main, theme, { transparency = transp,
     base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
 
   -- title bar
@@ -293,7 +293,7 @@ function Window.new(config)
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
-  function api:SetAcrylicTransparency(n) main.BackgroundTransparency = n; return n end
+  function api:SetTransparency(n) main.BackgroundTransparency = n; return n end
   function api:SetToggleKey(k) toggleKey = k; return k end
   local uiScale
   function api:SetUIScale(n)

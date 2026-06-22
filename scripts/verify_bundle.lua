@@ -109,7 +109,7 @@ w:Notify({ Title = "timed", Type = "success", Duration = 2000 }) -- progress bar
 -- R3 Plan B: live accent + settings APIs
 w:SetAccent("Indigo")
 w:SetUIScale(1.1)
-w:SetAcrylicTransparency(0.2)
+w:SetTransparency(0.2)
 w:SetNotificationsEnabled(false)
 assert(w:Notify({ Title = "blocked", Duration = 0 }) == nil, "notify should be gated when disabled")
 w:SetNotificationsEnabled(true)

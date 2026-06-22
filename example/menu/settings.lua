@@ -22,7 +22,7 @@ return function(window)
   tab:AddSlider({ Text = "UI scale (%)", Min = 80, Max = 130, Default = 100,
     Callback = function(v) window:SetUIScale(v / 100) end })
   tab:AddSlider({ Text = "Acrylic transparency (%)", Min = 0, Max = 60, Default = 12,
-    Callback = function(v) window:SetAcrylicTransparency(v / 100) end })
+    Callback = function(v) window:SetTransparency(v / 100) end })
 
   tab:AddSection("Behavior")
   tab:AddToggle({ Text = "Enable notifications", Flag = "notif", Default = true,
