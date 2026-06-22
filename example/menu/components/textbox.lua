@@ -13,6 +13,10 @@ return function(window, host)
   -- text prefix + suffix (FullWidth gives the addons room: label on top, box below)
   tab:AddTextBox({ Text = "Website", FullWidth = true, LeadingIcon = "link",
     Prefix = "https://", Suffix = ".com", Placeholder = "your-site" })
+  -- FullWidth + Description: label and helper text stacked above the box
+  tab:AddTextBox({ Text = "API endpoint", FullWidth = true,
+    Description = "Full URL the client calls, including the protocol.",
+    LeadingIcon = "link", Prefix = "https://", Placeholder = "api.example.com" })
   tab:AddTextBox({ Text = "Price", Prefix = "$", Suffix = "USD", Placeholder = "0.00" })
 
   tab:AddSection("Input group — buttons")
