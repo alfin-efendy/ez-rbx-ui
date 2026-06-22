@@ -10,7 +10,7 @@ end
 local function contains(arr, v) for _, x in ipairs(arr) do if x == v then return true end end return false end
 
 local function normOpt(o)
-  if type(o) == "table" then return { value = o.Value or o.value, icon = o.Icon, desc = o.Desc, divider = o.Divider == true } end
+  if type(o) == "table" then return { value = o.Value or o.value, label = o.Text or o.Label, icon = o.Icon, desc = o.Desc, divider = o.Divider == true } end
   return { value = o }
 end
 
@@ -35,16 +35,25 @@ function SelectBox.new(opts)
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
   local onChanged = opts.Callback
 
+  local function labelFor(v)
+    for _, raw in ipairs(options) do
+      local e = normOpt(raw)
+      if not e.divider and e.value == v then return e.label or tostring(e.value) end
+    end
+    return tostring(v)
+  end
+
   local function display()
     if multi then
       if #value == 0 then return "None" end
       local shown = {}
-      for i = 1, math.min(2, #value) do shown[i] = tostring(value[i]) end
+      for i = 1, math.min(2, #value) do shown[i] = labelFor(value[i]) end
       local s = table.concat(shown, ", ")
       if #value > 2 then s = s .. " +" .. (#value - 2) end
       return s
     end
-    return tostring(value or "Select")
+    if value == nil then return "Select" end
+    return labelFor(value)
   end
 
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
@@ -233,7 +242,7 @@ function SelectBox.new(opts)
           Icons.apply(lead, e.icon, theme.Colors.foreground)
           textX = 40
         end
-        Create("TextLabel", { Name = "OptLabel", BackgroundTransparency = 1, Text = e.value, ZIndex = 1003,
+        Create("TextLabel", { Name = "OptLabel", BackgroundTransparency = 1, Text = e.label or tostring(e.value), ZIndex = 1003,
           TextColor3 = theme.Colors.foreground,
           TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
           Size = UDim2.new(1, -textX - 4, e.desc and 0 or 1, e.desc and 16 or 0),
@@ -245,7 +254,7 @@ function SelectBox.new(opts)
             Size = UDim2.new(1, -textX - 4, 0, 14), Position = UDim2.new(0, textX, 0, 20), Parent = o })
         end
         o.MouseButton1Click:Connect(function() pick(e.value) end)
-        optButtons[#optButtons + 1] = { btn = o, text = tostring(e.value) .. " " .. tostring(e.desc or "") }
+        optButtons[#optButtons + 1] = { btn = o, text = tostring(e.value) .. " " .. tostring(e.label or "") .. " " .. tostring(e.desc or "") }
       end
     end
     Overlay.mount(dropdown)
