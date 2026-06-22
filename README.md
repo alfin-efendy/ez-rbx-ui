@@ -4,6 +4,8 @@ A modern, modular UI library for Roblox scripts. shadcn-inspired design, Fluent-
 
 > **v2 is a full rewrite with a clean-break API.** If you used the old `EzUI:CreateNew` / emoji-icon API, see [Migration](#migration-from-v1).
 
+📖 **Documentation:** https://alfin-efendy.github.io/ez-rbx-ui/
+
 ---
 
 ## Install
