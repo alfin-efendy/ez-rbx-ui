@@ -100,7 +100,10 @@ function TextBox.new(opts)
     PlaceholderText = opts.Placeholder or "", PlaceholderColor3 = theme.Colors.mutedForeground,
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
-    TextEditable = not opts.Copyable, LayoutOrder = 10, Size = UDim2.new(0, 0, 1, 0), Parent = box,
+    -- LayoutOrder 3 sits between leading addons (icon=1, prefix=2) and all trailing
+    -- addons (suffix=4, trailing icon=5, buttons=6+, eye/clear/copy, spinner). The
+    -- UIFlexItem makes it grow to fill the gap, pushing trailing addons to the right.
+    TextEditable = not opts.Copyable, LayoutOrder = 3, Size = UDim2.new(0, 0, 1, 0), Parent = box,
     Create("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
   })
   themed[#themed + 1] = function()
