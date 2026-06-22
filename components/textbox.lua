@@ -224,17 +224,50 @@ function TextBox.new(opts)
   end
   if opts.Disabled then setDisabled(true) end
 
+  local message
+  local function mkMessage()
+    if message then return message end
+    message = Create("TextLabel", { Name = "Error", BackgroundTransparency = 1, Visible = false,
+      Text = "", TextColor3 = theme.Colors.destructive, TextXAlignment = Enum.TextXAlignment.Left,
+      TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
+      TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(boxX.X.Scale, boxX.X.Offset, 0, boxTop + 30 + 2),
+      Size = UDim2.new(boxW.X.Scale, boxW.X.Offset, 0, 16), Parent = root })
+    themed[#themed + 1] = function() message.TextColor3 = theme.Colors.destructive end
+    return message
+  end
+  local function setInvalid(msg)
+    state.invalid = true
+    local m = mkMessage(); m.Text = msg or ""; m.Visible = true
+    root.Size = UDim2.new(1, 0, 0, baseH + 18)
+    stroke.Color = strokeColor()
+  end
+  local function setValid()
+    state.invalid = false
+    if message then message.Visible = false end
+    root.Size = UDim2.new(1, 0, 0, baseH)
+    stroke.Color = strokeColor()
+  end
+  local function runValidate()
+    if not opts.Validate then return end
+    local ok, msg = opts.Validate(real)
+    if ok then setValid() else setInvalid(msg) end
+  end
+  maid:Give(input.FocusLost:Connect(runValidate))
+
   if opts.AccentReg then maid:Give(opts.AccentReg(reTheme)) end
   maid:Give(root)
 
   -- ---- public api -----------------------------------------------------------
   api.Frame = root
   api.GetText = function() return real end
-  api.SetText = function(s) commit(tostring(s)); if opts.Callback then opts.Callback(real, api) end end
+  api.SetText = function(s) commit(tostring(s)); runValidate(); if opts.Callback then opts.Callback(real, api) end end
   api.Focus = function() input:CaptureFocus() end
   api.Clear = function() commit("") end
   -- @api-extra (Tasks 4,5,6 add SetInvalid/SetValid/SetLoading/SetDisabled here)
   api.SetDisabled = function(b) setDisabled(b) end
+  api.SetInvalid = function(msg) setInvalid(msg) end
+  api.SetValid = function() setValid() end
   api.Destroy = function() maid:DoCleanup() end
   return api
 end
