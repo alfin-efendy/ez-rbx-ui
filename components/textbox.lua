@@ -102,6 +102,7 @@ function TextBox.new(opts)
     Name = "Input", BackgroundTransparency = 1, Text = real,
     PlaceholderText = opts.Placeholder or "", PlaceholderColor3 = theme.Colors.mutedForeground,
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Center,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
     -- LayoutOrder 3 sits between leading addons (icon=1, prefix=2) and all trailing
     -- addons (suffix=4, trailing icon=5, buttons=6+, eye/clear/copy, spinner). The
@@ -166,6 +167,7 @@ function TextBox.new(opts)
   local function mkAffix(name, text, order)
     local lbl = Create("TextLabel", { Name = name, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.X,
       Text = text, TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left,
+      TextYAlignment = Enum.TextYAlignment.Center,
       TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
       Size = UDim2.new(0, 0, 1, 0), LayoutOrder = order, Parent = box })
     themed[#themed + 1] = function() lbl.TextColor3 = theme.Colors.mutedForeground end
