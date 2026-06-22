@@ -32,8 +32,18 @@ verify-bundle: build
 	@lua scripts/verify_bundle.lua
 
 .PHONY: check
-check: build test verify-bundle
+check: build test verify-bundle skill-test check-skill
 	@echo "Check OK."
+
+.PHONY: skill-test
+skill-test:
+	@echo "Running skill drift-check unit tests..."
+	@node --test scripts/check-skill.test.mjs
+
+.PHONY: check-skill
+check-skill:
+	@echo "Checking the EzUI skill is in sync with the library API..."
+	@node scripts/check-skill.mjs
 
 .PHONY: stress
 stress: build

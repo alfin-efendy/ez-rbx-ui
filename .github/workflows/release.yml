@@ -33,7 +33,7 @@ jobs:
       - name: Build release bundle
         run: |
           mkdir -p release
-          lua-bundler --entry ./main.lua --output ./release/ez-rbx-ui.lua --release
+          lua-bundler --entry ./main.lua --output ./release/ez-rbx-ui.lua
 
       - name: Verify bundle syntax
         run: lua5.1 -e "assert(loadfile('./release/ez-rbx-ui.lua')); print('bundle syntax ok')"
