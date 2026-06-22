@@ -64,7 +64,6 @@ function Window.new(config)
   local acrylicT = type(config.Acrylic) == "number" and config.Acrylic or nil
   Acrylic.decorate(main, theme, { solid = config.Acrylic == false, transparency = acrylicT,
     base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
-  local acrylicBlur = (config.Acrylic ~= false) and Acrylic.blur({}) or nil
 
   -- title bar
   local titleBar = Create("Frame", {
@@ -187,7 +186,7 @@ function Window.new(config)
 
   Overlay.get(gui)
 
-  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, AcrylicBlur = acrylicBlur, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
+  local api = { Gui = gui, Main = main, ContentScroll = contentScroll, Overlay = Overlay.get(gui), Config = cfg, Maid = maid }
 
   local tabEntries = {}
   local groups = {}
@@ -282,13 +281,11 @@ function Window.new(config)
   function api:Show()
     if closed then return end
     visible = true; main.Visible = true
-    if acrylicBlur then acrylicBlur.SetEnabled(true) end
     if hideFab then hideFab() end
   end
   function api:Hide()
     if closed then return end
     visible = false; main.Visible = false
-    if acrylicBlur then acrylicBlur.SetEnabled(false) end
     if showFab then showFab() end
   end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
@@ -646,7 +643,6 @@ function Window.new(config)
     if cfg then pcall(function() cfg:Save() end) end
     Overlay.closeAll()
     if Notif then Notif.clearAll() end
-    if acrylicBlur then acrylicBlur.Destroy() end
     maid:DoCleanup()       -- disconnects EVERY connection (drag, resize, toggle-key, close, ...)
     gui:Destroy()
     Overlay.reset()
