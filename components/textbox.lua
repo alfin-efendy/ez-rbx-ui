@@ -146,6 +146,25 @@ function TextBox.new(opts)
   end
 
   -- @addons (Tasks 2,3,6,7 insert addon builders + their option blocks here)
+  local function mkAffix(name, text, order)
+    local lbl = Create("TextLabel", { Name = name, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.X,
+      Text = text, TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left,
+      TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+      Size = UDim2.new(0, 0, 1, 0), LayoutOrder = order, Parent = box })
+    themed[#themed + 1] = function() lbl.TextColor3 = theme.Colors.mutedForeground end
+    return lbl
+  end
+  local function mkDecorIcon(name, icon, order)
+    local img = Create("ImageLabel", { Name = name, BackgroundTransparency = 1,
+      Size = UDim2.new(0, 16, 0, 16), LayoutOrder = order, Parent = box })
+    Icons.apply(img, icon, theme.Colors.mutedForeground)
+    themed[#themed + 1] = function() Icons.apply(img, icon, theme.Colors.mutedForeground) end
+    return img
+  end
+  if opts.LeadingIcon then mkDecorIcon("LeadingIcon", opts.LeadingIcon, 1) end
+  if opts.Prefix then mkAffix("Prefix", opts.Prefix, 2) end
+  if opts.Suffix then mkAffix("Suffix", opts.Suffix, 4) end
+  if opts.TrailingIcon then mkDecorIcon("TrailingIcon", opts.TrailingIcon, 5) end
 
   if opts.Copyable then
     mkIconButton("Copy", "copy", "primary", 30, function()
