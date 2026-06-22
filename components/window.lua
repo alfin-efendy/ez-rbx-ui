@@ -63,6 +63,7 @@ function Window.new(config)
   local fabEnabled, autoHide
   local sidebarW = SIDEBAR_W
   local closed = false
+  local userMoved = false  -- set when the user drags/resizes; viewport changes then clamp instead of re-centering
   local closeCallback
   local themer = Themer.new()
   local lockables = {}
@@ -643,6 +644,7 @@ function Window.new(config)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
       local delta = { X = input.Position.X - dragStart.X, Y = input.Position.Y - dragStart.Y }
       main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+      userMoved = true
     end
   end))
   maid:Give(titleBar.InputEnded:Connect(function(input)
@@ -673,6 +675,7 @@ function Window.new(config)
       main.Size = UDim2.new(0, width, 0, height)
       aspect = width / height       -- grip rewrites the ratio…
       coverage = height / vp.Y      -- …and the coverage, so viewport changes preserve them
+      userMoved = true
     end
   end))
   maid:Give(grip.InputEnded:Connect(function(input)
@@ -697,7 +700,17 @@ function Window.new(config)
   function api:AdaptToViewport()
     width, height = computeSize()
     main.Size = UDim2.new(0, width, 0, height)
-    main.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+    if userMoved then
+      -- honor the user's placement; just keep it on-screen in the new viewport
+      local vp = viewportSize()
+      local absX = main.Position.X.Scale * vp.X + main.Position.X.Offset
+      local absY = main.Position.Y.Scale * vp.Y + main.Position.Y.Offset
+      absX = math.max(0, math.min(absX, vp.X - width))
+      absY = math.max(0, math.min(absY, vp.Y - height))
+      main.Position = UDim2.new(0, absX, 0, absY)
+    else
+      main.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+    end
   end
   api:AdaptToViewport()
   do

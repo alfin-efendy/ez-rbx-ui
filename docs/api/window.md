@@ -117,7 +117,7 @@ Sets the window background transparency, `n` in `0..1` (`0` = opaque).
 
 ### `AdaptToViewport()`
 
-Re-fits the window to the current viewport, preserving the configured `Ratio` and re-centering. Called automatically on creation and whenever the viewport size changes — the window is always responsive.
+Re-fits the window to the current viewport, preserving the configured `Ratio`. A window the user hasn't moved is re-centered; once the user drags or resizes it, its position is kept (clamped on-screen) instead. Called automatically on creation and whenever the viewport size changes — the window is always responsive.
 
 ### `GetMode()`
 
