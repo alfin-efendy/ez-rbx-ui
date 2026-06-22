@@ -12,6 +12,7 @@ function Window.Init(R)
 end
 
 local TITLE_H = 40
+local TITLE_H_TALL = 56
 local SIDEBAR_W = 150
 local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
@@ -95,25 +96,57 @@ function Window.new(config)
   Acrylic.decorate(main, theme, { transparency = transp,
     base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
 
-  -- title bar
+  -- title bar (grows to fit a subtitle and/or image)
+  local resolvedTitleImg = Asset.image(config.Image)
+  local hasTitleImg = resolvedTitleImg ~= nil
+  local hasSubtitle = type(config.Subtitle) == "string" and config.Subtitle ~= ""
+  local titleH = (hasTitleImg or hasSubtitle) and TITLE_H_TALL or TITLE_H
   local titleBar = Create("Frame", {
     Name = "TitleBar",
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, TITLE_H),
+    Size = UDim2.new(1, 0, 0, titleH),
     Parent = main,
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
   })
+  local titleTextX = 0
+  if hasTitleImg then
+    local imgSize = 36
+    Create("ImageLabel", {
+      Name = "TitleImage", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+      AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
+      Size = UDim2.new(0, imgSize, 0, imgSize), Image = resolvedTitleImg, Parent = titleBar,
+      Create.corner(theme.Radius.md),
+    })
+    titleTextX = imgSize + 8
+  end
   local titleLabel = Create("TextLabel", {
     Name = "Title",
     BackgroundTransparency = 1,
     Text = config.Title or "EzUI",
     TextColor3 = theme.Colors.foreground,
     TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = hasSubtitle and Enum.TextYAlignment.Bottom or Enum.TextYAlignment.Center,
     TextSize = theme.Font.title.Size,
     Font = Enum.Font.BuilderSans,
-    Size = UDim2.new(1, -60, 1, 0),
+    Position = UDim2.new(0, titleTextX, 0, 0),
+    Size = hasSubtitle and UDim2.new(1, -(titleTextX + 60), 0.5, 0) or UDim2.new(1, -(titleTextX + 60), 1, 0),
     Parent = titleBar,
   })
+  if hasSubtitle then
+    Create("TextLabel", {
+      Name = "Subtitle",
+      BackgroundTransparency = 1,
+      Text = config.Subtitle,
+      TextColor3 = theme.Colors.mutedForeground,
+      TextXAlignment = Enum.TextXAlignment.Left,
+      TextYAlignment = Enum.TextYAlignment.Top,
+      TextSize = theme.Font.muted.Size,
+      Font = Enum.Font.BuilderSans,
+      Position = UDim2.new(0, titleTextX, 0.5, 0),
+      Size = UDim2.new(1, -(titleTextX + 60), 0.5, 0),
+      Parent = titleBar,
+    })
+  end
   local closeBtn = Create("ImageButton", {
     Name = "Close",
     BackgroundTransparency = 1,
@@ -136,8 +169,8 @@ function Window.new(config)
   local body = Create("Frame", {
     Name = "Body",
     BackgroundTransparency = 1,
-    Position = UDim2.new(0, 0, 0, TITLE_H),
-    Size = UDim2.new(1, 0, 1, -TITLE_H),
+    Position = UDim2.new(0, 0, 0, titleH),
+    Size = UDim2.new(1, 0, 1, -titleH),
     Parent = main,
   })
   -- sidebar search box (pinned above the tab list)
@@ -320,6 +353,15 @@ function Window.new(config)
   end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
   function api:SetTitle(s) titleLabel.Text = s end
+  function api:SetSubtitle(s)
+    local sub = titleBar:FindFirstChild("Subtitle")
+    if sub then sub.Text = s end
+  end
+  function api:SetImage(v)
+    local img = titleBar:FindFirstChild("TitleImage")
+    local resolved = Asset.image(v)
+    if img and resolved then img.Image = resolved end
+  end
   function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
@@ -430,6 +472,8 @@ function Window.new(config)
   themer.register(function()
     main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
+    local sub = titleBar:FindFirstChild("Subtitle")
+    if sub then sub.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
     Icons.apply(minBtn, "minus", theme.Colors.mutedForeground)
     searchBox.BackgroundColor3 = theme.Colors.input
