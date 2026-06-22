@@ -60,6 +60,7 @@ function Window.new(config)
   local tabs = {}
   local visible = true
   local fab, fabFullSize, fabSnap, fabMaid, showFab, hideFab
+  local fabEnabled, autoHide
   local sidebarW = SIDEBAR_W
   local closed = false
   local closeCallback
@@ -344,7 +345,7 @@ function Window.new(config)
   function api:Show()
     if closed then return end
     visible = true; main.Visible = true
-    if hideFab then hideFab() end
+    if autoHide and hideFab then hideFab() end
   end
   function api:Hide()
     if closed then return end
@@ -493,7 +494,9 @@ function Window.new(config)
     if noise then noise.ImageTransparency = (theme.Mode == "light") and 0.97 or 0.92 end
   end)
 
+  fabEnabled = config.FloatingToggle ~= false
   local fabOpts = (type(config.FloatingToggle) == "table") and config.FloatingToggle or {}
+  autoHide = fabOpts.AutoHide ~= false   -- default true: hide the FAB while the window is shown
   local function ensureFab()
     if fab then return fab end
     if fabMaid then fabMaid:DoCleanup() end
@@ -579,7 +582,7 @@ function Window.new(config)
     end
     fabMaid:Give(fab.MouseButton1Click:Connect(function()
       if moved then moved = false; return end
-      api:Show()
+      api:Toggle()
     end))
     fabMaid:Give(themer.register(function()
       if kind == "circle" then
@@ -595,6 +598,7 @@ function Window.new(config)
   end
 
   showFab = function()
+    if not fabEnabled then return end
     ensureFab()
     fab.Visible = true
     local target = fabFullSize or fab.Size
@@ -616,8 +620,10 @@ function Window.new(config)
     local wasHidden = not visible
     if fab then fab:Destroy(); fab = nil end
     fabOpts = opts or {}
+    fabEnabled = true
+    autoHide = fabOpts.AutoHide ~= false
     ensureFab()
-    if wasHidden then showFab() end
+    if wasHidden or not autoHide then showFab() end
   end
 
   function api:Minimize()
@@ -702,7 +708,10 @@ function Window.new(config)
   end
 
   -- mobile/touch floating toggle button
-  ensureFab() -- always available as the reopen button; hidden until the window hides
+  if fabEnabled then
+    ensureFab() -- reopen button; hidden until the window hides (unless AutoHide = false)
+    if not autoHide then showFab() end
+  end
   function api:SetFloatingToggleVisible(b) if b then showFab() else hideFab() end end
 
   maid:Give(gui)

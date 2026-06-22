@@ -339,6 +339,25 @@ h.describe("window", function()
     h.expect(bar:FindFirstChild("Subtitle")).toBe(nil)
     h.expect(bar:FindFirstChild("TitleImage")).toBe(nil)
   end)
+  h.it("FloatingToggle AutoHide=false keeps the FAB visible while the window is shown", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { AutoHide = false } })
+    local function findFab() for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then return c end end end
+    h.expect(findFab().Visible).toBe(true)           -- visible even though the window is shown
+    w:Hide()
+    h.expect(findFab().Visible).toBe(true)
+    findFab().MouseButton1Click:Fire()               -- toggles back open
+    h.expect(w:IsVisible()).toBe(true)
+  end)
+  h.it("FloatingToggle=false disables the FAB entirely", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = false })
+    local function findFab() for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then return c end end end
+    h.expect(findFab()).toBe(nil)
+    w:Hide()                                          -- must not create/restore a FAB
+    h.expect(findFab()).toBe(nil)
+    h.expect(w:IsVisible()).toBe(false)
+  end)
 end)
 
 h.run()
