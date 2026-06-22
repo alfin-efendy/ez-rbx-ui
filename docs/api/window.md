@@ -26,6 +26,11 @@ local Window = EzUI:CreateWindow({
 | `Acrylic` | `bool` | Acrylic sheen panel (`false` = flat). Opaque and readable either way |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
 | `FloatingToggle` | `bool` | Show a floating toggle button (auto-enabled on touch devices) |
+| `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](#color-mode) |
+| `AutoAdapt` | `bool` | Auto-fit the window to the viewport on creation; default `true`. Pass `false` to skip |
+| `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
+| `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
+| `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
 | `Theme` | `table` | Override design tokens (see [Theming](/guide/theming)) |
 | `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | Flag persistence options (see [Config & Flags](/guide/config-and-flags)) |
 
@@ -97,7 +102,15 @@ Sets the window title-bar text to `s`.
 
 ### `AdaptToViewport()`
 
-Clamps the window position and size to fit within the current viewport. Called automatically on creation unless `AutoAdapt = false` is passed.
+Clamps the window position and size to fit within the current viewport. Called automatically on creation unless the `AutoAdapt = false` config key is passed.
+
+### `GetMode()`
+
+Returns the current color mode: `"dark"` or `"light"`.
+
+### `SetMode(mode)`
+
+Switches the color palette live. Pass `"dark"` or `"light"`. Controls re-skin immediately without recreating the window.
 
 ### `SetFloatingToggleVisible(b)`
 
@@ -212,3 +225,22 @@ Resets a single flag to its default value without confirmation.
 ### `.Config`
 
 The config object attached to this window (`EzUI:NewConfig` instance). Use it to call `cfg:Get(k)`, `cfg:Set(k, v)`, or other [Config API](/api/core#config) methods directly.
+
+---
+
+## Color mode
+
+EzUI ships `dark` (default) and `light` palettes. Choose at creation time with the `Mode` config key, or switch the running window with `SetMode`:
+
+```lua
+-- Light mode from the start
+local Window = EzUI:CreateWindow({ Mode = "light" })
+
+-- Switch live at runtime
+Window:SetMode("light")
+
+-- Read the current mode
+print(Window:GetMode()) -- "light"
+```
+
+See [Theming — Color mode](/guide/theming#color-mode-dark-light) for the full palette reference.

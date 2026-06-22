@@ -25,6 +25,11 @@ local Window = EzUI:CreateWindow({
 | `Acrylic` | `bool` | Acrylic sheen panel (`false` = flat). Opaque and readable either way |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
 | `FloatingToggle` | `bool` | Show a floating toggle button (auto-enabled on touch devices) |
+| `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](/guide/theming#color-mode-dark-light) |
+| `AutoAdapt` | `bool` | Auto-fit the window to the viewport on creation; default `true`. Pass `false` to skip |
+| `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
+| `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
+| `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
 | `Theme` | `table` | Override design tokens (see [Theming](/guide/theming)) |
 | `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | Flag persistence (see [Config & Flags](/guide/config-and-flags)) |
 
@@ -42,6 +47,8 @@ local Window = EzUI:CreateWindow({
 | `Minimize()` | Collapse the window |
 | `SetTitle(s)` | Update the title-bar text |
 | `AdaptToViewport()` | Reposition/resize to fit the current screen |
+| `GetMode()` | Returns the current color mode (`"dark"` or `"light"`) |
+| `SetMode(mode)` | Switch the color palette live (`"dark"` / `"light"`) |
 | `SetFloatingToggleVisible(b)` | Show or hide the floating toggle button |
 | `Destroy()` | Tear down the window and all its children |
 
