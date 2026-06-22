@@ -65,7 +65,7 @@ See [`example/main.lua`](example/main.lua) for a full playground (`make run` to 
 | `Theme` | table | override design tokens (see [Theming](#theming)) |
 | `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | flag persistence |
 
-**Methods:** `AddTab(opts)`, `AddTabGroup(name)`, `SearchTabs(query)`, `Show()`, `Hide()`, `Toggle()`, `IsVisible()`, `Minimize()`, `SetTitle(s)`, `SetSubtitle(s)`, `SetImage(v)`, `SetTransparency(n)`, `AdaptToViewport()`, `SetFloatingToggleVisible(b)`, `Destroy()`, and:
+**Methods:** `AddTab(opts)`, `AddTabGroup(name)`, `SearchTabs(query)`, `Show()`, `Hide()`, `Toggle()`, `IsVisible()`, `Minimize()`, `SetTitle(s)`, `SetSubtitle(s)`, `SetImage(v)`, `SetTransparency(n)`, `AdaptToViewport()`, `SetFloatingToggle(opts)`, `SetFloatingToggleVisible(b)`, `Destroy()`, and:
 
 - **Notifications:** `Notify(opts)`, `ShowSuccess/ShowWarning/ShowError/ShowInfo(opts)`, `DismissNotification(id)`, `ClearNotifications()` — `opts = { Title, Message?, Type?, Duration?=4000, Action?, OnDismiss? }`.
 - **Dialog:** `Dialog({ Title, Message?, Buttons = { { Text, Variant?, Callback? }, ... }, Modal?=true })`.

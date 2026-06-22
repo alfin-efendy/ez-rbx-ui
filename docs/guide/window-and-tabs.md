@@ -54,11 +54,49 @@ local Window = EzUI:CreateWindow({
 | `AdaptToViewport()` | Re-fit to the current viewport (also runs automatically on viewport changes) |
 | `GetMode()` | Returns the current color mode (`"dark"` or `"light"`) |
 | `SetMode(mode)` | Switch the color palette live (`"dark"` / `"light"`) |
+| `SetFloatingToggle(opts)` | Rebuild the floating toggle button with new options |
 | `SetFloatingToggleVisible(b)` | Show or hide the floating toggle button |
 | `Destroy()` | Tear down the window and all its children |
 
 For notification and dialog methods, see [Notifications & Dialog](/guide/notifications-dialog).  
 For config/flag reset methods, see [Config & Flags](/guide/config-and-flags).
+
+## Floating toggle button
+
+The floating toggle button (FAB) lets players reopen the window after it's hidden — essential on touch devices, where there's no keyboard `ToggleKey`. It's enabled by default. Pass a `FloatingToggle` table to customize it, or `FloatingToggle = false` to remove it entirely.
+
+```lua
+local Window = EzUI:CreateWindow({
+    FloatingToggle = {
+        Type = "circle",                -- "simple" (default) | "circle" | "square"
+        Image = "rbxassetid://123",     -- logo for circle/square (rbxassetid:// or http(s)://)
+        Position = { X = 20, Y = -90 }, -- X from the left edge, Y from the bottom edge
+        Size = { Width = 56, Height = 56 },
+        Draggable = true,               -- drag, then it magnet-snaps to the nearest screen edge
+        AutoHide = true,                -- true: visible only while hidden; false: always visible
+    },
+})
+```
+
+### Options
+
+| Key | Type | Description |
+|---|---|---|
+| `Type` | `string` | `"simple"` (default) — a chevron tab that docks at the screen edge; `"circle"` — an accent-colored round button; `"square"` — a rounded surface tile |
+| `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` or an `http(s)://` URL. Falls back to a controller icon if omitted |
+| `Position` | `{ X, Y }` \| `UDim2` | Button position. With the table form, `X` is pixels from the left edge and `Y` is pixels from the bottom edge (use a negative `Y` to move it up) |
+| `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
+| `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |
+| `AutoHide` | `bool` | `true` (default) shows the button only while the window is hidden (it disappears when the window is open); `false` keeps it on screen at all times, acting as a persistent open/close toggle |
+
+Set `FloatingToggle = false` to disable the button. With it disabled, players can only reopen the window with the `ToggleKey`, so avoid this on touch-only experiences.
+
+### Changing it at runtime
+
+```lua
+Window:SetFloatingToggle({ Type = "square", Image = "rbxassetid://123" })  -- rebuild with new options
+Window:SetFloatingToggleVisible(true)                                       -- force show / hide
+```
 
 ## Tabs
 

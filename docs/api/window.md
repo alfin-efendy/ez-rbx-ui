@@ -131,20 +131,40 @@ Switches the color palette live. Pass `"dark"` or `"light"`. Controls re-skin im
 
 Shows (`b = true`) or hides (`b = false`) the floating toggle button.
 
+### `SetFloatingToggle(opts)`
+
+Rebuilds the floating toggle button at runtime with a new options table (the same shape as the [FloatingToggle config](#floatingtoggle-config)). Re-enables the button if it was disabled, and shows it immediately when `AutoHide = false`.
+
+```lua
+Window:SetFloatingToggle({ Type = "circle", Image = "rbxassetid://123" })
+```
+
 ### FloatingToggle config
 
-The `FloatingToggle` config key accepts a table:
+The `FloatingToggle` config key accepts a table (or `false` to disable the button entirely):
 
 | Key | Type | Description |
 |---|---|---|
-| `Type` | `string` | `"simple"` (default), `"circle"`, or `"square"` |
-| `Position` | `{ X, Y }` \| `UDim2` | Button position |
-| `Image` | `string` | Image for the button (`rbxassetid://` or URL) |
-| `Size` | `{ Width, Height }` \| `UDim2` | Button size |
-| `Draggable` | `bool` | Allow dragging the button (default `true`) |
-| `AutoHide` | `bool` | `true` (default) hides the button while the window is shown; `false` keeps it always visible |
+| `Type` | `string` | `"simple"` (default) docks a chevron tab at the screen edge; `"circle"` is an accent-colored round button; `"square"` is a rounded surface tile |
+| `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon) |
+| `Position` | `{ X, Y }` \| `UDim2` | Button position. With the table form, `X` is pixels from the left edge and `Y` is pixels from the bottom edge (use a negative `Y` to move it up) |
+| `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
+| `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |
+| `AutoHide` | `bool` | `true` (default) shows the button only while the window is hidden; `false` keeps it visible at all times (a persistent open/close toggle) |
 
-Pass `FloatingToggle = false` to disable the button entirely (mobile users then reopen only via `ToggleKey`).
+```lua
+EzUI:CreateWindow({
+    FloatingToggle = {
+        Type = "circle",
+        Image = "rbxassetid://123",
+        Position = { X = 20, Y = -90 },
+        Size = { Width = 56, Height = 56 },
+        AutoHide = false,
+    },
+})
+```
+
+With `FloatingToggle = false` the button is not created, and players can reopen the window only via the `ToggleKey` — avoid this on touch-only experiences.
 
 ### `Destroy()`
 
