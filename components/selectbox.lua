@@ -297,10 +297,11 @@ function SelectBox.new(opts)
       end
     end
     end
-    -- keep the dropdown stuck to the control as it scrolls
-    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
-      if dropdown then local nx, ny = computePos(width, ddH); dropdown.Position = UDim2.new(0, nx, 0, ny) end
-    end)
+    -- close the dropdown when the control scrolls — otherwise the screen-space popover
+    -- would either detach from the control or float outside the window once the control
+    -- leaves the content viewport (standard <select> behavior). Scrolling inside the
+    -- dropdown itself doesn't move the control's AbsolutePosition, so it stays open.
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() api.Close() end)
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
   end

@@ -80,18 +80,21 @@ h.describe("selectbox", function()
     local dd; for _, c in ipairs(root:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
     h.expect(dd.Position.Y.Offset < 380).toBeTruthy()
   end)
-  h.it("dropdown follows the control when it scrolls (AbsolutePosition change)", function()
+  h.it("scrolling the control (AbsolutePosition change) closes the dropdown", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset()
     local root = R.Overlay.get(gui); root.AbsoluteSize = h.roblox.Vector2.new(600, 800)
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A" })
     sb.Frame.AbsolutePosition = h.roblox.Vector2.new(50, 100)
     sb.Frame.AbsoluteSize = h.roblox.Vector2.new(200, 38)
     sb.Open()
-    local dd; for _, c in ipairs(root:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
-    h.expect(dd.Position.Y.Offset).toBe(142)
+    local function open()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "SelectDropdown" then return true end end
+      return false
+    end
+    h.expect(open()).toBe(true)
     sb.Frame.AbsolutePosition = h.roblox.Vector2.new(50, 60)
     sb.Frame:GetPropertyChangedSignal("AbsolutePosition"):Fire()
-    h.expect(dd.Position.Y.Offset).toBe(102)
+    h.expect(open()).toBe(false)
   end)
   h.it("dropdown opens below when there is room", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset()
