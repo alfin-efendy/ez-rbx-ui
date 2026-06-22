@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua + lua-bundler
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lua5.1
+          sudo ln -sf /usr/bin/lua5.1 /usr/local/bin/lua   # Makefile memanggil `lua`
+          curl -fsSL https://alfin-efendy.github.io/lua-bundler/install.sh | sudo bash
+
+      - name: make check
+        run: make check

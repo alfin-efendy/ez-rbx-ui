@@ -1,144 +1,53 @@
-name: Automatic Release
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v1.0.0)'
-        required: true
-        default: 'v1.0.0'
 
 permissions:
   contents: write
-  packages: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Install lua-bundler
-        run: |
-          curl -fsSL https://alfin-efendy.github.io/lua-bundler/install.sh | sudo bash
-          lua-bundler --version
-          
-      - name: Create release directory
-        run: mkdir -p release
-        
-      - name: Bundle main library
-        run: |
-          lua-bundler \
-            --entry ./main.lua \
-            --output ./release/ez-rbx-ui.lua \
-            --release
+        with:
+          fetch-depth: 0
+          # token: ${{ secrets.RELEASE_TOKEN }}   # aktifkan bila main diproteksi (lihat spec Bagian 9)
 
-      - name: Verify bundle syntax
+      - name: Install Lua + lua-bundler
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lua5.1
-          lua5.1 -e "assert(loadfile('./release/ez-rbx-ui.lua')); print('bundle syntax ok')"
+          curl -fsSL https://alfin-efendy.github.io/lua-bundler/install.sh | sudo bash
+          lua-bundler --version
 
-      - name: Create README for release
+      - name: Build release bundle
         run: |
-          cat > release/README.md << 'EOF'
-          # EzUI Library - Release
+          mkdir -p release
+          lua-bundler --entry ./main.lua --output ./release/ez-rbx-ui.lua --release
 
-          Bundled, single-file build of EzUI (v2).
+      - name: Verify bundle syntax
+        run: lua5.1 -e "assert(loadfile('./release/ez-rbx-ui.lua')); print('bundle syntax ok')"
 
-          ## Quick Installation
-
-          ```lua
-          local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
-
-          local Window = EzUI:CreateWindow({
-              Title = "My UI",
-              Size = { Width = 560, Height = 420 },
-              Acrylic = true,
-          })
-
-          local tab = Window:AddTab({ Name = "Home", Icon = "home" }) -- Lucide icon names
-          tab:AddLabel("Welcome to EzUI!")
-          tab:AddToggle({ Text = "Enable", Flag = "enable", Default = false })
-          tab:AddButton({ Text = "Click Me", Callback = function() print("Hello!") end })
-
-          Window:ShowSuccess({ Title = "Ready!", Message = "EzUI is loaded." })
-          ```
-
-          For complete documentation, visit: https://github.com/alfin-efendy/ez-rbx-ui
-          EOF
-
-      - name: Create release info
-        run: |
-          cat > release/RELEASE_INFO.txt << EOF
-          EzUI Library Release
-          Generated: $(date)
-          Version: ${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}
-          Commit: ${GITHUB_SHA}
-          Branch: ${GITHUB_REF_NAME}
-
-          Files included:
-          - ez-rbx-ui.lua (Complete library)
-
-          Installation:
-          loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
-          EOF
-
-      - name: Create ZIP archive
-        run: |
-          cd release
-          zip -r ../ez-rbx-ui-release.zip .
-          cd ..
-          
-      - name: Get release version
-        id: get_version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          fi
-          
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          name: EzUI ${{ steps.get_version.outputs.version }}
-          body: |
-            # EzUI Library ${{ steps.get_version.outputs.version }}
-            
-            🎉 **New Release of EzUI - Modern Roblox UI Library**
-            
-            ## 📦 What's Included
-            - Complete bundled library (`ez-rbx-ui.lua`)
+          node-version: 20
+          cache: npm
 
-            ## 🚀 Quick Start
-            ```lua
-            local EzUI = loadstring(game:HttpGet('https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/ez-rbx-ui.lua'))()
-            ```
+      - name: Install dependencies
+        run: npm ci
 
-            ## ✨ Features
-            - 🎨 shadcn-inspired design, Fluent acrylic panel, Lucide icons
-            - 🧩 Full control set: toggle, slider, numberbox, select (multi), keybind, colorpicker, textbox, table, image, progressbar, player selector
-            - 🪟 Tab groups + full-text sidebar search, dialogs, draggable/resizable window, mobile floating toggle
-            - 🔔 Sonner-style toast notifications
-            - 💾 Flag-based config with auto-save/load + reset
-            - ⚡ Engine-driven flex layout + smooth tab/accordion transitions
-            
-            ## 📚 Documentation
-            Visit the [repository](https://github.com/alfin-efendy/ez-rbx-ui) for complete documentation and examples.
-            
-            ---
-            **Generated:** $(date)  
-            **Commit:** ${{ github.sha }}
-          files: |
-            ./release/ez-rbx-ui.lua
-            ./release/RELEASE_INFO.txt
-            ./ez-rbx-ui-release.zip
-          draft: false
-          prerelease: false
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
