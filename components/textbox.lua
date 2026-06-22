@@ -1,4 +1,5 @@
 -- Deps injected via Init(R).
+local TweenService = game:GetService("TweenService")
 local TextBox = {}
 local Create, DefaultTheme, Maid, Icons, Flag, Animate
 
@@ -204,6 +205,30 @@ function TextBox.new(opts)
     maid:Give(input:GetPropertyChangedSignal("Text"):Connect(sync))
   end
 
+  local spinner, spinTween
+  local function mkSpinner()
+    if spinner then return spinner end
+    spinner = Create("ImageLabel", { Name = "Spinner", BackgroundTransparency = 1, Visible = false,
+      Size = UDim2.new(0, 16, 0, 16), LayoutOrder = 40, Parent = box })
+    Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
+    themed[#themed + 1] = function() Icons.apply(spinner, "loader", theme.Colors.mutedForeground) end
+    return spinner
+  end
+  local function setLoading(b)
+    local s = mkSpinner()
+    s.Visible = b and true or false
+    if spinTween then spinTween:Cancel(); spinTween = nil end
+    if b then
+      spinTween = TweenService:Create(s,
+        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
+        { Rotation = 360 })
+      spinTween:Play()
+    else
+      s.Rotation = 0
+    end
+  end
+  if opts.Loading then setLoading(true) end
+
   if opts.Copyable then
     mkIconButton("Copy", "copy", "primary", 30, function()
       if setclipboard then pcall(setclipboard, real) end
@@ -256,6 +281,7 @@ function TextBox.new(opts)
   maid:Give(input.FocusLost:Connect(runValidate))
 
   if opts.AccentReg then maid:Give(opts.AccentReg(reTheme)) end
+  maid:Give(function() if spinTween then spinTween:Cancel(); spinTween = nil end end)
   maid:Give(root)
 
   -- ---- public api -----------------------------------------------------------
@@ -268,6 +294,7 @@ function TextBox.new(opts)
   api.SetDisabled = function(b) setDisabled(b) end
   api.SetInvalid = function(msg) setInvalid(msg) end
   api.SetValid = function() setValid() end
+  api.SetLoading = function(b) setLoading(b) end
   api.Destroy = function() maid:DoCleanup() end
   return api
 end
