@@ -35,6 +35,7 @@ function ColorPicker.new(opts)
   local color = opts.Default or Color3.fromRGB(255, 255, 255)
   local hsvH, hsvS, hsvV = rgbToHsv(color)
   local popover
+  local posConn -- closes the popover when the control scrolls
   local onChanged = opts.Callback
 
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
@@ -136,11 +137,15 @@ function ColorPicker.new(opts)
       if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragTarget = nil end
     end))
 
+    -- close on scroll: the screen-space popover would otherwise detach or float
+    -- outside the window once the control leaves the content viewport.
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() api.Close() end)
     Overlay.mount(popover)
     Overlay.trackPopover(api.Close)
     Animate.pop(popover, "base")
   end
   function api.Close()
+    if posConn then posConn:Disconnect(); posConn = nil end
     if popover then popover:Destroy(); popover = nil end
     Overlay.untrackPopover(api.Close)
   end
