@@ -9,6 +9,7 @@ local EzUI = require("../output/bundle")
 local window = EzUI:CreateWindow({
   Title = "EzUI Demo",
   Size = { Width = 600, Height = 440 },
+  Acrylic = true,
   ToggleKey = Enum.KeyCode.RightControl,
   FloatingToggle = true,
   Config = { Enabled = true, FileName = "EzUIDemo", AutoSave = true, AutoLoad = true },

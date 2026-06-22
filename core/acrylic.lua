@@ -15,7 +15,7 @@ function Acrylic.decorate(frame, theme, opts)
   frame.BackgroundColor3 = opts.base or theme.Colors.card
   frame.BackgroundTransparency = opts.solid and 0 or (opts.transparency or 0.12)
 
-  if not opts.noStroke and not frame:FindFirstChildOfClass("UIStroke") then
+  if not frame:FindFirstChildOfClass("UIStroke") then
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Transparency = 0.3, Parent = frame })
   end
 
@@ -33,6 +33,21 @@ function Acrylic.decorate(frame, theme, opts)
     end
   end
   return frame
+end
+
+-- Real frosted blur: a Lighting BlurEffect toggled with window visibility. Headless-safe
+-- (when Lighting is unavailable the BlurEffect is simply left unparented).
+function Acrylic.blur(opts)
+  opts = opts or {}
+  local target = opts.size or 18
+  local blur = Create("BlurEffect", { Name = "EzUIAcrylicBlur", Size = target, Enabled = true })
+  local ok, Lighting = pcall(function() return game:GetService("Lighting") end)
+  if ok and Lighting then blur.Parent = Lighting end
+  return {
+    Instance = blur,
+    SetEnabled = function(on) blur.Enabled = on and true or false; blur.Size = on and target or 0 end,
+    Destroy = function() pcall(function() blur:Destroy() end) end,
+  }
 end
 
 return Acrylic

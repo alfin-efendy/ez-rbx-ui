@@ -13,16 +13,13 @@ function Tab.new(opts)
   local maid = Maid.new()
   local order = 0
   local selected = false
-  -- selected tab sits on the chrome; one step lighter than chrome so it stays visible
-  -- (dark = surface on background; light = card/white on the surface-grey sidebar).
-  local function elevated() return (theme.Mode == "light") and theme.Colors.card or theme.Colors.surface end
 
   -- sidebar button
   local button = Create("TextButton", {
     Name = "TabButton",
     Text = "",
     AutoButtonColor = false,
-    BackgroundColor3 = elevated(),
+    BackgroundColor3 = theme.Colors.surface,
     BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, 34),
     LayoutOrder = opts.LayoutOrder or 0,
@@ -97,7 +94,7 @@ function Tab.new(opts)
     syncCanvas()
     Animate.to(content, "base", { GroupTransparency = 0, Position = UDim2.new(0, 0, 0, 0) })
     button.BackgroundTransparency = 0
-    Animate.to(button, "fast", { BackgroundColor3 = elevated() })
+    Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.foreground) end
   end
@@ -132,7 +129,7 @@ function Tab.new(opts)
     indicator.BackgroundColor3 = theme.Colors.primary
     if selected then
       label.TextColor3 = theme.Colors.foreground
-      Animate.to(button, "fast", { BackgroundColor3 = elevated() })
+      Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
       if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.foreground) end
     else
       label.TextColor3 = theme.Colors.mutedForeground

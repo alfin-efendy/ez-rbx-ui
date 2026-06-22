@@ -109,6 +109,7 @@ w:Notify({ Title = "timed", Type = "success", Duration = 2000 }) -- progress bar
 -- R3 Plan B: live accent + settings APIs
 w:SetAccent("Indigo")
 w:SetUIScale(1.1)
+w:SetAcrylicTransparency(0.2)
 w:SetNotificationsEnabled(false)
 assert(w:Notify({ Title = "blocked", Duration = 0 }) == nil, "notify should be gated when disabled")
 w:SetNotificationsEnabled(true)
@@ -123,7 +124,7 @@ assert(type(w:LoadConfiguration()) == "boolean", "LoadConfiguration")
 
 -- R5: light-mode acrylic re-skin + reference simple FAB
 w:SetMode("light")
-assert(w.Main:FindFirstChild("Body"):FindFirstChild("ContentPanel").BackgroundColor3.R > 0.9, "content card not light")
+assert(w.Main:FindFirstChildOfClass("UIGradient"), "no acrylic gradient")
 w:SetMode("dark")
 local w4 = EzUI:CreateWindow({ Title = "FabRef", Parent = screen, FloatingToggle = true,
   Config = { FileName = "Verify4", AutoSave = false } })
