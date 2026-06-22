@@ -1,4 +1,5 @@
 -- Deps injected via Init(R).
+local RunService = game:GetService("RunService")
 local NumberBox = {}
 local Create, DefaultTheme, Maid, Icons, Flag, Numfmt
 
@@ -81,8 +82,36 @@ function NumberBox.new(opts)
   local commit = Flag.bind(opts, clamp(opts.Default or 0), apply)
   local function set(n) commit(clamp(n)); if opts.Callback then opts.Callback(value) end end
 
-  maid:Give(minus.MouseButton1Click:Connect(function() if atMin then return end; set(value - step) end))
-  maid:Give(plus.MouseButton1Click:Connect(function() if atMax then return end; set(value + step) end))
+  local function holdRepeat(btn, stepFn, atBoundFn)
+    local conn, held
+    local function stop()
+      held = false
+      if conn then conn:Disconnect(); conn = nil end
+    end
+    maid:Give(btn.MouseButton1Down:Connect(function()
+      if atBoundFn() then return end
+      held = true
+      stepFn()                                  -- immediate first step
+      local elapsed, since = 0, 0
+      conn = RunService.Heartbeat:Connect(function(dt)
+        if not held then return end
+        elapsed = elapsed + dt
+        if elapsed < 0.35 then return end       -- initial hold delay
+        since = since + dt
+        local interval = math.max(0.03, 0.12 - (elapsed - 0.35) * 0.06)  -- accelerate
+        if since >= interval then
+          since = 0
+          if atBoundFn() then stop(); return end
+          stepFn()
+        end
+      end)
+    end))
+    maid:Give(btn.MouseButton1Up:Connect(stop))
+    maid:Give(btn.MouseLeave:Connect(stop))
+    maid:Give(stop)
+  end
+  holdRepeat(minus, function() set(value - step) end, function() return atMin end)
+  holdRepeat(plus, function() set(value + step) end, function() return atMax end)
   maid:Give(input.Focused:Connect(function() focused = true; input.Text = tostring(value) end))
   maid:Give(input.FocusLost:Connect(function()
     focused = false

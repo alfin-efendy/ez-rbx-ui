@@ -57,6 +57,18 @@ h.describe("numberbox", function()
     box.InputChanged:Fire({ UserInputType = h.roblox.Enum.UserInputType.MouseWheel, Position = { Z = -1 } })
     h.expect(nb.GetValue()).toBe(5)
   end)
+  h.it("press-and-hold repeats and stops on release", function()
+    local nb = NumberBox.new({ Parent = Create("Frame", {}), Text = "N", Default = 0, Min = 0, Max = 1000, Step = 1 })
+    local plus = nb.Frame:FindFirstChild("Box"):FindFirstChild("Plus")
+    plus.MouseButton1Down:Fire()
+    h.expect(nb.GetValue()).toBe(1)
+    for _ = 1, 50 do h.mock.stepHeartbeat(0.1) end
+    h.expect(nb.GetValue() > 1).toBeTruthy()
+    plus.MouseButton1Up:Fire()
+    local v = nb.GetValue()
+    for _ = 1, 10 do h.mock.stepHeartbeat(0.1) end
+    h.expect(nb.GetValue()).toBe(v)
+  end)
 end)
 
 h.run()
