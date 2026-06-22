@@ -166,6 +166,44 @@ function TextBox.new(opts)
   if opts.Suffix then mkAffix("Suffix", opts.Suffix, 4) end
   if opts.TrailingIcon then mkDecorIcon("TrailingIcon", opts.TrailingIcon, 5) end
 
+  local function mkTextButton(spec, order)
+    local bg, fg, line = btnPalette(theme, spec.Variant or "default")
+    local btn = Create("TextButton", { Name = "Button" .. order, AutoButtonColor = false,
+      BackgroundColor3 = bg, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 0, 22),
+      Text = spec.Text, TextColor3 = fg, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+      LayoutOrder = order, Parent = box, Create.corner(theme.Radius.sm),
+      Create.padding({ left = 8, right = 8 }) })
+    if line then Create("UIStroke", { Color = line, Thickness = 1, Parent = btn }) end
+    themed[#themed + 1] = function()
+      local b2, f2, l2 = btnPalette(theme, spec.Variant or "default")
+      btn.BackgroundColor3 = b2; btn.TextColor3 = f2
+      local s = btn:FindFirstChildOfClass("UIStroke"); if s and l2 then s.Color = l2 end
+    end
+    return btn
+  end
+  if opts.Buttons then
+    for i, spec in ipairs(opts.Buttons) do
+      local order = 5 + i
+      if spec.Icon then
+        mkIconButton("Button" .. i, spec.Icon, "primary", order,
+          spec.Callback and function() spec.Callback(real, api) end or nil)
+      else
+        local btn = mkTextButton(spec, order)
+        btn.Name = "Button" .. i
+        if spec.Callback then maid:Give(btn.MouseButton1Click:Connect(function() spec.Callback(real, api) end)) end
+      end
+    end
+  end
+  if opts.Clearable then
+    local clear = mkIconButton("Clear", "x", "muted", 29, function()
+      commit(""); if opts.Callback then opts.Callback(real, api) end
+      if input.CaptureFocus then input:CaptureFocus() end
+    end)
+    local function sync() clear.Visible = #real > 0 end
+    sync()
+    maid:Give(input:GetPropertyChangedSignal("Text"):Connect(sync))
+  end
+
   if opts.Copyable then
     mkIconButton("Copy", "copy", "primary", 30, function()
       if setclipboard then pcall(setclipboard, real) end
