@@ -29,9 +29,11 @@ home:AddToggle({ Text = "Auto Farm", Default = false,
     Callback = function(on) print("Auto Farm:", on) end })
 
 home:AddSlider({ Text = "Walk Speed", Min = 16, Max = 200, Default = 16, Step = 2,
-    Callback = function(v) game.Players.LocalPlayer.Character
-        and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-        and (game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v) end })
+    Callback = function(v)
+        local char = game.Players.LocalPlayer.Character
+        local hum  = char and char:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end })
 
 home:AddButton({ Text = "Run", Variant = "default", Icon = "play",
     Callback = function()
