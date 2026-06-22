@@ -15,6 +15,10 @@ return function(window, host)
     { Value = "Bow", Icon = "target", Desc = "Ranged" }, { Divider = true },
     { Value = "Shield", Icon = "shield", Desc = "Defense" } } })
   tab:AddSelectBox({ Text = "With description", Description = "Choose a difficulty.", Options = { "Easy", "Hard" }, Default = "Easy" })
+  tab:AddSection("Search + disabled")
+  -- long list -> search box appears automatically; flips up near the screen bottom
+  tab:AddSelectBox({ Text = "Country", Options = { "ID", "US", "JP", "DE", "FR", "BR", "IN" }, Default = "ID" })
+  tab:AddSelectBox({ Text = "Locked", Options = { "X", "Y" }, Default = "X", Disabled = true })
   tab:AddSection("Persistence (Flag)")
   tab:AddSelectBox({ Text = "Saved choice", Flag = "ex_select", Options = { "One", "Two", "Three" }, Default = "One" })
   tab:AddParagraph("Single, multi+search, per-item icon/desc/divider, AllowNone, dynamic SetOptions, and a Flag-bound select.")
