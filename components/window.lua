@@ -1,6 +1,5 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 local Window = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer
@@ -78,7 +77,7 @@ function Window.new(config)
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
-  local fab, fabFullSize, fabSnap, fabMaid, showFab, hideFab
+  local fab, fabScale, fabFullSize, fabSnap, fabMaid, showFab, hideFab
   local fabEnabled, autoHide
   local sidebarW = SIDEBAR_W
   local closed = false
@@ -548,6 +547,7 @@ function Window.new(config)
     fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundTransparency = 0,
       Visible = false, Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
     fab:SetAttribute("FabType", kind)
+    fabScale = Create("UIScale", { Scale = 1, Parent = fab })
     if kind == "square" then
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
@@ -649,6 +649,11 @@ function Window.new(config)
         if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
       end
     end))
+    local fabHover = false
+    fabMaid:Give(fab.MouseEnter:Connect(function() fabHover = true; Animate.to(fabScale, "fast", { Scale = 1.06 }) end))
+    fabMaid:Give(fab.MouseLeave:Connect(function() fabHover = false; Animate.to(fabScale, "fast", { Scale = 1 }) end))
+    fabMaid:Give(fab.MouseButton1Down:Connect(function() Animate.to(fabScale, "fast", { Scale = 0.92 }) end))
+    fabMaid:Give(fab.MouseButton1Up:Connect(function() Animate.springTo(fabScale, "base", { Scale = fabHover and 1.06 or 1 }) end))
     fabMaid:Give(fab)
     return fab
   end
@@ -657,20 +662,16 @@ function Window.new(config)
     if not fabEnabled then return end
     ensureFab()
     fab.Visible = true
-    local target = fabFullSize or fab.Size
-    fab.Size = UDim2.new(target.X.Scale, 0, target.Y.Scale, target.Y.Offset)
-    local tw = Animate.to(fab, 0.3, { Size = target }, Enum.EasingStyle.Quad)
-    -- only the slide-out tab re-docks on show; anchored circle/square stay where placed
-    tw.Completed:Connect(function() if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end end)
+    fabScale.Scale = 0.6
+    Animate.toThen(fabScale, "slow", { Scale = 1 }, function()
+      if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end
+    end, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
   end
   hideFab = function()
     if not fab or not fab.Visible then return end
-    local target = fabFullSize or fab.Size
-    -- connect BEFORE Play so the Completed handler runs even under the synchronous test mock
-    local tw = TweenService:Create(fab, Animate.info(0.3, Enum.EasingStyle.Quad),
-      { Size = UDim2.new(target.X.Scale, 0, target.Y.Scale, target.Y.Offset) })
-    tw.Completed:Connect(function() fab.Visible = false; fab.Size = target end)
-    tw:Play()
+    Animate.toThen(fabScale, "fast", { Scale = 0.6 }, function()
+      fab.Visible = false; fabScale.Scale = 1
+    end)
   end
 
   function api:SetFloatingToggle(opts)
