@@ -115,6 +115,8 @@ function Window.new(config)
   local transp = type(config.Transparency) == "number" and config.Transparency or 0.12
   Acrylic.decorate(main, theme, { transparency = transp,
     base = theme.Colors.background, gradientTop = theme.Colors.card, gradientBottom = theme.Colors.background })
+  local winScale = Create("UIScale", { Scale = 1, Parent = main })
+  local userScale = 1
 
   -- title bar (grows to fit a subtitle and/or image)
   local resolvedTitleImg = Asset.image(config.Image)
@@ -384,11 +386,16 @@ function Window.new(config)
   function api:Show()
     if closed then return end
     visible = true; main.Visible = true
+    winScale.Scale = userScale * 0.92
+    Animate.springTo(winScale, "base", { Scale = userScale })
     if autoHide and hideFab then hideFab() end
   end
   function api:Hide()
     if closed then return end
-    visible = false; main.Visible = false
+    visible = false
+    Animate.toThen(winScale, "base", { Scale = userScale * 0.92 }, function()
+      if not visible then main.Visible = false; winScale.Scale = userScale end
+    end)
     if showFab then showFab() end
   end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
@@ -407,10 +414,9 @@ function Window.new(config)
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetTransparency(n) main.BackgroundTransparency = n; return n end
   function api:SetToggleKey(k) toggleKey = k; return k end
-  local uiScale
   function api:SetUIScale(n)
-    if not uiScale then uiScale = Instance.new("UIScale"); uiScale.Parent = main end
-    uiScale.Scale = n
+    userScale = n
+    winScale.Scale = n
     return n
   end
   function api:ShowSuccess(o) o = o or {}; o.Type = "success"; return api:Notify(o) end
@@ -784,6 +790,12 @@ function Window.new(config)
   end
   function api:SetFloatingToggleVisible(b) if b then showFab() else hideFab() end end
 
+  -- entrance: scale-pop + background fade-in
+  winScale.Scale = userScale * 0.9
+  main.BackgroundTransparency = 1
+  Animate.springTo(winScale, "slow", { Scale = userScale })
+  Animate.to(main, "slow", { BackgroundTransparency = transp })
+
   maid:Give(gui)
 
   function api:SetCloseCallback(fn) closeCallback = fn end
@@ -792,14 +804,16 @@ function Window.new(config)
     closed = true
     visible = false
     Animate.to(main, "fast", { BackgroundTransparency = 1 })
-    if config.OnClose then pcall(config.OnClose) end
-    if closeCallback then pcall(closeCallback) end
-    if cfg then pcall(function() cfg:Save() end) end
-    Overlay.closeAll()
-    if Notif then Notif.clearAll() end
-    maid:DoCleanup()       -- disconnects EVERY connection (drag, resize, toggle-key, close, ...)
-    gui:Destroy()
-    Overlay.reset()
+    Animate.toThen(winScale, "fast", { Scale = userScale * 0.9 }, function()
+      if config.OnClose then pcall(config.OnClose) end
+      if closeCallback then pcall(closeCallback) end
+      if cfg then pcall(function() cfg:Save() end) end
+      Overlay.closeAll()
+      if Notif then Notif.clearAll() end
+      maid:DoCleanup()       -- disconnects EVERY connection (drag, resize, toggle-key, close, ...)
+      gui:Destroy()
+      Overlay.reset()
+    end, Enum.EasingStyle.Back, Enum.EasingDirection.In)
   end
   function api.Destroy() api:Close() end
 

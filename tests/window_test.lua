@@ -402,6 +402,20 @@ h.describe("window", function()
     h.expect(br.Position.X.Scale).toBe(1); h.expect(br.Position.X.Offset).toBe(-60)        -- 44 + 16 margin
     h.expect(br.Position.Y.Scale).toBe(1); h.expect(br.Position.Y.Offset).toBe(-60)
   end)
+  h.it("entrance leaves the window at full scale and target transparency; Close fades then tears down", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local fired = {}
+    local w = R.Window.new({ Title = "C", Parent = screen, Transparency = 0.2, OnClose = function() fired.c = true end })
+    local sc = w.Main:FindFirstChildOfClass("UIScale")
+    h.expect(sc.Scale).toBe(1)                       -- entrance settled to full scale
+    h.expect(w.Main.BackgroundTransparency).toBe(0.2) -- faded to the configured transparency
+    w:SetUIScale(1.5)
+    h.expect(w.Main:FindFirstChildOfClass("UIScale").Scale).toBe(1.5) -- still one shared UIScale
+    local gui = w.Gui
+    w:Close()
+    h.expect(fired.c).toBeTruthy()
+    h.expect(gui._destroyed).toBeTruthy()            -- destroyed AFTER the close tween completes
+  end)
   h.it("a single sliding active indicator lives in the body and shows on the selected tab", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
