@@ -23,9 +23,13 @@ function Slider.new(opts)
   end
 
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+  -- symmetric vertical padding so the title/track/handle aren't flush against the row edges;
+  -- grow the row height by 2*padY so the inner layout (title at top, track anchored to the
+  -- inner bottom) keeps its relative geometry and simply gains breathing room top and bottom.
+  local padY = theme.Spacing.inputY
   local root = Create("Frame", { Name = "SliderRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
-    Size = UDim2.new(1, 0, 0, opts.Text and (hasDesc and 62 or 46) or 28), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
-    Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }) })
+    Size = UDim2.new(1, 0, 0, (opts.Text and (hasDesc and 62 or 46) or 28) + padY * 2), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Create.corner(theme.Radius.md), Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX, top = padY, bottom = padY }) })
   local valueLabel
   if opts.Text then
     Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,

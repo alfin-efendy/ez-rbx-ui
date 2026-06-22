@@ -216,7 +216,8 @@ function Window.new(config)
     Name = "Sidebar",
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
-    ScrollBarThickness = 0,
+    ScrollBarThickness = 3,
+    ScrollBarImageColor3 = theme.Colors.border,
     Position = UDim2.new(0, 0, 0, 36),
     Size = UDim2.new(0, sidebarW, 1, -36),
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -281,14 +282,35 @@ function Window.new(config)
     Parent = body, Create.corner(2),
   })
   local activeTabButton
-  local function moveIndicatorTo(btn)
+  local function moveIndicatorTo(btn, instant)
     activeTabButton = btn
     if not btn or btn.Visible == false then activeIndicator.Visible = false; return end
-    activeIndicator.Visible = true
     local bp, sp = btn.AbsolutePosition, body.AbsolutePosition
     local by = (bp and sp and (bp.Y - sp.Y)) or 0
     local bh = (btn.AbsoluteSize and btn.AbsoluteSize.Y) or 34
-    Animate.springTo(activeIndicator, "base", { Position = UDim2.new(0, 2, 0, by + bh / 2 - 9) })
+    -- Clip to the sidebar's visible vertical band (body-relative): hide when the selected
+    -- button is scrolled out of view so the indicator never drifts over the search box or
+    -- off the window edge.
+    local sTop = (sidebar.AbsolutePosition and sp and (sidebar.AbsolutePosition.Y - sp.Y)) or 0
+    local sBot = sTop + ((sidebar.AbsoluteSize and sidebar.AbsoluteSize.Y) or 0)
+    local center = by + bh / 2
+    if sBot > sTop and (center < sTop or center > sBot) then activeIndicator.Visible = false; return end
+    activeIndicator.Visible = true
+    local target = UDim2.new(0, 2, 0, by + bh / 2 - 9)
+    if instant then activeIndicator.Position = target else Animate.springTo(activeIndicator, "base", { Position = target }) end
+  end
+  -- Keep the window-owned indicator glued to the selected button: its Y is a body-relative
+  -- offset from the button's AbsolutePosition, so recompute it (instantly, no spring) whenever
+  -- the button moves on screen -- sidebar scroll (CanvasPosition), sidebar/body resize
+  -- (AbsoluteSize), or a list reflow (AbsoluteContentSize). Without these it desyncs on scroll
+  -- or resize and can drift right out of the window.
+  local function reanchorIndicator() if activeTabButton then moveIndicatorTo(activeTabButton, true) end end
+  maid:Give(sidebar:GetPropertyChangedSignal("CanvasPosition"):Connect(reanchorIndicator))
+  maid:Give(sidebar:GetPropertyChangedSignal("AbsoluteSize"):Connect(reanchorIndicator))
+  maid:Give(body:GetPropertyChangedSignal("AbsoluteSize"):Connect(reanchorIndicator))
+  do
+    local sbLayout = sidebar:FindFirstChildOfClass("UIListLayout")
+    if sbLayout then maid:Give(sbLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(reanchorIndicator)) end
   end
 
   Overlay.get(gui)
@@ -418,7 +440,7 @@ function Window.new(config)
     local resolved = Asset.image(v)
     if img and resolved then img.Image = resolved end
   end
-  function api:Dialog(o) o = o or {}; o.Theme = theme; return DialogMod.open(o) end
+  function api:Dialog(o) o = o or {}; o.Theme = theme; o.Window = api; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
   function api:SetTransparency(n) main.BackgroundTransparency = n; return n end
@@ -648,7 +670,11 @@ function Window.new(config)
       fabMaid:Give(UserInputService.InputEnded:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
           dragging = false
-          if moved and fabSnap then fabSnap() end
+          -- Always magnet to the nearest edge on release, based on the knob's current
+          -- position -- not on whether/how fast it moved. `moved` only gates the click-vs-drag
+          -- distinction in the MouseButton1Click handler; gating the snap on it made slow drags
+          -- (where the click fires first and clears `moved`) skip the magnet.
+          if fabSnap then fabSnap() end
         end
       end))
     end

@@ -42,7 +42,17 @@ function Dialog.open(opts)
     maid:Give(btn)
   end
   maid:Give(dim)
-  Overlay.mount(dim)
+  -- Scope the backdrop to the owning window when one is given (its api exposes .Main), so the
+  -- scrim covers only the window frame (rounded to match it). Standalone dialogs (no Window)
+  -- fall back to the global screen overlay, shared with dropdowns/colorpickers that want the
+  -- full screen.
+  local winFrame = opts.Window and opts.Window.Main
+  if winFrame then
+    Create.corner(theme.Radius.window).Parent = dim
+    dim.Parent = winFrame
+  else
+    Overlay.mount(dim)
+  end
   Animate.pop(card, "base") -- pop the card in
   return handle
 end

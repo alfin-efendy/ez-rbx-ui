@@ -10,7 +10,7 @@ local function palette(theme, variant)
   if variant == "destructive" then return theme.Colors.destructive, theme.Colors.primaryForeground, nil end
   if variant == "secondary" then return theme.Colors.surface, theme.Colors.foreground, nil end
   if variant == "outline" then return theme.Colors.card, theme.Colors.foreground, theme.Colors.border end
-  if variant == "ghost" then return theme.Colors.card, theme.Colors.foreground, nil end
+  if variant == "ghost" then return theme.Colors.surface, theme.Colors.foreground, nil end
   return theme.Colors.primary, theme.Colors.primaryForeground, nil -- default
 end
 
@@ -43,8 +43,11 @@ function Button.new(opts)
 
   local hovering = false
   local bgNormal = transparent and 1 or 0
-  local bgHover = transparent and 0.92 or 0.12
-  local bgPressed = transparent and 0.85 or 0.2
+  -- ghost rests fully transparent; on hover/press it reveals a clearly-visible muted 'surface'
+  -- wash (its palette bg is surface, not card -- card matched the panel behind it and looked
+  -- dead). Kept lighter than 'secondary' (a full opaque surface fill) so it still reads as ghost.
+  local bgHover = transparent and 0.4 or 0.12
+  local bgPressed = transparent and 0.25 or 0.2
 
   local hasIcon = opts.Icon ~= nil
   if hasIcon then

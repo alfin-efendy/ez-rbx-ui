@@ -63,7 +63,7 @@ h.describe("theme", function()
     local R = h.loadLib()
     local sl = R.Slider.new({ Parent = R.Create("Frame", {}), Text = "Vol", Min = 0, Max = 100, Default = 10 })
     h.expect(sl.Frame:FindFirstChild("Track").Position.Y.Offset).toBe(-16)
-    h.expect(sl.Frame.Size.Y.Offset).toBe(46)
+    h.expect(sl.Frame.Size.Y.Offset).toBe(62)  -- 46 inner + 2*inputY(8) vertical breathing room
   end)
   h.it("slider row is opaque with a bordered track; selectbox has a bordered Field", function()
     local R = h.loadLib(); local p = R.Create("Frame", {})

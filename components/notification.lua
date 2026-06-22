@@ -63,7 +63,13 @@ function Notification.relayout()
     local scale, transp, visible, yoff
     if expanded then
       visible, scale, transp, yoff = true, 1, 0, y
-      local h = (e.frame.AbsoluteSize and e.frame.AbsoluteSize.Y) or 60
+      -- Use the toast's intrinsic content height (UIListLayout content + its all=10 padding),
+      -- which is scale-independent -- so expanded gaps stay uniform even while the per-toast
+      -- collapse scale is still animating to 1. Reading AbsoluteSize mid-animation gave the
+      -- scaled (smaller) height and made the gaps jitter/overlap on hover.
+      local lay = e.frame:FindFirstChildOfClass("UIListLayout")
+      local acs = lay and lay.AbsoluteContentSize
+      local h = (acs and acs.Y and acs.Y > 0 and acs.Y + 20) or (e.frame.AbsoluteSize and e.frame.AbsoluteSize.Y) or 60
       y = y + h + GAP
     else
       visible = i < 3
@@ -97,6 +103,14 @@ function Notification.show(opts)
   })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = toast })
   local scale = Instance.new("UIScale"); scale.Parent = toast
+  -- While the stack is expanded (hovered), expanded stacking sums each toast's real height, but
+  -- the per-toast collapse scale is still animating to 1 the moment we relayout -- so the first
+  -- pass measures scaled (smaller) heights and the gaps come out uneven. Re-flow as each toast's
+  -- rendered size settles to keep the inter-toast gaps uniform. (Disconnected when the toast is
+  -- Destroyed; in collapsed mode relayout uses fixed offsets, so this is a no-op then.)
+  toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    if expanded then Notification.relayout() end
+  end)
 
   local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })

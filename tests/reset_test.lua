@@ -17,8 +17,8 @@ h.describe("reset config", function()
     local w = R.Window.new({ Title = "W", Parent = gui, Config = { FileName = "RC2", AutoSave = false } })
     w:AddTab({ Name = "Home" })
     w:ResetConfiguration()
-    local root = R.Overlay.get(gui); local hasDialog = false
-    for _, c in ipairs(root:GetChildren()) do if c.Name == "Dialog" then hasDialog = true end end
+    local hasDialog = false  -- window dialog scrim is now scoped to the window frame, not the global overlay
+    for _, c in ipairs(w.Main:GetChildren()) do if c.Name == "Dialog" then hasDialog = true end end
     h.expect(hasDialog).toBeTruthy()
   end)
 end)

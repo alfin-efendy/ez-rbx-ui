@@ -19,6 +19,16 @@ h.describe("button", function()
     b.Frame.MouseButton1Click:Fire()
     h.expect(reset).toBe(1)
   end)
+  h.it("ghost variant is invisible at rest but reveals a surface wash on hover", function()
+    local b = Button.new({ Parent = Create("Frame", {}), Text = "Ghost", Variant = "ghost" })
+    local surface = b.Frame:FindFirstChild("Surface")
+    h.expect(surface.BackgroundColor3.R8).toBe(R.Theme.Colors.surface.R8)  -- muted wash, not card (was invisible)
+    h.expect(surface.BackgroundTransparency).toBe(1)                       -- fully transparent at rest
+    b.Frame.MouseEnter:Fire()
+    h.expect(surface.BackgroundTransparency).toBe(0.4)                     -- visible hover fill
+    b.Frame.MouseLeave:Fire()
+    h.expect(surface.BackgroundTransparency).toBe(1)                       -- back to invisible
+  end)
   h.it("presses in on MouseButton1Down and springs back on MouseButton1Up", function()
     local b = Button.new({ Parent = Create("Frame", {}), Text = "Go" })
     -- the press UIScale lives on the inner Surface (not the laid-out Button) so siblings never reflow
