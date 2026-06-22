@@ -94,6 +94,14 @@ function SelectBox.new(opts)
     valueLabel.Size = UDim2.new(1, -(left + right), 1, 0)
   end
 
+  local disabled = false
+  local function setDisabled(b)
+    disabled = b and true or false
+    valueLabel.TextColor3 = disabled and theme.Colors.mutedForeground or theme.Colors.foreground
+    Icons.apply(caret, "chevron-down", disabled and theme.Colors.mutedForeground or theme.Colors.primary)
+    field.BackgroundTransparency = disabled and 0.4 or 0
+  end
+
   local function refresh()
     local ic = selectedIcon()
     if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground); fieldIcon.Visible = true
@@ -126,6 +134,7 @@ function SelectBox.new(opts)
     end
     refresh()
   end
+  function api.SetDisabled(b) setDisabled(b) end
 
   local function pick(opt)
     if multi then
@@ -233,10 +242,14 @@ function SelectBox.new(opts)
 
   function api.Destroy() api.Close(); maid:DoCleanup() end
 
-  maid:Give(btn.MouseButton1Click:Connect(function() if dropdown then api.Close() else api.Open() end end))
+  maid:Give(btn.MouseButton1Click:Connect(function()
+    if disabled then return end
+    if dropdown then api.Close() else api.Open() end
+  end))
   maid:Give(clearBtn.MouseButton1Click:Connect(function() if multi then api.SetValue({}) end end))
   maid:Give(btn)
   maid:Give(function() api.Close() end)
+  if opts.Disabled then setDisabled(true) end
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
     btn.BackgroundColor3 = theme.Colors.surface
@@ -248,6 +261,7 @@ function SelectBox.new(opts)
     Icons.apply(caret, "chevron-down", theme.Colors.primary)
     Icons.apply(clearBtn, "x", theme.Colors.mutedForeground)
     if fieldIcon.Visible then local ic = selectedIcon(); if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground) end end
+    setDisabled(disabled)
   end)) end
 
   return api

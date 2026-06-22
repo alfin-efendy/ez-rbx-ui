@@ -86,6 +86,20 @@ h.describe("selectbox", function()
     local field = sb.Frame:FindFirstChild("Field")
     h.expect(field:FindFirstChild("Value").Text).toBe("Bow")
   end)
+  h.it("Disabled blocks opening and mutes the field", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A", Disabled = true })
+    sb.Frame.MouseButton1Click:Fire()
+    local function dropdownOpen()
+      for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then return true end end
+      return false
+    end
+    h.expect(dropdownOpen()).toBe(false)
+    h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Value").TextColor3).toBe(R.Theme.Colors.mutedForeground)
+    sb.SetDisabled(false)
+    sb.Frame.MouseButton1Click:Fire()
+    h.expect(dropdownOpen()).toBe(true)
+  end)
   h.it("multi shows truncated 'A, B +N' with a clear button", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B", "C", "D" },
       Multi = true, Default = { "A", "B", "C", "D" } })
