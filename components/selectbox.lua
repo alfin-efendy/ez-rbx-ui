@@ -33,6 +33,7 @@ function SelectBox.new(opts)
   local value = multi and (opts.Default or {}) or (opts.Default ~= nil and opts.Default or firstValue())
   local dropdown
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
+  local buildDropdown, rebuild
   local onChanged = opts.Callback
 
   local function labelFor(v)
@@ -148,6 +149,7 @@ function SelectBox.new(opts)
       value = opts.AllowNone and nil or firstValue()
     end
     refresh()
+    if dropdown then rebuild() end
   end
   function api.SetDisabled(b) setDisabled(b) end
 
@@ -161,7 +163,7 @@ function SelectBox.new(opts)
         nv[#nv + 1] = opt
       end
       api.SetValue(nv)
-      if dropdown then api.Close(); api.Open() end -- rebuild to re-tint
+      if dropdown then rebuild() end -- re-render to re-tint (no OnOpen)
     else
       if opts.AllowNone and value == opt then
         api.SetValue(nil)
@@ -181,8 +183,7 @@ function SelectBox.new(opts)
     end
   end
 
-  function api.Open()
-    if dropdown then return end
+  function buildDropdown()
     optButtons = {}
     local searchable
     if opts.Searchable ~= nil then searchable = opts.Searchable == true
@@ -259,6 +260,16 @@ function SelectBox.new(opts)
     end
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
+  end
+
+  function api.Open()
+    if dropdown then return end
+    if opts.OnOpen then opts.OnOpen(api) end
+    buildDropdown()
+  end
+  function rebuild()
+    if dropdown then api.Close() end
+    buildDropdown()
   end
 
   function api.Close()

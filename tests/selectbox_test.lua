@@ -153,6 +153,26 @@ h.describe("selectbox", function()
       Options = { { Value = "Bow", Icon = "target" }, { Value = "Shield", Icon = "shield" } } })
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("FieldIcon").Visible).toBe(true)
   end)
+  h.it("OnOpen fires on open and can refresh options", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local calls = 0
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A" },
+      OnOpen = function(api) calls = calls + 1; api.SetOptions({ "X", "Y" }) end })
+    sb.Open()
+    h.expect(calls).toBe(1)
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local n = 0; for _, o in ipairs(dd:GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    h.expect(n).toBe(2)
+  end)
+  h.it("SetOptions rebuilds an open dropdown", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A" })
+    sb.Open()
+    sb.SetOptions({ "C", "D", "E" })
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local n = 0; for _, o in ipairs(dd:GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    h.expect(n).toBe(3)
+  end)
   h.it("option Text shows as label while Value is stored and persisted", function()
     local cfg = Config.new({ FileName = "SBVL", AutoSave = false })
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Text = "Weapon", Flag = "wid", Config = cfg,
