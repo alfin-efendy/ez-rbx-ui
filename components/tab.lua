@@ -66,6 +66,8 @@ function Tab.new(opts)
   -- AutomaticCanvasSize is unreliable here because the CanvasGroup starts hidden (measured 0).
   local contentLayout = content:FindFirstChildOfClass("UIListLayout")
   local contentPad = theme.Spacing.pad
+  -- visual-only settle for the tab-switch transition (does not affect layout once settled at 1)
+  local contentScale = Create("UIScale", { Scale = 1, Parent = content })
   local function syncCanvas()
     local sf = content.Parent
     if selected and sf then
@@ -81,12 +83,14 @@ function Tab.new(opts)
 
   function api:Select()
     selected = true
-    -- slide up into place (visible tab-switch transition)
-    content.Position = UDim2.new(0, 0, 0, 12)
+    -- materialize into place: gentle scale-settle + short slide, smooth (Quint Out), no overshoot
+    content.Position = UDim2.new(0, 0, 0, 8)
+    contentScale.Scale = 0.98
     content.Visible = true
     if content.Parent then content.Parent.CanvasPosition = Vector2.new(0, 0) end
     syncCanvas()
-    Animate.springTo(content, "slow", { Position = UDim2.new(0, 0, 0, 0) })
+    Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, 0) }, Animate.EASING.smooth)
+    Animate.to(contentScale, "base", { Scale = 1 }, Animate.EASING.smooth)
     button.BackgroundTransparency = 0
     Animate.to(button, "fast", { BackgroundColor3 = theme.Colors.surface })
     label.TextColor3 = theme.Colors.foreground
@@ -95,9 +99,11 @@ function Tab.new(opts)
 
   function api:Deselect()
     selected = false
-    Animate.toThen(content, "base", { Position = UDim2.new(0, 0, 0, -8) }, function()
-      if not selected then content.Visible = false end
-    end)
+    -- cut instantly so the outgoing content never overlaps the incoming slide (the old
+    -- competing slide looked janky); reset transform so the next Select starts clean
+    content.Visible = false
+    content.Position = UDim2.new(0, 0, 0, 0)
+    contentScale.Scale = 1
     button.BackgroundTransparency = 1
     label.TextColor3 = theme.Colors.mutedForeground
     if opts.Icon then Icons.apply(icon, opts.Icon, theme.Colors.mutedForeground) end
