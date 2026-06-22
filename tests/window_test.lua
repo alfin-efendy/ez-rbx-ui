@@ -144,7 +144,7 @@ h.describe("window", function()
   h.it("floating toggle honors Size and Position overrides", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "circle" } })
-    w:SetFloatingToggle({ Type = "circle", Size = h.roblox.UDim2.new(0, 150, 0, 40), Position = { X = 30, Y = -80 } })
+    w:SetFloatingToggle({ Type = "circle", Size = h.roblox.UDim2.new(0, 150, 0, 40), Position = h.roblox.UDim2.new(0, 30, 1, -80) })
     local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
     h.expect(fab.Size.X.Offset).toBe(150)
     h.expect(fab.Size.Y.Offset).toBe(40)
@@ -379,6 +379,28 @@ h.describe("window", function()
     local bar = w.Main:FindFirstChild("TitleBar")
     w:SetImage("rbxassetid://99")
     h.expect(bar:FindFirstChild("TitleImage").Image).toBe("rbxassetid://99")
+  end)
+  h.it("FloatingToggle simple Position docks as a tab (default MidLeft, MidRight on the right)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local function lastFab() local r; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then r = c end end return r end
+    R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "simple" } })
+    local def = lastFab()
+    h.expect(def.Position.X.Offset).toBe(-15); h.expect(def.Position.Y.Scale).toBe(0.5)  -- default MidLeft tab
+    R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "simple", Position = "MidRight" } })
+    local mr = lastFab()
+    h.expect(mr.Position.X.Scale).toBe(1); h.expect(mr.Position.Y.Scale).toBe(0.5)        -- right-edge tab
+  end)
+  h.it("FloatingToggle circle Position anchors fully visible (default TopLeft, BottomRight)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local function lastFab() local r; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then r = c end end return r end
+    R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "circle" } })
+    local def = lastFab()
+    h.expect(def.Position.X.Scale).toBe(0); h.expect(def.Position.X.Offset).toBe(16)       -- default TopLeft, fully visible
+    h.expect(def.Position.Y.Scale).toBe(0); h.expect(def.Position.Y.Offset).toBe(16)
+    R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "circle", Position = "BottomRight" } })
+    local br = lastFab()
+    h.expect(br.Position.X.Scale).toBe(1); h.expect(br.Position.X.Offset).toBe(-60)        -- 44 + 16 margin
+    h.expect(br.Position.Y.Scale).toBe(1); h.expect(br.Position.Y.Offset).toBe(-60)
   end)
 end)
 

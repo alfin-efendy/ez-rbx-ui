@@ -18,7 +18,26 @@ local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
 local VP_MARGIN = 0.92                  -- never exceed 92% of the viewport on either axis
 local COVERAGE_DEF = 0.6                -- default fraction of viewport height the window targets
-local FALLBACK_VP = { X = 1280, Y = 720 } -- headless / no CurrentCamera
+local FALLBACK_VP = { X = 1280, Y = 720 }
+local FAB_MARGIN = 16
+local FAB_ANCHORS = { TopLeft = true, MidLeft = true, BottomLeft = true, TopRight = true, MidRight = true, BottomRight = true }
+-- Map a named anchor + the FAB kind/size to a Position UDim2.
+-- simple = a docked edge tab (left peeks at -15; right starts near the edge so the on-show
+-- magnet settles it); circle/square = fully visible at the anchor with a margin. Vertical
+-- band (Top/Mid/Bottom) is the same for both.
+local function fabAnchorPos(name, kind, w, h)
+  local yScale, yOff
+  if name:find("Top") then yScale, yOff = 0, FAB_MARGIN
+  elseif name:find("Mid") then yScale, yOff = 0.5, -h / 2
+  else yScale, yOff = 1, -(h + FAB_MARGIN) end
+  local isLeft = name:find("Left") ~= nil
+  if kind == "simple" then
+    if isLeft then return UDim2.new(0, -15, yScale, yOff) end
+    return UDim2.new(1, -(w - 15), yScale, yOff)
+  end
+  if isLeft then return UDim2.new(0, FAB_MARGIN, yScale, yOff) end
+  return UDim2.new(1, -(w + FAB_MARGIN), yScale, yOff)
+end -- headless / no CurrentCamera
 
 function Window.new(config)
   config = config or {}
@@ -531,16 +550,22 @@ function Window.new(config)
         Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
       Icons.apply(chev, "chevron-right", theme.Colors.primary)
     end
-    -- Size/Position overrides (accept UDim2 or {Width,Height}/{X,Y} offset tables)
+    -- Size override (accept UDim2 or {Width,Height} table)
     if fabOpts.Size then
       if type(fabOpts.Size) == "table" and type(fabOpts.Size.Width) == "number" then
         fab.Size = UDim2.new(0, fabOpts.Size.Width, 0, fabOpts.Size.Height or 44)
       else fab.Size = fabOpts.Size end
     end
-    if fabOpts.Position then
-      if type(fabOpts.Position) == "table" and type(fabOpts.Position.X) == "number" then
-        fab.Position = UDim2.new(0, fabOpts.Position.X, 1, fabOpts.Position.Y or -60)
-      else fab.Position = fabOpts.Position end
+    -- Position: a named anchor ("TopLeft".."BottomRight"), a raw UDim2, or default per kind
+    local defaultAnchor = (kind == "simple") and "MidLeft" or "TopLeft"
+    local pos = fabOpts.Position
+    if type(pos) == "string" then
+      if not FAB_ANCHORS[pos] then pos = defaultAnchor end
+      fab.Position = fabAnchorPos(pos, kind, fab.Size.X.Offset, fab.Size.Y.Offset)
+    elseif pos ~= nil then
+      fab.Position = pos -- raw UDim2
+    else
+      fab.Position = fabAnchorPos(defaultAnchor, kind, fab.Size.X.Offset, fab.Size.Y.Offset)
     end
     fabFullSize = fab.Size
 
@@ -549,13 +574,22 @@ function Window.new(config)
       if not vp or vp.X <= 0 then return end
       local w2 = (fabFullSize and fabFullSize.X.Offset) or 50
       local cx = fab.Position.X.Scale * vp.X + fab.Position.X.Offset + w2 / 2
-      local peek = 15
-      if cx < vp.X / 2 then
-        chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
-        Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
-      else
-        chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
-        Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, fab.Position.Y.Scale, fab.Position.Y.Offset) }, Enum.EasingStyle.Quad)
+      local ys, yo = fab.Position.Y.Scale, fab.Position.Y.Offset
+      if kind == "simple" then -- slide-out tab: dock to the edge, peeking ~15px
+        local peek = 15
+        if cx < vp.X / 2 then
+          chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, ys, yo) }, Enum.EasingStyle.Quad)
+        else
+          chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, ys, yo) }, Enum.EasingStyle.Quad)
+        end
+      else -- circle/square: snap to the nearest edge but stay fully visible (with a margin)
+        if cx < vp.X / 2 then
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, FAB_MARGIN, ys, yo) }, Enum.EasingStyle.Quad)
+        else
+          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 - FAB_MARGIN, ys, yo) }, Enum.EasingStyle.Quad)
+        end
       end
     end
 
@@ -605,7 +639,8 @@ function Window.new(config)
     local target = fabFullSize or fab.Size
     fab.Size = UDim2.new(target.X.Scale, 0, target.Y.Scale, target.Y.Offset)
     local tw = Animate.to(fab, 0.3, { Size = target }, Enum.EasingStyle.Quad)
-    tw.Completed:Connect(function() if fabSnap then fabSnap() end end)
+    -- only the slide-out tab re-docks on show; anchored circle/square stay where placed
+    tw.Completed:Connect(function() if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end end)
   end
   hideFab = function()
     if not fab or not fab.Visible then return end

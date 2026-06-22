@@ -90,7 +90,7 @@ assert(accCard.Container:FindFirstChild("Divider"), "no accordion divider")
 assert(w.Main:FindFirstChild("Body"):FindFirstChild("SidebarHandle"), "no sidebar handle")
 local w3 = EzUI:CreateWindow({ Title = "Pill", Parent = screen, FloatingToggle = true,
   Config = { FileName = "Verify3", AutoSave = false } })
-w3:SetFloatingToggle({ Type = "simple", Size = { Width = 140, Height = 38 }, Position = { X = 20, Y = -70 } })
+w3:SetFloatingToggle({ Type = "simple", Size = { Width = 140, Height = 38 }, Position = "BottomLeft" })
 
 w:Minimize() -- hides window + shows floating toggle
 -- R3 Plan C: lock, advanced dropdown, profiles, tag, card, toast bar

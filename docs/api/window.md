@@ -147,7 +147,7 @@ The `FloatingToggle` config key accepts a table (or `false` to disable the butto
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) docks a chevron tab at the screen edge; `"circle"` is an accent-colored round button; `"square"` is a rounded surface tile |
 | `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon) |
-| `Position` | `{ X, Y }` \| `UDim2` | Button position. With the table form, `X` is pixels from the left edge and `Y` is pixels from the bottom edge (use a negative `Y` to move it up) |
+| `Position` | `string` \| `UDim2` | Anchor — `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. For `simple` it sets which edge the tab docks to (and its height); for `circle`/`square` it places the button fully visible at that anchor. Default: `simple` → `MidLeft`, others → `TopLeft` |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |
 | `AutoHide` | `bool` | `true` (default) shows the button only while the window is hidden; `false` keeps it visible at all times (a persistent open/close toggle) |
@@ -157,7 +157,7 @@ EzUI:CreateWindow({
     FloatingToggle = {
         Type = "circle",
         Image = "rbxassetid://123",
-        Position = { X = 20, Y = -90 },
+        Position = "BottomRight",
         Size = { Width = 56, Height = 56 },
         AutoHide = false,
     },

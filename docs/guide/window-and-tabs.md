@@ -70,7 +70,7 @@ local Window = EzUI:CreateWindow({
     FloatingToggle = {
         Type = "circle",                -- "simple" (default) | "circle" | "square"
         Image = "rbxassetid://123",     -- logo for circle/square (rbxassetid:// or http(s)://)
-        Position = { X = 20, Y = -90 }, -- X from the left edge, Y from the bottom edge
+        Position = "BottomRight",       -- TopLeft/MidLeft/BottomLeft/TopRight/MidRight/BottomRight, or a UDim2
         Size = { Width = 56, Height = 56 },
         Draggable = true,               -- drag, then it magnet-snaps to the nearest screen edge
         AutoHide = true,                -- true: visible only while hidden; false: always visible
@@ -84,7 +84,7 @@ local Window = EzUI:CreateWindow({
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) — a chevron tab that docks at the screen edge; `"circle"` — an accent-colored round button; `"square"` — a rounded surface tile |
 | `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` or an `http(s)://` URL. Falls back to a controller icon if omitted |
-| `Position` | `{ X, Y }` \| `UDim2` | Button position. With the table form, `X` is pixels from the left edge and `Y` is pixels from the bottom edge (use a negative `Y` to move it up) |
+| `Position` | `string` \| `UDim2` | Anchor — `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. For `simple` it sets which edge the tab docks to (and its height); for `circle`/`square` it places the button fully visible at that anchor. Default: `simple` → `MidLeft`, others → `TopLeft` |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |
 | `AutoHide` | `bool` | `true` (default) shows the button only while the window is hidden (it disappears when the window is open); `false` keeps it on screen at all times, acting as a persistent open/close toggle |
