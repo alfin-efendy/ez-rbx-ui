@@ -1,9 +1,18 @@
 -- Deps injected via Init(R).
 local TextBox = {}
-local Create, DefaultTheme, Maid, Icons, Flag
+local Create, DefaultTheme, Maid, Icons, Flag, Animate
 
 function TextBox.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Animate = R.Animate
+end
+
+-- compact inline-button palette (mirrors components/button.lua)
+local function btnPalette(theme, variant)
+  if variant == "destructive" then return theme.Colors.destructive, theme.Colors.primaryForeground end
+  if variant == "secondary" then return theme.Colors.surface, theme.Colors.foreground end
+  if variant == "outline" then return theme.Colors.card, theme.Colors.foreground, theme.Colors.border end
+  if variant == "ghost" then return theme.Colors.card, theme.Colors.foreground end
+  return theme.Colors.primary, theme.Colors.primaryForeground -- default
 end
 
 function TextBox.new(opts)
@@ -12,82 +21,152 @@ function TextBox.new(opts)
   local maid = Maid.new()
   local hasLabel = opts.Text ~= nil and opts.Text ~= ""
   local hasDesc = opts.Description ~= nil and opts.Description ~= ""
-  local rowH = (not hasLabel) and 30 or (hasDesc and 56 or 46)
+  local fullWidth = (opts.FullWidth and hasLabel) and true or false
 
+  -- ---- geometry -------------------------------------------------------------
+  local boxX, boxW, boxTop, baseH
+  if not hasLabel then
+    boxX, boxW, boxTop, baseH = UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 30), 0, 30
+  elseif fullWidth then
+    boxTop = hasDesc and 44 or 26
+    boxX, boxW, baseH = UDim2.new(0, 0, 0, boxTop), UDim2.new(1, 0, 0, 30), boxTop + 30
+  else
+    baseH = hasDesc and 56 or 46
+    boxTop = math.floor((baseH - 30) / 2)
+    boxX, boxW = UDim2.new(0.5, 4, 0, boxTop), UDim2.new(0.5, -4, 0, 30)
+  end
+
+  -- ---- shared state ---------------------------------------------------------
+  local real = opts.Default or ""
+  local masked = false                 -- Password task sets this from opts.Password
+  local revealed = false
+  local suppress = false
+  local state = { focused = false, invalid = false }
+  local themed = {}                    -- recolor closures, replayed on accent change
+  local function reTheme() for _, fn in ipairs(themed) do fn() end end
+  local api = {}                       -- returned control; buttons capture it for the ctl arg
+
+  -- ---- root + label ---------------------------------------------------------
   local root = Create("Frame", {
     Name = "TextBoxRow", BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = 0,
-    Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
+    Size = UDim2.new(1, 0, 0, baseH), LayoutOrder = opts.LayoutOrder or 0, Parent = opts.Parent,
     Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
   })
+  themed[#themed + 1] = function() root.BackgroundColor3 = theme.Colors.surface end
+
   if hasLabel then
-    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
+    local title = Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Text,
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
-      TextYAlignment = hasDesc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
+      TextYAlignment = (hasDesc or fullWidth) and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
       TextSize = theme.Font.label.Size, Font = Enum.Font.BuilderSans,
-      Position = UDim2.new(0, 0, 0, hasDesc and 6 or 0),
-      Size = UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0), Parent = root })
+      Position = fullWidth and UDim2.new(0, 0, 0, 0) or UDim2.new(0, 0, 0, hasDesc and 6 or 0),
+      Size = fullWidth and UDim2.new(1, 0, 0, 18)
+        or UDim2.new(0.5, -8, hasDesc and 0 or 1, hasDesc and 18 or 0),
+      Parent = root })
+    themed[#themed + 1] = function() title.TextColor3 = theme.Colors.foreground end
     if hasDesc then
-      Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
+      local desc = Create("TextLabel", { Name = "Description", BackgroundTransparency = 1, Text = opts.Description,
         TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
         TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(0.5, -8, 0, 26), Parent = root })
+        Position = fullWidth and UDim2.new(0, 0, 0, 22) or UDim2.new(0, 0, 0, 26),
+        Size = fullWidth and UDim2.new(1, 0, 0, 18) or UDim2.new(0.5, -8, 0, 26), Parent = root })
+      themed[#themed + 1] = function() desc.TextColor3 = theme.Colors.mutedForeground end
     end
   end
+
+  -- ---- box (horizontal flex row) -------------------------------------------
   local box = Create("Frame", {
     Name = "Box", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
-    Position = hasLabel and UDim2.new(0.5, 4, 0.5, -15) or UDim2.new(0, 0, 0, 0),
-    Size = hasLabel and UDim2.new(0.5, -4, 0, 30) or UDim2.new(1, 0, 0, 30),
-    Parent = root, Create.corner(theme.Radius.md),
+    Position = boxX, Size = boxW, Parent = root, Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
+    Create.listLayout({ FillDirection = Enum.FillDirection.Horizontal, Padding = 6 }),
   })
-  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = box })
+  themed[#themed + 1] = function() box.BackgroundColor3 = theme.Colors.background end
+  box:FindFirstChildOfClass("UIListLayout").VerticalAlignment = Enum.VerticalAlignment.Center
+
+  local stroke = Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = box })
+  local function strokeColor()
+    if state.invalid then return theme.Colors.destructive end
+    if state.focused then return theme.Colors.ring end
+    return theme.Colors.border
+  end
+  themed[#themed + 1] = function() stroke.Color = strokeColor() end
+
+  -- ---- input (flex-fills) ---------------------------------------------------
   local input = Create("TextBox", {
-    Name = "Input", BackgroundTransparency = 1, Text = opts.Default or "",
+    Name = "Input", BackgroundTransparency = 1, Text = real,
     PlaceholderText = opts.Placeholder or "", PlaceholderColor3 = theme.Colors.mutedForeground,
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
-    TextEditable = not opts.Copyable, Size = UDim2.new(1, opts.Copyable and -26 or 0, 1, 0),
-    Parent = box,
+    TextEditable = not opts.Copyable, LayoutOrder = 10, Size = UDim2.new(0, 0, 1, 0), Parent = box,
+    Create("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
   })
-
-  if opts.Copyable then
-    local copy = Create("ImageButton", { Name = "Copy", BackgroundTransparency = 1,
-      Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -16, 0.5, -8), Parent = box })
-    Icons.apply(copy, "copy", theme.Colors.primary)
-    maid:Give(copy.MouseButton1Click:Connect(function()
-      if setclipboard then pcall(setclipboard, input.Text) end
-    end))
+  themed[#themed + 1] = function()
+    input.TextColor3 = theme.Colors.foreground; input.PlaceholderColor3 = theme.Colors.mutedForeground
   end
 
-  local function apply(s) input.Text = tostring(s or "") end
+  -- ---- value machinery ------------------------------------------------------
+  local function display() return (masked and not revealed) and string.rep("*", #real) or real end
+  local function render() suppress = true; input.Text = display(); suppress = false end
+  local function apply(v)
+    real = tostring(v or "")
+    if opts.MaxLength and #real > opts.MaxLength then real = real:sub(1, opts.MaxLength) end
+    render()
+  end
   local commit = Flag.bind(opts, opts.Default or "", apply)
 
-  maid:Give(input.FocusLost:Connect(function()
-    if opts.MaxLength and #input.Text > opts.MaxLength then input.Text = input.Text:sub(1, opts.MaxLength) end
-    commit(input.Text)
-    if opts.Callback then opts.Callback(input.Text) end
+  maid:Give(input:GetPropertyChangedSignal("Text"):Connect(function()
+    if suppress then return end
+    local vis = input.Text
+    if masked and not revealed then
+      if #vis > #real then real = real .. vis:sub(#real + 1)
+      elseif #vis < #real then real = real:sub(1, #vis) end
+    else
+      real = vis
+    end
+    if opts.MaxLength and #real > opts.MaxLength then real = real:sub(1, opts.MaxLength) end
+    render()
   end))
+
+  maid:Give(input.FocusLost:Connect(function()
+    commit(real)
+    if opts.Callback then opts.Callback(real, api) end
+  end))
+
+  -- ---- inline icon-button helper -------------------------------------------
+  local function mkIconButton(name, icon, colorRole, order, onClick)
+    local function color() return colorRole == "muted" and theme.Colors.mutedForeground or theme.Colors.primary end
+    local btn = Create("ImageButton", { Name = name, BackgroundTransparency = 1,
+      Size = UDim2.new(0, 16, 0, 16), LayoutOrder = order, Parent = box })
+    Icons.apply(btn, icon, color())
+    themed[#themed + 1] = function() Icons.apply(btn, icon, color()) end
+    if onClick then maid:Give(btn.MouseButton1Click:Connect(onClick)) end
+    return btn
+  end
+
+  -- @addons (Tasks 2,3,6,7 insert addon builders + their option blocks here)
+
+  if opts.Copyable then
+    mkIconButton("Copy", "copy", "primary", 30, function()
+      if setclipboard then pcall(setclipboard, real) end
+    end)
+  end
+
+  -- @states (Tasks 4,5 insert focus-ring / validation wiring here)
+
+  if opts.AccentReg then maid:Give(opts.AccentReg(reTheme)) end
   maid:Give(root)
 
-  if opts.AccentReg then maid:Give(opts.AccentReg(function()
-    root.BackgroundColor3 = theme.Colors.surface
-    box.BackgroundColor3 = theme.Colors.background
-    local bs = box:FindFirstChildOfClass("UIStroke"); if bs then bs.Color = theme.Colors.border end
-    input.TextColor3 = theme.Colors.foreground; input.PlaceholderColor3 = theme.Colors.mutedForeground
-    local ti = root:FindFirstChild("Title"); if ti then ti.TextColor3 = theme.Colors.foreground end
-    local de = root:FindFirstChild("Description"); if de then de.TextColor3 = theme.Colors.mutedForeground end
-    local cp = box:FindFirstChild("Copy"); if cp then Icons.apply(cp, "copy", theme.Colors.primary) end
-  end)) end
-
-  return {
-    Frame = root,
-    GetText = function() return input.Text end,
-    SetText = function(s) commit(tostring(s)); if opts.Callback then opts.Callback(input.Text) end end,
-    Focus = function() input:CaptureFocus() end,
-    Clear = function() commit("") end,
-    Destroy = function() maid:DoCleanup() end,
-  }
+  -- ---- public api -----------------------------------------------------------
+  api.Frame = root
+  api.GetText = function() return real end
+  api.SetText = function(s) commit(tostring(s)); if opts.Callback then opts.Callback(real, api) end end
+  api.Focus = function() input:CaptureFocus() end
+  api.Clear = function() commit("") end
+  -- @api-extra (Tasks 4,5,6 add SetInvalid/SetValid/SetLoading/SetDisabled here)
+  api.Destroy = function() maid:DoCleanup() end
+  return api
 end
 
 return TextBox
