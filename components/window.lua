@@ -15,6 +15,9 @@ local TITLE_H = 40
 local SIDEBAR_W = 150
 local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
+local VP_MARGIN = 0.92                  -- never exceed 92% of the viewport on either axis
+local COVERAGE_DEF = 0.6                -- default fraction of viewport height the window targets
+local FALLBACK_VP = { X = 1280, Y = 720 } -- headless / no CurrentCamera
 
 function Window.new(config)
   config = config or {}
@@ -23,8 +26,35 @@ function Window.new(config)
   if config.Mode == "light" then DefaultTheme.applyMode(theme, "light") else theme.Mode = "dark" end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
-  local width = (config.Size and config.Size.Width) or 560
-  local height = (config.Size and config.Size.Height) or 420
+  local function aspectFromRatio(r)
+    if type(r) == "number" and r > 0 then return r end
+    if type(r) == "table" then
+      local rw = r.Width or r[1]
+      local rh = r.Height or r[2]
+      if type(rw) == "number" and type(rh) == "number" and rh > 0 then return rw / rh end
+    end
+    return 4 / 3
+  end
+  local aspect = aspectFromRatio(config.Ratio)
+  local coverage = COVERAGE_DEF
+  local function viewportSize()
+    local cam = workspace and workspace.CurrentCamera
+    local vp = cam and cam.ViewportSize
+    if vp and vp.X and vp.X > 0 then return vp end
+    return FALLBACK_VP
+  end
+  local function computeSize()
+    local vp = viewportSize()
+    local h = vp.Y * coverage
+    local w = h * aspect
+    local maxW, maxH = vp.X * VP_MARGIN, vp.Y * VP_MARGIN
+    if w > maxW then w = maxW; h = w / aspect end
+    if h > maxH then h = maxH; w = h * aspect end
+    w = math.max(w, MIN_W)
+    h = math.max(h, MIN_H)
+    return math.floor(w), math.floor(h)
+  end
+  local width, height = computeSize()
   local toggleKey = config.ToggleKey or Enum.KeyCode.RightControl
   local tabs = {}
   local visible = true
@@ -588,11 +618,11 @@ function Window.new(config)
     if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
       width = math.max(MIN_W, rSize.X + (input.Position.X - rStart.X))
       height = math.max(MIN_H, rSize.Y + (input.Position.Y - rStart.Y))
-      local cam = workspace and workspace.CurrentCamera
-      if cam and cam.ViewportSize then
-        width = math.min(width, cam.ViewportSize.X); height = math.min(height, cam.ViewportSize.Y)
-      end
+      local vp = viewportSize()
+      width = math.min(width, vp.X); height = math.min(height, vp.Y)
       main.Size = UDim2.new(0, width, 0, height)
+      aspect = width / height       -- grip rewrites the ratio…
+      coverage = height / vp.Y      -- …and the coverage, so viewport changes preserve them
     end
   end))
   maid:Give(grip.InputEnded:Connect(function(input)
@@ -613,18 +643,19 @@ function Window.new(config)
       } })
   end))
 
-  -- responsive: clamp to viewport (best-effort; no-op headless where workspace is nil)
+  -- responsive: always re-fit to the viewport, preserving the configured Ratio
   function api:AdaptToViewport()
+    width, height = computeSize()
+    main.Size = UDim2.new(0, width, 0, height)
+    main.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+  end
+  api:AdaptToViewport()
+  do
     local cam = workspace and workspace.CurrentCamera
-    local vp = cam and cam.ViewportSize
-    if vp then
-      width = math.min(width, vp.X - 40)
-      height = math.min(height, vp.Y - 40)
-      main.Size = UDim2.new(0, width, 0, height)
-      main.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+    if cam and cam.GetPropertyChangedSignal then
+      maid:Give(cam:GetPropertyChangedSignal("ViewportSize"):Connect(function() api:AdaptToViewport() end))
     end
   end
-  if config.AutoAdapt ~= false then api:AdaptToViewport() end
 
   -- mobile/touch floating toggle button
   ensureFab() -- always available as the reopen button; hidden until the window hides

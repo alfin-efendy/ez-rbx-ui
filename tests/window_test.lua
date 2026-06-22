@@ -3,7 +3,7 @@ local Window = h.loadLib().Window
 
 local function newWin()
   local screen = h.roblox.Instance.new("ScreenGui")
-  return Window.new({ Title = "My Hub", Parent = screen, Size = { Width = 560, Height = 420 } })
+  return Window.new({ Title = "My Hub", Parent = screen })
 end
 
 h.describe("window", function()
@@ -312,6 +312,14 @@ h.describe("window", function()
     h.expect(w.Main:FindFirstChild("AcrylicNoise") ~= nil).toBeTruthy()  -- frosted always on
     h.expect(w:SetTransparency(0.5)).toBe(0.5)
     h.expect(w.Main.BackgroundTransparency).toBe(0.5)
+  end)
+  h.it("Ratio sets the window shape: square => equal sides, default ~= 4:3", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local sq = R.Window.new({ Title = "M", Parent = screen, Ratio = 1 })
+    h.expect(sq.Main.Size.X.Offset).toBe(sq.Main.Size.Y.Offset)         -- 1:1
+    local def = R.Window.new({ Title = "M", Parent = screen })          -- default 4/3
+    local r = def.Main.Size.X.Offset / def.Main.Size.Y.Offset
+    h.expect(r > 1.2 and r < 1.45).toBeTruthy()
   end)
 end)
 
