@@ -30,6 +30,7 @@ local Window = EzUI:CreateWindow({
 | `Image` | `string` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
 | `Ratio` | `number` \| `{ Width, Height }` | `4/3` | Window aspect ratio; auto-fits the viewport and stays responsive |
 | `Transparency` | `number` | `0.12` | Window background transparency `0..1`; `0` = opaque |
+| `Animations` | `bool` | `true` | Enable entrance/transition motion (FAB pop, window open/close, accordion + tab transitions); pass `false` for reduced/instant motion on low-end devices or for accessibility |
 | `ToggleKey` | `Enum.KeyCode` | `RightControl` | Show/hide keyboard key |
 | `FloatingToggle` | `table` \| `false` | enabled | Floating toggle button config — see [FloatingToggle](#floatingtoggle) below. Pass `false` to disable |
 | `Theme` | `table` | — | Override design tokens (deep-merged onto defaults) |
@@ -55,6 +56,9 @@ local Window = EzUI:CreateWindow({
 | `SetSubtitle(s)` | Update the subtitle text |
 | `SetImage(v)` | Update the title-bar image (`rbxassetid://` or URL) |
 | `SetTransparency(n)` | Set background transparency `0..1` |
+| `GetMode()` | Returns the current color mode: `"dark"` or `"light"` |
+| `SetMode(mode)` | Switch the color palette live (`"dark"` or `"light"`); controls re-skin immediately |
+| `SetAnimationsEnabled(b)` | Toggle all library motion at runtime (`true` = animated, `false` = instant) |
 | `AdaptToViewport()` | Re-fit the window to the current viewport (also runs automatically) |
 | `SetFloatingToggle(opts)` | Rebuild the floating toggle button with new options |
 | `SetFloatingToggleVisible(b)` | Show (`true`) or hide (`false`) the floating toggle button |
@@ -135,7 +139,7 @@ EzUI:CreateWindow({
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) — a chevron tab that docks at the screen edge; `"circle"` — accent-colored round button; `"square"` — rounded surface tile |
 | `Position` | `string` \| `UDim2` | `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. Default: `simple` → `MidLeft`, others → `TopLeft` |
-| `Image` | `string` | Icon for `circle`/`square` buttons — `rbxassetid://` or `http(s)://` URL; falls back to a controller icon |
+| `Image` | `string` | Icon for `circle`/`square` buttons — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL; falls back to a controller icon |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | `true` (default): player can drag it; on release it magnet-snaps to the nearest screen edge |
 | `AutoHide` | `bool` | `true` (default): visible only while the window is hidden; `false`: always visible (persistent toggle) |
