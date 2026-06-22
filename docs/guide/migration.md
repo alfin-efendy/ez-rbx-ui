@@ -1,18 +1,28 @@
 # Migration
 
-The current published release is **v2**. This documentation covers **v3**, which is in active development on this branch and **not yet released**. This page lists what changes when you move from the published v2 to v3.
-
-::: info v3 is unreleased
-The install snippets throughout these docs pull the **latest GitHub release**, which is still **v2** until v3 ships. Treat the v3-only features below as forthcoming.
-:::
-
 ## v2 → v3
 
-v3 keeps the v2 window and control API — every method documented for v2 is still present, with no renames or removals — and adds the following.
+v3 is a full rewrite with a clean-break API. The table below maps every changed surface from v2.
+
+| v2 | v3 |
+|---|---|
+| `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
+| `Size = { Width, Height }` | unchanged |
+| `tab = window:AddTab({ Name, Icon = "🏠" })` | `Icon = "home"` (Lucide name, not emoji) |
+| `tab:AddLabel/AddButton/AddToggle/AddTextBox/AddNumberBox/AddSelectBox/AddSeparator` | same names |
+| `window:ShowNotification/ShowSuccess/ShowError(...)` | `window:Notify/ShowSuccess/ShowError(...)` |
+| `Colors` module (`utils/colors`) | `EzUI.Theme` tokens / `Theme` override |
+| `EzUI:NewConfig(...)` | unchanged |
+| flags (`Flag = "..."`) | unchanged |
+| — | **new:** `AddSlider`, `AddKeybind`, `AddColorPicker`, `AddImage`, `AddProgressBar`, `AddTable`, `AddCard`, `AddResizable`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
+
+v3 internals are a clean rewrite: engine-driven layout (`UIListLayout` + `AutomaticSize` + `UIFlex`) instead of manual Y positioning, a single-tween accordion (no O(n²) reflow), and `CanvasGroup` tab transitions.
+
+The most significant new v3 controls and options are detailed below.
 
 ### `AddCard`
 
-Windows and tabs now expose `AddCard`, a new v3 control that renders a styled card surface with an optional banner image, title, body paragraph, and action buttons. It is **not** a host — it does not accept child controls. Pass all content via an options table and see [Card](/controls/card) for the full option set.
+Windows and tabs expose `AddCard`, which renders a styled card surface with an optional banner image, title, body paragraph, and action buttons. It is **not** a host — it does not accept child controls. Pass all content via an options table and see [Card](/controls/card) for the full option set.
 
 ```lua
 tab:AddCard({
@@ -27,7 +37,7 @@ tab:AddCard({
 
 ### `AddResizable`
 
-A new split-pane container control. Each pane is itself a control host, so you add controls into `Panes[i]` just like a tab or accordion. See [Resizable](/controls/resizable).
+A split-pane container control. Each pane is itself a control host, so you add controls into `Panes[i]` just like a tab or accordion. See [Resizable](/controls/resizable).
 
 ```lua
 local rz = tab:AddResizable({ Direction = "Horizontal", Panes = { { Default = 0.4 }, { Default = 0.6 } } })
@@ -37,7 +47,7 @@ rz.Panes[2]:AddToggle({ Text = "Option" })
 
 ### `TextBox` — `LeadingIcon`, `Password`, and `Validate`
 
-`AddTextBox` gained several new options (`components/textbox.lua`):
+`AddTextBox` carries a rich option set (`components/textbox.lua`):
 
 - **`LeadingIcon`** / **`TrailingIcon`** — Lucide icon names rendered inside the left/right edge of the input field.
 - **`Password`** — when `true`, masks the input and shows a reveal toggle button.
@@ -59,7 +69,7 @@ See [TextBox](/controls/textbox) for the full option and method set (input-group
 
 ### `Description` on controls
 
-Many controls now accept a `Description` option that renders a secondary muted-text line below the label. Confirmed on: `AddToggle`, `AddSlider`, `AddTextBox`, `AddSelectBox`, `AddKeybind`, `AddColorPicker`, `AddNumberBox`.
+Many controls accept a `Description` option that renders a secondary muted-text line below the label. Available on: `AddToggle`, `AddSlider`, `AddTextBox`, `AddSelectBox`, `AddKeybind`, `AddColorPicker`, `AddNumberBox`.
 
 ```lua
 tab:AddToggle({

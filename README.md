@@ -2,7 +2,7 @@
 
 A modern, modular UI library for Roblox scripts. shadcn-inspired design, Fluent-style acrylic panel, Lucide icons, CSS-flex-like layout (engine-driven, no manual positioning), smooth tab/accordion transitions, and a flag-based config system with auto-save/load and reset.
 
-> **v2 is a full rewrite with a clean-break API.** If you used the old `EzUI:CreateNew` / emoji-icon API, see [Migration](#migration-from-v1).
+> **v3 is a full rewrite with a clean-break API.** If you used the old v2 `EzUI:CreateNew` / emoji-icon API, see [Migration](#migration-from-v2).
 
 📖 **Documentation:** https://alfin-efendy.github.io/ez-rbx-ui/
 
@@ -129,9 +129,9 @@ Controls with `Flag` register against the window's `Config`. `Window:ResetConfig
 
 ---
 
-## Migration from v1
+## Migration from v2
 
-| v1 | v2 |
+| v2 | v3 |
 |---|---|
 | `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
 | `Size = { Width, Height }` | unchanged |
@@ -141,9 +141,9 @@ Controls with `Flag` register against the window's `Config`. `Window:ResetConfig
 | `Colors` module (`utils/colors`) | `EzUI.Theme` tokens / `Theme` override |
 | `EzUI:NewConfig(...)` | unchanged |
 | flags (`Flag = "..."`) | unchanged |
-| — | **new:** `AddSlider, AddKeybind, AddColorPicker, AddImage, AddProgressBar, AddTable`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
+| — | **new:** `AddSlider, AddKeybind, AddColorPicker, AddImage, AddProgressBar, AddTable, AddCard, AddResizable`, `AddTabGroup`, sidebar search, `Dialog`, `ResetConfiguration` |
 
-v2 internals are a clean rewrite: engine-driven layout (`UIListLayout` + `AutomaticSize` + `UIFlex`) instead of manual Y positioning, a single-tween accordion (no O(n²) reflow), and `CanvasGroup` tab transitions.
+v3 internals are a clean rewrite: engine-driven layout (`UIListLayout` + `AutomaticSize` + `UIFlex`) instead of manual Y positioning, a single-tween accordion (no O(n²) reflow), and `CanvasGroup` tab transitions.
 
 ---
 
