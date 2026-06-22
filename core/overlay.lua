@@ -2,9 +2,26 @@
 local Overlay = {}
 local Create
 local root = nil
+local catcher = nil -- full-screen click-catcher behind open popovers (closes them on outside click)
 local popovers = {} -- set of close functions for open popovers (dropdowns, color pickers)
 
 function Overlay.Init(R) Create = R.Create end
+
+-- A transparent full-screen button mounted under the popover (ZIndex 1000, the popover
+-- is 1001+). A click anywhere outside the popover lands on it and closes everything.
+local function ensureCatcher()
+  if catcher and catcher.Parent ~= nil then return end
+  if not root then return end
+  catcher = Create("ImageButton", {
+    Name = "EzUI_OverlayCatcher", AutoButtonColor = false, BackgroundTransparency = 1,
+    Active = true, Size = UDim2.new(1, 0, 1, 0), ZIndex = 1000, Parent = root,
+  })
+  catcher.MouseButton1Click:Connect(function() Overlay.closeAll() end)
+end
+
+local function removeCatcher()
+  if catcher then catcher:Destroy(); catcher = nil end
+end
 
 function Overlay.get(parentGui)
   -- Roblox-safe liveness check: reading a non-existent member (e.g. a mock-only
@@ -29,13 +46,17 @@ end
 
 -- Popover registry: components register their Close fn so the window can close
 -- every open popover at once (e.g. on drag/resize/minimize/shutdown).
-function Overlay.trackPopover(closeFn) popovers[closeFn] = true; return closeFn end
-function Overlay.untrackPopover(closeFn) popovers[closeFn] = nil end
+function Overlay.trackPopover(closeFn) popovers[closeFn] = true; ensureCatcher(); return closeFn end
+function Overlay.untrackPopover(closeFn)
+  popovers[closeFn] = nil
+  if next(popovers) == nil then removeCatcher() end
+end
 function Overlay.closeAll()
   local fns = popovers; popovers = {}
   for fn in pairs(fns) do pcall(fn) end
+  removeCatcher()
 end
 
-function Overlay.reset() root = nil; popovers = {} end
+function Overlay.reset() root = nil; catcher = nil; popovers = {} end
 
 return Overlay

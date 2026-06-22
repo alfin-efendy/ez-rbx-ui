@@ -20,7 +20,11 @@ function SelectBox.new(opts)
   local maid = Maid.new()
   local options = opts.Options or {}
   local multi = opts.Multi == true
-  local value = multi and (opts.Default or {}) or (opts.Default or options[1])
+  -- For per-item options the entries are tables ({ Value, Icon, ... }); the stored
+  -- value must be the option's value, not the raw option table (else display() would
+  -- tostring a table address and isSelected/Flag would never match).
+  local function firstValue() return options[1] ~= nil and normOpt(options[1]).value or nil end
+  local value = multi and (opts.Default or {}) or (opts.Default ~= nil and opts.Default or firstValue())
   local dropdown
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
   local onChanged = opts.Callback
