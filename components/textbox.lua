@@ -25,16 +25,19 @@ function TextBox.new(opts)
   local fullWidth = (opts.FullWidth and hasLabel) and true or false
 
   -- ---- geometry -------------------------------------------------------------
+  -- FullWidth boxes are taller (36) with breathing room above and below the box;
+  -- compact boxes stay 30 and vertically centered in their fixed row.
+  local boxH = fullWidth and 36 or 30
   local boxX, boxW, boxTop, baseH
   if not hasLabel then
-    boxX, boxW, boxTop, baseH = UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 30), 0, 30
+    boxX, boxW, boxTop, baseH = UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, boxH), 0, boxH
   elseif fullWidth then
-    boxTop = hasDesc and 44 or 26
-    boxX, boxW, baseH = UDim2.new(0, 0, 0, boxTop), UDim2.new(1, 0, 0, 30), boxTop + 30
+    boxTop = hasDesc and 46 or 28
+    boxX, boxW, baseH = UDim2.new(0, 0, 0, boxTop), UDim2.new(1, 0, 0, boxH), boxTop + boxH + 10
   else
     baseH = hasDesc and 56 or 46
-    boxTop = math.floor((baseH - 30) / 2)
-    boxX, boxW = UDim2.new(0.5, 4, 0, boxTop), UDim2.new(0.5, -4, 0, 30)
+    boxTop = math.floor((baseH - boxH) / 2)
+    boxX, boxW = UDim2.new(0.5, 4, 0, boxTop), UDim2.new(0.5, -4, 0, boxH)
   end
 
   -- ---- shared state ---------------------------------------------------------
@@ -278,7 +281,7 @@ function TextBox.new(opts)
       Text = "", TextColor3 = theme.Colors.destructive, TextXAlignment = Enum.TextXAlignment.Left,
       TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
       TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      Position = UDim2.new(boxX.X.Scale, boxX.X.Offset, 0, boxTop + 30 + 2),
+      Position = UDim2.new(boxX.X.Scale, boxX.X.Offset, 0, boxTop + boxH + 2),
       Size = UDim2.new(boxW.X.Scale, boxW.X.Offset, 0, 16), Parent = root })
     themed[#themed + 1] = function() message.TextColor3 = theme.Colors.destructive end
     return message
