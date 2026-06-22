@@ -219,11 +219,13 @@ function SelectBox.new(opts)
     local openUp = (below + ddH > (vp.Y or 1080)) and ((pos.Y or 0) - 4 - ddH >= 0)
     local y = openUp and ((pos.Y or 0) - 4 - ddH) or below
     local x = math.max(0, math.min(pos.X or 0, (vp.X or 1920) - width - 4))
-    dropdown = Create("Frame", {
+    dropdown = Create("ScrollingFrame", {
       Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
       Position = UDim2.new(0, x, 0, y),
       Size = UDim2.new(0, width, 0, ddH),
       ClipsDescendants = true, ZIndex = 1001,
+      ScrollBarThickness = 4, ScrollBarImageColor3 = theme.Colors.border,
+      AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0, 0, 0, 0),
       Create.corner(theme.Radius.md),
       Create.padding({ all = 4 }),
       Create.listLayout({ Padding = 2 }),
