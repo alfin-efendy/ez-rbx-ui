@@ -1,9 +1,9 @@
 -- Deps injected via Init(R).
 local NumberBox = {}
-local Create, DefaultTheme, Maid, Icons, Flag
+local Create, DefaultTheme, Maid, Icons, Flag, Numfmt
 
 function NumberBox.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Numfmt = R.Numfmt
 end
 
 function NumberBox.new(opts)
@@ -60,13 +60,23 @@ function NumberBox.new(opts)
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
     Position = UDim2.new(0, 32, 0, 0), Size = UDim2.new(1, -64, 1, 0), Parent = box })
 
-  local function apply(n) value = clamp(n); input.Text = tostring(value) end
+  local function fmt(n)
+    return Numfmt.format(n, { Format = opts.Format, Decimals = opts.Decimals, Prefix = opts.Prefix, Suffix = opts.Suffix })
+  end
+  local focused = false
+  local function render() input.Text = focused and tostring(value) or fmt(value) end
+  local function apply(n) value = clamp(n); render() end
   local commit = Flag.bind(opts, clamp(opts.Default or 0), apply)
   local function set(n) commit(clamp(n)); if opts.Callback then opts.Callback(value) end end
 
   maid:Give(minus.MouseButton1Click:Connect(function() set(value - step) end))
   maid:Give(plus.MouseButton1Click:Connect(function() set(value + step) end))
-  maid:Give(input.FocusLost:Connect(function() set(input.Text) end))
+  maid:Give(input.Focused:Connect(function() focused = true; input.Text = tostring(value) end))
+  maid:Give(input.FocusLost:Connect(function()
+    focused = false
+    local parsed = Numfmt.parse(input.Text, { Prefix = opts.Prefix, Suffix = opts.Suffix })
+    if parsed ~= nil then set(parsed) else render() end
+  end))
   maid:Give(root)
 
   if opts.AccentReg then maid:Give(opts.AccentReg(function()
