@@ -8,6 +8,7 @@ EXAMPLE_OUTPUT_FILE := ./output/example.lua
 .PHONY: build
 build:
 	@echo "Building Lua bundle..."
+	@mkdir -p $(dir $(OUTPUT_FILE))
 	@lua-bundler -e $(INPUT_FILE) -o $(OUTPUT_FILE);
 
 .PHONY: run
