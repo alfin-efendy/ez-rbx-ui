@@ -211,6 +211,18 @@ function TextBox.new(opts)
   end
 
   -- @states (Tasks 4,5 insert focus-ring / validation wiring here)
+  maid:Give(input.Focused:Connect(function()
+    state.focused = true; Animate.to(stroke, "fast", { Color = strokeColor() })
+  end))
+  maid:Give(input.FocusLost:Connect(function()
+    state.focused = false; Animate.to(stroke, "fast", { Color = strokeColor() })
+  end))
+  local function setDisabled(b)
+    b = b and true or false
+    input.TextEditable = not b and not opts.Copyable
+    input.TextColor3 = b and theme.Colors.mutedForeground or theme.Colors.foreground
+  end
+  if opts.Disabled then setDisabled(true) end
 
   if opts.AccentReg then maid:Give(opts.AccentReg(reTheme)) end
   maid:Give(root)
@@ -222,6 +234,7 @@ function TextBox.new(opts)
   api.Focus = function() input:CaptureFocus() end
   api.Clear = function() commit("") end
   -- @api-extra (Tasks 4,5,6 add SetInvalid/SetValid/SetLoading/SetDisabled here)
+  api.SetDisabled = function(b) setDisabled(b) end
   api.Destroy = function() maid:DoCleanup() end
   return api
 end
