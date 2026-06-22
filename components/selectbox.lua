@@ -76,7 +76,24 @@ function SelectBox.new(opts)
   local api = { Frame = btn }
   function api.GetValue() return value end
   function api.SetValue(v) commit(v); if onChanged then onChanged(value) end end
-  function api.SetOptions(o) options = o or {}; refresh() end
+  function api.SetOptions(o)
+    options = o or {}
+    local function present(v)
+      for _, raw in ipairs(options) do
+        local e = normOpt(raw)
+        if not e.divider and e.value == v then return true end
+      end
+      return false
+    end
+    if multi then
+      local nv = {}
+      for _, v in ipairs(value) do if present(v) then nv[#nv + 1] = v end end
+      value = nv
+    elseif value ~= nil and not present(value) then
+      value = opts.AllowNone and nil or firstValue()
+    end
+    refresh()
+  end
 
   local function pick(opt)
     if multi then
