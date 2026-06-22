@@ -19,6 +19,21 @@ return function(window, host)
   -- long list -> search box appears automatically; flips up near the screen bottom
   tab:AddSelectBox({ Text = "Country", Options = { "ID", "US", "JP", "DE", "FR", "BR", "IN" }, Default = "ID" })
   tab:AddSelectBox({ Text = "Locked", Options = { "X", "Y" }, Default = "X", Disabled = true })
+  tab:AddSection("Data-driven (async + OnOpen)")
+  local WEAPON_DB = { wpn_001 = "Bow", wpn_002 = "Shield", wpn_003 = "Sword" }
+  local function weaponOptions()
+    local out = {}
+    for id, name in pairs(WEAPON_DB) do out[#out + 1] = { Value = id, Text = name } end
+    return out
+  end
+  -- the Value (wpn_xxx) persists to the flag; the Text (name) is shown in the UI
+  local wsel = tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", Loading = true, Options = {},
+    OnOpen = function(api) api.SetOptions(weaponOptions()) end })
+  task.delay(1.2, function() wsel.SetOptions(weaponOptions()); wsel.SetLoading(false) end)
+  local big = {}; for i = 1, 24 do big[i] = "Item " .. i end
+  tab:AddSelectBox({ Text = "Long list", Options = big, Default = "Item 1" })
+  tab:AddSelectBox({ Text = "Notify", Options = { "Red", "Green", "Blue" }, Default = "Red",
+    Callback = function(v) window:ShowSuccess({ Title = "Picked", Message = tostring(v) }) end })
   tab:AddSection("Persistence (Flag)")
   tab:AddSelectBox({ Text = "Saved choice", Flag = "ex_select", Options = { "One", "Two", "Three" }, Default = "One" })
   tab:AddParagraph("Single, multi+search, per-item icon/desc/divider, AllowNone, dynamic SetOptions, and a Flag-bound select.")

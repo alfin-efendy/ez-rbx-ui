@@ -84,7 +84,7 @@ Call these on a `tab` or an `accordion` (same API):
 | `AddTextBox(opts)` | `Text, Default, Placeholder, MaxLength, Copyable, Flag` → `GetText()/SetText(s)/Focus()/Clear()` |
 | `AddNumberBox(opts)` | `Text, Default, Min, Max, Step, Format ("compact"/"comma"), Decimals, Prefix, Suffix, Flag` → `GetValue()/SetValue(n)/SetMin/SetMax`. Type `1k`/`4.4m`/`72B` directly; hold −/+ or scroll to adjust |
 | `AddSlider(opts)` | `Text, Min, Max, Default, Step, Flag` → `GetValue()/SetValue(n)/OnChanged(fn)` |
-| `AddSelectBox(opts)` | `Text, Options, Default, Multi, AllowNone, Searchable, Disabled, Flag` → `GetValue()/SetValue(v)/SetOptions(o)/SetDisabled(b)`. Search auto-shows for long lists; dropdown flips up near the screen edge; click outside closes it |
+| `AddSelectBox(opts)` | `Text, Options, Default, Multi, AllowNone, Searchable, Disabled, Loading, OnOpen, Flag` → `GetValue()/SetValue(v)/SetOptions(o)/SetDisabled(b)/SetLoading(b)`. Options may be `{ Value, Text/Label, Icon, Desc }` — `Value` is stored/flagged, `Text` is shown. Search auto-shows for long lists; flips up near the screen edge; click outside closes it; `OnOpen(api)` refreshes options on open |
 | `AddKeybind(opts)` | `Text, Default (Enum.KeyCode), Flag, Callback` → `GetKey()/SetKey(k)/OnPressed(fn)` |
 | `AddColorPicker(opts)` | `Text, Default (Color3), Flag` → `GetColor()/SetColor(c)` |
 | `AddImage(opts)` | `Image` (rbxassetid) or `Lucide` (icon name), `Height` |
