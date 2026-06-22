@@ -82,7 +82,7 @@ Call these on a `tab` or an `accordion` (same API):
 | `AddButton(opts)` | `Text, Variant (default/secondary/outline/ghost/destructive), Icon, Callback, Action="ResetConfig", Tooltip` |
 | `AddToggle(opts)` | `Text, Default, Flag, Callback` → `Get()/Set(v)/OnChanged(fn)` |
 | `AddTextBox(opts)` | `Text, Default, Placeholder, MaxLength, Copyable, Flag` → `GetText()/SetText(s)/Focus()/Clear()` |
-| `AddNumberBox(opts)` | `Text, Default, Min, Max, Step, Flag` → `GetValue()/SetValue(n)/SetMin/SetMax` |
+| `AddNumberBox(opts)` | `Text, Default, Min, Max, Step, Format ("compact"/"comma"), Decimals, Prefix, Suffix, Flag` → `GetValue()/SetValue(n)/SetMin/SetMax`. Type `1k`/`4.4m`/`72B` directly; hold −/+ or scroll to adjust |
 | `AddSlider(opts)` | `Text, Min, Max, Default, Step, Flag` → `GetValue()/SetValue(n)/OnChanged(fn)` |
 | `AddSelectBox(opts)` | `Text, Options, Default, Multi, Flag` → `GetValue()/SetValue(v)/SetOptions(o)` |
 | `AddKeybind(opts)` | `Text, Default (Enum.KeyCode), Flag, Callback` → `GetKey()/SetKey(k)/OnPressed(fn)` |
