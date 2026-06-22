@@ -89,7 +89,7 @@ settings:AddSection("Danger Zone")
 settings:AddButton({
     Text    = "Reset Settings",
     Variant = "destructive",
-    Icon    = "rotate-ccw",
+    Icon    = "rotate-cw",
     Action  = "ResetConfig",   -- triggers Window:ResetConfiguration() automatically
 })
 
@@ -116,16 +116,16 @@ local Window = EzUI:CreateWindow({
     FloatingToggle = { Type = "simple", AutoHide = true },
 })
 
-local tab = Window:AddTab({ Name = "Loadout", Icon = "sword" })
+local tab = Window:AddTab({ Name = "Loadout", Icon = "swords" })
 
 -- Simulated database — replace with your actual data source
 local WEAPON_DB = {
     { Value = "wpn_001", Text = "Bow",    Icon = "target" },
     { Value = "wpn_002", Text = "Shield", Icon = "shield" },
-    { Value = "wpn_003", Text = "Sword",  Icon = "sword" },
-    { Value = "wpn_004", Text = "Staff",  Icon = "wand-2" },
+    { Value = "wpn_003", Text = "Sword",  Icon = "swords" },
+    { Value = "wpn_004", Text = "Staff",  Icon = "wand" },
     { Value = "wpn_005", Text = "Dagger", Icon = "scissors" },
-    { Value = "wpn_006", Text = "Axe",    Icon = "axe" },
+    { Value = "wpn_006", Text = "Axe",    Icon = "hammer" },
 }
 
 local weaponSelect = tab:AddSelectBox({
@@ -225,7 +225,7 @@ tab:AddButton({ Text = "Delete item", Variant = "destructive", Icon = "trash-2",
         })
     end })
 
-tab:AddButton({ Text = "Confirm action", Variant = "outline", Icon = "check-circle",
+tab:AddButton({ Text = "Confirm action", Variant = "outline", Icon = "circle-check",
     Callback = function()
         Window:Dialog({
             Title   = "Are you sure?",
