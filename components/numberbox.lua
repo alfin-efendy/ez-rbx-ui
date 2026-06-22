@@ -60,17 +60,29 @@ function NumberBox.new(opts)
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans, ClearTextOnFocus = false,
     Position = UDim2.new(0, 32, 0, 0), Size = UDim2.new(1, -64, 1, 0), Parent = box })
 
+  local atMin, atMax = false, false
+  local function dim(btn, off)
+    local img = btn:FindFirstChildOfClass("ImageLabel")
+    if img then img.ImageColor3 = off and theme.Colors.mutedForeground or theme.Colors.primary end
+  end
+  local function updateBounds()
+    atMin = minV ~= nil and value <= minV
+    atMax = maxV ~= nil and value >= maxV
+    dim(minus, atMin); minus.Active = not atMin
+    dim(plus, atMax); plus.Active = not atMax
+  end
+
   local function fmt(n)
     return Numfmt.format(n, { Format = opts.Format, Decimals = opts.Decimals, Prefix = opts.Prefix, Suffix = opts.Suffix })
   end
   local focused = false
   local function render() input.Text = focused and tostring(value) or fmt(value) end
-  local function apply(n) value = clamp(n); render() end
+  local function apply(n) value = clamp(n); render(); updateBounds() end
   local commit = Flag.bind(opts, clamp(opts.Default or 0), apply)
   local function set(n) commit(clamp(n)); if opts.Callback then opts.Callback(value) end end
 
-  maid:Give(minus.MouseButton1Click:Connect(function() set(value - step) end))
-  maid:Give(plus.MouseButton1Click:Connect(function() set(value + step) end))
+  maid:Give(minus.MouseButton1Click:Connect(function() if atMin then return end; set(value - step) end))
+  maid:Give(plus.MouseButton1Click:Connect(function() if atMax then return end; set(value + step) end))
   maid:Give(input.Focused:Connect(function() focused = true; input.Text = tostring(value) end))
   maid:Give(input.FocusLost:Connect(function()
     focused = false
@@ -90,6 +102,7 @@ function NumberBox.new(opts)
       if c:IsA("ImageButton") then c.BackgroundColor3 = theme.Colors.surface
         local g = c:FindFirstChildOfClass("ImageLabel"); if g then g.ImageColor3 = theme.Colors.primary end end
     end
+    updateBounds()
   end)) end
 
   return {
