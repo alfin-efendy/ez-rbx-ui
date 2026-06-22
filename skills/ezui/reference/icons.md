@@ -30,15 +30,6 @@ When unsure whether a name is included, prefer common verbs and nouns. The full 
 
 `"house"` is aliased to `"home"` — both names resolve to the same icon. This alias exists because this Lucide port predates an upstream icon rename.
 
-## Regenerating Icons
+## Checking Available Icons
 
-The icon data is generated from [`latte-soft/lucide-roblox`](https://github.com/latte-soft/lucide-roblox). To add icons or update the subset:
-
-1. Edit `scripts/icons.manifest.txt` — add or remove Lucide icon names, one per line.
-2. Run `make icons` to regenerate the icon table in the bundle.
-
-```bash
-make icons
-```
-
-Only icons listed in the manifest will be available at runtime.
+If an icon name isn't recognized, it simply renders as empty. To verify a name exists in the bundle, check the runtime inventory at `EzUI.Icons` — this contains the full curated set.
