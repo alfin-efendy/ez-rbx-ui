@@ -271,25 +271,35 @@ h.describe("selectbox", function()
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Value").Text).toBe("Alpha")
     h.expect(sb.GetValue()).toBe("a")
   end)
-  h.it("LoadOptions fills the dropdown automatically and clears the loading state", function()
+  h.it("LoadOptions loads on the next Heartbeat (deferred, non-blocking) and clears the loading state", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Text = "Weapon",
       LoadOptions = function() return { { Value = "a", Text = "Alpha" }, { Value = "b", Text = "Beta" } } end })
-    -- provider resolved (synchronously under the test scheduler) -> not stuck loading
+    local function optCount()
+      local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+      local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
+      return n
+    end
+    -- deferred to Heartbeat so it never blocks construction: nothing loaded yet
+    sb.Open(); h.expect(optCount()).toBe(0); sb.Close()
+    h.mock.stepHeartbeat() -- fire the deferred load
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Spinner").Visible).toBe(false)
     sb.Open()
     local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
     h.expect(dd:FindFirstChild("List"):FindFirstChild("Loading")).toBe(nil)
-    local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
-    h.expect(n).toBe(2)
+    h.expect(optCount()).toBe(2)
   end)
-  h.it("Reload re-runs LoadOptions without a manual SetLoading", function()
+  h.it("Reload re-runs LoadOptions (deferred) without a manual SetLoading", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
     local calls, sets = 0, { { { Value = "a", Text = "A" } }, { { Value = "x", Text = "X" }, { Value = "y", Text = "Y" } } }
     local sb = SelectBox.new({ Parent = Create("Frame", {}),
       LoadOptions = function() calls = calls + 1; return sets[calls] end })
+    h.expect(calls).toBe(0) -- deferred to Heartbeat, not called yet
+    h.mock.stepHeartbeat()
     h.expect(calls).toBe(1)
     sb.Reload()
+    h.expect(calls).toBe(1) -- deferred again
+    h.mock.stepHeartbeat()
     h.expect(calls).toBe(2)
     sb.Open()
     local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
@@ -298,6 +308,7 @@ h.describe("selectbox", function()
   end)
   h.it("LoadOptions errors are swallowed and the loading state still clears", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), LoadOptions = function() error("boom") end })
+    h.mock.stepHeartbeat() -- fire the deferred load (which errors)
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Spinner").Visible).toBe(false)
   end)
   h.it("field shows 'Loading…' (not the value) while loading, then the value once done", function()

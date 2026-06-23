@@ -1,5 +1,6 @@
 -- Deps injected via Init(R).
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local SelectBox = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Flag
 
@@ -402,39 +403,41 @@ function SelectBox.new(opts)
   -- yield (HTTP, datastore, task.wait). The field shows its loading state on its own while
   -- the call is pending and clears it once the function returns — no manual SetLoading.
   --
-  -- It runs SYNCHRONOUSLY (NOT in task.spawn) on purpose: when the loader returns,
-  -- api.SetOptions -> refresh() mutates the GUI instances, which live under a protected
-  -- parent (gethui()/CoreGui). Under an executor, a task.spawn'd thread does not carry the
-  -- elevated capability, so mutating that GUI throws "lacking capability Plugin". Running
-  -- inline keeps SetOptions on the CALLER's thread — the main thread at create time, or the
-  -- OnOpen/Reload signal-handler thread otherwise — both of which retain the capability.
-  -- Trade-off: a LoadOptions that yields briefly blocks the caller; most loaders read cache
-  -- and don't yield. A timeout (opts.Timeout seconds, default 60) is armed beforehand so it
-  -- can still fire while the loader is yielding and clear a never-returning load. Call
-  -- api.Reload() to run it again; loadToken supersedes any earlier in-flight run.
+  -- The fetch + GUI apply are deferred to the next RunService.Heartbeat. This gives BOTH
+  -- properties we need:
+  --   * Non-blocking: runLoader returns immediately, so a yielding LoadOptions never blocks
+  --     window construction — the controls created AFTER this one still render right away.
+  --   * Capability-safe: the work runs in a RunService signal-handler thread, which (like the
+  --     MouseButton1Click/OnOpen handlers) retains the executor capability across the yield.
+  --     api.SetOptions -> refresh() mutates GUI under a protected parent (gethui()/CoreGui),
+  --     which needs that capability — a task.spawn'd thread loses it ("lacking capability
+  --     Plugin"), and running synchronously keeps it but blocks construction.
+  -- setLoading(true) runs synchronously (the caller — create/main or OnOpen handler — has
+  -- capability) so the spinner shows immediately. A timeout (opts.Timeout, default 60) clears
+  -- the spinner if the loader never returns. Call api.Reload() to run again; loadToken
+  -- supersedes any earlier in-flight run.
   local loadToken = 0
   local function runLoader()
     if type(opts.LoadOptions) ~= "function" then return end
     loadToken = loadToken + 1
     local token = loadToken
     setLoading(true)
-    -- Timeout safety net: clears the loading spinner if LoadOptions yields and is slow to
-    -- return. Armed before the call so it can fire while the loader is parked. The token check
-    -- drops it if a newer load (Reload) or destroy superseded this one. It only clears the
-    -- spinner — it never blocks the result below — so a result that arrives after the timeout
-    -- still applies (in the synchronous model the caller is parked until the loader returns).
+    local conn
+    conn = RunService.Heartbeat:Once(function()
+      if token ~= loadToken then return end
+      local ok, result = pcall(opts.LoadOptions)
+      if token ~= loadToken then return end
+      if ok and type(result) == "table" then api.SetOptions(result) end
+      setLoading(false)
+    end)
+    if conn then maid:Give(conn) end
+    -- Best-effort timeout: clears the spinner if LoadOptions never returns. token-guarded so a
+    -- newer load (Reload) or destroy supersedes it; only clears the spinner, never the result.
     local timeout = type(opts.Timeout) == "number" and opts.Timeout or 60
     task.delay(timeout, function()
       if token ~= loadToken then return end
       if loading then setLoading(false) end
     end)
-    -- Run synchronously: when the loader returns, api.SetOptions -> refresh() mutates the GUI,
-    -- which must stay on the caller's capability-bearing thread (see the note above). The token
-    -- check drops a result that arrived after a newer load or a destroy superseded this one.
-    local ok, result = pcall(opts.LoadOptions)
-    if token ~= loadToken then return end
-    if ok and type(result) == "table" then api.SetOptions(result) end
-    setLoading(false)
   end
   function api.Reload() runLoader() end
   maid:Give(function() loadToken = loadToken + 1 end) -- drop pending loads on destroy
