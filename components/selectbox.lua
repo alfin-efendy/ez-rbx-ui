@@ -292,7 +292,7 @@ function SelectBox.new(opts)
         PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
         TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
         ClearTextOnFocus = false, ZIndex = 1003, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
-      searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
+      searchInput:GetPropertyChangedSignal("Text"):Connect(function() Safe.mutate(function() api.Filter(searchInput.Text) end) end)
     end
 
     -- scrolling list of options/dividers, below the pinned search
@@ -356,7 +356,7 @@ function SelectBox.new(opts)
     -- would either detach from the control or float outside the window once the control
     -- leaves the content viewport (standard <select> behavior). Scrolling inside the
     -- dropdown itself doesn't move the control's AbsolutePosition, so it stays open.
-    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() api.Close() end)
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() Safe.mutate(api.Close) end)
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
   end

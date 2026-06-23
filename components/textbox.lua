@@ -223,7 +223,9 @@ function TextBox.new(opts)
       commit(""); if opts.Callback then opts.Callback(real, api) end
       if input.CaptureFocus then input:CaptureFocus() end
     end)
-    local function sync() clear.Visible = #real > 0 end
+    -- Text-changed fires on an engine thread (no GUI capability on strict executors); clear.Visible
+    -- is a protected write -> marshal through Safe.mutate (inline when capable, e.g. the sync() below).
+    local function sync() Safe.mutate(function() clear.Visible = #real > 0 end) end
     sync()
     maid:Give(input:GetPropertyChangedSignal("Text"):Connect(sync))
   end

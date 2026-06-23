@@ -319,7 +319,9 @@ function Window.new(config)
   -- the button moves on screen -- sidebar scroll (CanvasPosition), sidebar/body resize
   -- (AbsoluteSize), or a list reflow (AbsoluteContentSize). Without these it desyncs on scroll
   -- or resize and can drift right out of the window.
-  local function reanchorIndicator() if activeTabButton then moveIndicatorTo(activeTabButton, true) end end
+  -- Driven by property-changed signals (engine thread, no GUI capability on strict executors), so
+  -- moveIndicatorTo's protected reads/writes must be marshalled (inline when capable).
+  local function reanchorIndicator() if activeTabButton then Safe.mutate(function() moveIndicatorTo(activeTabButton, true) end) end end
   maid:Give(sidebar:GetPropertyChangedSignal("CanvasPosition"):Connect(reanchorIndicator))
   maid:Give(sidebar:GetPropertyChangedSignal("AbsoluteSize"):Connect(reanchorIndicator))
   maid:Give(body:GetPropertyChangedSignal("AbsoluteSize"):Connect(reanchorIndicator))
@@ -425,7 +427,8 @@ function Window.new(config)
   end
 
   maid:Give(searchInput:GetPropertyChangedSignal("Text"):Connect(function()
-    api:SearchTabs(searchInput.Text)
+    -- Text-changed fires on an engine thread; SearchTabs toggles many .Visible (protected) -> marshal.
+    Safe.mutate(function() api:SearchTabs(searchInput.Text) end)
   end))
 
   function api:IsVisible() return visible end
@@ -867,7 +870,7 @@ function Window.new(config)
   do
     local cam = workspace and workspace.CurrentCamera
     if cam and cam.GetPropertyChangedSignal then
-      maid:Give(cam:GetPropertyChangedSignal("ViewportSize"):Connect(function() api:AdaptToViewport() end))
+      maid:Give(cam:GetPropertyChangedSignal("ViewportSize"):Connect(function() Safe.mutate(function() api:AdaptToViewport() end) end))
     end
   end
 
