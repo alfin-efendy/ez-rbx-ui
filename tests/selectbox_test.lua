@@ -265,6 +265,12 @@ h.describe("selectbox", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { { Value = "a", Text = "Alpha" } }, Default = "zzz" })
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Value").Text).toBe("zzz")
   end)
+  h.it("normOpt accepts lowercase keys (value/text) from JSON-style data", function()
+    local sb = SelectBox.new({ Parent = Create("Frame", {}),
+      Options = { { value = "a", text = "Alpha" }, { value = "b", text = "Beta" } }, Default = "a" })
+    h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Value").Text).toBe("Alpha")
+    h.expect(sb.GetValue()).toBe("a")
+  end)
   h.it("LoadOptions fills the dropdown automatically and clears the loading state", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Text = "Weapon",
