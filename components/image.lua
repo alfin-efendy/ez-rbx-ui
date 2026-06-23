@@ -1,7 +1,7 @@
 -- Deps injected via Init(R).
 local Image = {}
-local Create, DefaultTheme, Icons
-function Image.Init(R) Create = R.Create; DefaultTheme = R.Theme; Icons = R.Icons end
+local Create, DefaultTheme, Icons, Safe
+function Image.Init(R) Create = R.Create; DefaultTheme = R.Theme; Icons = R.Icons; Safe = R.Safe end
 function Image.new(opts)
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
@@ -13,7 +13,7 @@ function Image.new(opts)
   if opts.Lucide then Icons.apply(img, opts.Lucide, opts.Color or theme.Colors.foreground) end
   return {
     Frame = img,
-    SetImage = function(v) img.Image = v end,
+    SetImage = function(v) Safe.mutate(function() img.Image = v end) end,
     Destroy = function() img:Destroy() end,
   }
 end
