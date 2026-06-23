@@ -73,6 +73,36 @@ h.describe("accordion", function()
     h.expect(a:Toggle()).toBe(true)
     h.expect(a:Toggle()).toBe(false)
   end)
+  -- Regression: a child's height settles a render step AFTER it is added (TextLabel AutomaticSize,
+  -- wrapped/reactive paragraphs). The container (AutomaticSize=None, ClipsDescendants) must re-derive
+  -- its height on the next Heartbeat or it stays sized for the un-settled child and clips the rest.
+  local gap = R.Theme.Spacing.gap
+  local inputY = R.Theme.Spacing.inputY
+  h.it("AddParagraph/AddButton schedule a deferred re-measure so tall content is not clipped", function()
+    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = true })
+    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
+    acc:AddParagraph("a\nb\nc\nd\ne\nf")   -- tall content; its AutomaticSize lands next frame
+    acc:AddButton({ Text = "Go" })
+    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 120) -- engine settles the content height
+    h.mock.stepHeartbeat(0)                                   -- Heartbeat:Once -> deferred reflow runs
+    h.expect(acc.Container.Size.Y.Offset).toBe(34 + gap + 120 + inputY)
+  end)
+  h.it("MountRow schedules a deferred re-measure", function()
+    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = true })
+    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
+    acc.MountRow(Create("Frame", {}))
+    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 90)
+    h.mock.stepHeartbeat(0)
+    h.expect(acc.Container.Size.Y.Offset).toBe(34 + gap + 90 + inputY)
+  end)
+  h.it("a collapsed accordion does not grow on a deferred re-measure", function()
+    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = false })
+    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
+    acc.MountRow(Create("Frame", {}))
+    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 200)
+    h.mock.stepHeartbeat(0)
+    h.expect(acc.Container.Size.Y.Offset).toBe(34)            -- stays header-height while collapsed
+  end)
 end)
 
 h.run()

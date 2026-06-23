@@ -1,6 +1,7 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Accordion = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Host, REG, Safe
+local RunService = game:GetService("RunService")
 
 function Accordion.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
@@ -121,6 +122,23 @@ function Accordion.new(opts)
     end
   end
 
+  -- The container height is fixed (AutomaticSize=None), so it must be re-derived whenever the content
+  -- size changes. A child's height settles a render step AFTER it is added -- a TextLabel's
+  -- AutomaticSize.Y, and especially a wrapped/reactive paragraph -- so a height measured on the
+  -- add-frame is stale and ClipsDescendants crops the lower rows. reflow() re-applies the height from
+  -- the CURRENT content size; scheduleReflow() defers it one Heartbeat (when AutomaticSize has
+  -- landed) via Heartbeat:Once, which keeps the GUI write in a capability-bearing context (never
+  -- task.defer/spawn -- those drop executor capability). Debounced so rapid AddX calls do one pass.
+  local reflowPending = false
+  local function reflow()
+    if expanded then container.Size = UDim2.new(1, 0, 0, HEADER_H + theme.Spacing.gap + contentHeight()) end
+  end
+  local function scheduleReflow()
+    if reflowPending then return end
+    reflowPending = true
+    RunService.Heartbeat:Once(function() reflowPending = false; reflow() end)
+  end
+
   function api:Toggle() expanded = not expanded; applyHeight(true); return expanded end
   function api:Expand() if not expanded then expanded = true; applyHeight(true) end end
   function api:Collapse() if expanded then expanded = false; applyHeight(true) end end
@@ -132,6 +150,7 @@ function Accordion.new(opts)
     order = order + 1
     child.LayoutOrder = order
     child.Parent = content
+    scheduleReflow()                    -- the child's AutomaticSize settles next frame; re-measure then
     return order
   end
 
@@ -140,7 +159,9 @@ function Accordion.new(opts)
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
     registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
     registerControl = opts.RegisterControl,
-    nextOrder = function() order = order + 1; return order end,
+    -- AddX controls parent straight to `content` (not via MountRow), so re-measure here too: a
+    -- freshly added paragraph/button's height settles next frame and would otherwise be clipped.
+    nextOrder = function() order = order + 1; scheduleReflow(); return order end,
   })
 
   if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
@@ -153,9 +174,12 @@ function Accordion.new(opts)
     divider.BackgroundColor3 = theme.Colors.border
   end)) end
 
-  -- Re-apply height when content grows (engine drives sibling reflow via parent UIListLayout).
+  -- Re-apply height when content grows. The immediate reflow handles add/remove (content size already
+  -- updated when this fires); scheduleReflow re-measures one step later, after a just-added child's
+  -- AutomaticSize has settled -- the signal can first fire while the child is still un-grown.
   maid:Give(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    if expanded then container.Size = UDim2.new(1, 0, 0, HEADER_H + theme.Spacing.gap + contentHeight()) end
+    reflow()
+    scheduleReflow()
   end))
 
   maid:Give(header.MouseButton1Click:Connect(function() api:Toggle() end))
@@ -164,6 +188,7 @@ function Accordion.new(opts)
   function api.Destroy() maid:DoCleanup() end
 
   applyHeight(false)
+  scheduleReflow()   -- Expanded=true content (paragraphs/buttons) settles next frame; re-measure then
   return api
 end
 
