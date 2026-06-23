@@ -18,9 +18,16 @@ function Safe.Init(R) Overlay = R.Overlay end
 -- No attribute/name is added, so no EzUI signature leaks. No protected root yet -> assume true
 -- (runtime mutators are only reached once a window exists; init runs on the main thread anyway).
 local function defaultHasCapability()
-  local root = Overlay and Overlay.peek and Overlay.peek()
-  if not root then return true end
-  return (pcall(function() root.BackgroundTransparency = root.BackgroundTransparency end))
+  -- The whole probe runs inside ONE pcall: Overlay.peek() reads root.Parent, and READING a
+  -- protected Instance property ALSO throws "lacking capability" on a thread without it (not just
+  -- writes). So peek() must be inside the pcall too -- previously it ran outside, so its throw
+  -- escaped the probe and Safe.mutate never reached the Heartbeat fallback. Semantics preserved:
+  -- no root yet -> peek short-circuits and reads nothing -> no throw -> true (assume capability);
+  -- root + capability -> read+write succeed -> true; root + no capability -> read throws -> false.
+  return (pcall(function()
+    local root = Overlay and Overlay.peek and Overlay.peek()
+    if root then root.BackgroundTransparency = root.BackgroundTransparency end
+  end))
 end
 
 local hasCapability = defaultHasCapability
