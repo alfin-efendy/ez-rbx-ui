@@ -33,7 +33,7 @@ h.describe("selectbox", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "X", "Y" }, Default = "X" })
     sb.Open()
     local root = Overlay.get(gui)
-    local catcher; for _, c in ipairs(root:GetChildren()) do if c.Name == "EzUI_OverlayCatcher" then catcher = c end end
+    local catcher; for _, c in ipairs(root:GetChildren()) do if c.ClassName == "ImageButton" then catcher = c end end -- name is anonymized; identify by class
     h.expect(catcher ~= nil).toBeTruthy()
     catcher.MouseButton1Click:Fire()
     local stillOpen = false

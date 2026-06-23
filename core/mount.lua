@@ -84,4 +84,17 @@ function Mount.finalize(gui, ctx)
   return gui
 end
 
+-- A stealth name for an internal (non-root) instance: random GUID at runtime, the readable
+-- label in Studio. Used for the overlay root/catcher so they don't carry the "EzUI" signature
+-- into the GUI tree (the root ScreenGui is already anonymized via guiName).
+function Mount.anonName(readable)
+  local rs = Mount.service("RunService")
+  local studio = false
+  if rs then local ok, v = pcall(function() return rs:IsStudio() end); studio = ok and v or false end
+  if studio then return readable end
+  local hs = Mount.service("HttpService")
+  if hs then local ok, g = pcall(function() return hs:GenerateGUID(false) end); if ok and g then return g end end
+  return "_" .. tostring(math.random(100000, 999999999))
+end
+
 return Mount

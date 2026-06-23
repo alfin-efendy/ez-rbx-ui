@@ -1,11 +1,18 @@
 -- Deps injected via Init(R).
 local Overlay = {}
-local Create
+local Create, Mount
 local root = nil
 local catcher = nil -- full-screen click-catcher behind open popovers (closes them on outside click)
 local popovers = {} -- set of close functions for open popovers (dropdowns, color pickers)
 
-function Overlay.Init(R) Create = R.Create end
+function Overlay.Init(R) Create = R.Create; Mount = R.Mount end
+
+-- Anonymous (random at runtime, readable in Studio) name so overlay instances don't carry the
+-- "EzUI" signature into the GUI tree. Falls back to the readable label if Mount is unavailable.
+local function anon(readable)
+  if Mount and Mount.anonName then return Mount.anonName(readable) end
+  return readable
+end
 
 -- A transparent full-screen button mounted under the popover (ZIndex 1000, the popover
 -- is 1001+). A click anywhere outside the popover lands on it and closes everything.
@@ -13,7 +20,7 @@ local function ensureCatcher()
   if catcher and catcher.Parent ~= nil then return end
   if not root then return end
   catcher = Create("ImageButton", {
-    Name = "EzUI_OverlayCatcher", AutoButtonColor = false, BackgroundTransparency = 1,
+    Name = anon("OverlayCatcher"), AutoButtonColor = false, BackgroundTransparency = 1,
     Active = true, Size = UDim2.new(1, 0, 1, 0), ZIndex = 1000, Parent = root,
   })
   catcher.MouseButton1Click:Connect(function() Overlay.closeAll() end)
@@ -28,7 +35,7 @@ function Overlay.get(parentGui)
   -- "_destroyed" flag) THROWS on real Instances. A destroyed Instance has Parent=nil.
   if root and root.Parent ~= nil then return root end
   root = Create("Frame", {
-    Name = "EzUI_OverlayRoot",
+    Name = anon("OverlayRoot"),
     BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 1, 0),
     ZIndex = 1000,

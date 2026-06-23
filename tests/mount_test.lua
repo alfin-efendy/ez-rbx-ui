@@ -87,6 +87,13 @@ h.describe("mount", function()
     h.expect(Mount.guiName({ GuiName = "MyHub" }, true)).toBe("MyHub")
   end)
 
+  h.it("anonName: random at runtime, readable label in Studio", function()
+    resetEnv()
+    h.expect(Mount.anonName("OverlayRoot")).toBe("guid") -- runtime → GUID (mock GenerateGUID)
+    h.mock.isStudio = true
+    h.expect(Mount.anonName("OverlayRoot")).toBe("OverlayRoot")
+  end)
+
   h.it("finalize: marks the gui and dedupes prior EzUI roots only", function()
     resetEnv()
     local parent = h.roblox.Instance.new("Folder")
