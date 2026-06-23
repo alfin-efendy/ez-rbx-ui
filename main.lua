@@ -14,6 +14,7 @@ R.Config = require("core/config")
 R.Flag = require("core/flag")
 R.Animate = require("core/animate")
 R.Overlay = require("core/overlay")
+R.Mount = require("core/mount")
 R.Acrylic = require("core/acrylic")
 R.Asset = require("core/asset")
 R.Numfmt = require("core/numfmt")
@@ -53,10 +54,9 @@ function EzUI:NewConfig(opts) return R.Config.new(opts) end
 
 function EzUI:CreateWindow(config)
   config = config or {}
-  if config.Parent == nil then
-    local ok, hui = pcall(function() return gethui and gethui() end)
-    config.Parent = (ok and hui) or game:GetService("CoreGui")
-  end
+  local ctx = R.Mount.resolve(config)
+  config.Parent = ctx.parent
+  config._mountCtx = ctx
   return R.Window.new(config)
 end
 

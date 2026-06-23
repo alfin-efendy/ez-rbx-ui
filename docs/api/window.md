@@ -300,3 +300,18 @@ print(Window:GetMode()) -- "light"
 ```
 
 See [Theming — Color mode](/guide/theming#color-mode-dark-light) for the full palette reference.
+
+## Parenting & stealth
+
+`CreateWindow` resolves where to mount the UI automatically via a fallback chain:
+`gethui()` → `protect_gui` + `CoreGui` → `CoreGui` → `PlayerGui`. It also applies
+stealth at runtime (random `ScreenGui` name, `cloneref`, dedupe of prior EzUI roots).
+
+| Field | Type | Default | Effect |
+|---|---|---|---|
+| `Parent` | `Instance` | auto | Manual override; bypasses the whole chain. |
+| `Stealth` | `bool` | `true` at runtime | Controls naming only. `false` → readable name `"EzUI"`. Dedupe / `protect` / service `cloneref` are always feature-detected-on. |
+| `GuiName` | `string` | random / `"EzUI"` | Force a specific `ScreenGui` name. |
+| `DisplayOrder` | `number` | `1000000` | `ScreenGui` render order (higher renders above game UI). |
+
+In Roblox Studio the name stays the readable `"EzUI"` for easy debugging.
