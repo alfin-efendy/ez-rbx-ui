@@ -122,7 +122,7 @@ function M.installInto(env, mock, strict)
     VerticalAlignment = enumNs({ "Top", "Center", "Bottom" }),
     HorizontalAlignment = enumNs({ "Left", "Center", "Right" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
-    KeyCode = enumNs({ "RightControl", "E", "P", "Insert", "Unknown" }),
+    KeyCode = enumNs({ "RightControl", "LeftAlt", "E", "P", "Insert", "Unknown" }),
     UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard", "MouseWheel" }),
     ZIndexBehavior = enumNs({ "Sibling", "Global" }),
     ScaleType = enumNs({ "Stretch", "Fit", "Crop", "Tile", "Slice" }),

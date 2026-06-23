@@ -28,8 +28,11 @@ return function(window)
   tab:AddToggle({ Text = "Enable notifications", Flag = "notif", Default = true,
     Description = "Show toast notifications for in-game events.",
     Callback = function(on) window:SetNotificationsEnabled(on) end })
+  -- Rebind the window's built-in toggle key. Use OnChanged (not Callback) so we don't add a
+  -- SECOND toggle handler on the same key — that would fire alongside the window's own one
+  -- and just make the window blink (hide+show) instead of toggling.
   tab:AddKeybind({ Text = "Toggle UI key", Default = Enum.KeyCode.RightControl,
-    Callback = function() window:Toggle() end })
+    OnChanged = function(key) window:SetToggleKey(key) end })
 
   local cfg = tab:AddAccordion({ Title = "Configuration", Icon = "settings-2" })
   cfg:AddSelectBox({ Text = "Profile", Options = window:ConfigProfiles(), Default = "Default",

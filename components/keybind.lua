@@ -57,9 +57,17 @@ function Keybind.new(opts)
   end
   local commit = Flag.bind(opts, keyName(opts.Default or "Unknown"), apply)
 
+  -- Rebind the key and notify via OnChanged. Use this (not opts.Callback) to react to
+  -- the user *choosing a different key* — e.g. driving Window:SetToggleKey so the window's
+  -- built-in toggle handler stays the single source of truth instead of adding a second one.
+  local function setKey(k)
+    commit(keyName(k))
+    if opts.OnChanged then opts.OnChanged(toKeyCode(keyCode)) end
+  end
+
   local api = { Frame = btn }
   function api.GetKey() return toKeyCode(keyCode) end
-  function api.SetKey(k) commit(keyName(k)) end
+  function api.SetKey(k) setKey(k) end
   function api.OnPressed(fn) onPressed = fn end
   function api.Destroy() maid:DoCleanup() end
 
@@ -68,7 +76,7 @@ function Keybind.new(opts)
     if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
     if listening then
       listening = false
-      commit(keyName(input.KeyCode))
+      setKey(input.KeyCode)
     elseif not gameProcessed and input.KeyCode == toKeyCode(keyCode) then
       if opts.Callback then opts.Callback() end
       if onPressed then onPressed() end
