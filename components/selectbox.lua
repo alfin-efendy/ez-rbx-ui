@@ -1,5 +1,6 @@
 -- Deps injected via Init(R).
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local SelectBox = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Flag
 
@@ -11,7 +12,17 @@ end
 local function contains(arr, v) for _, x in ipairs(arr) do if x == v then return true end end return false end
 
 local function normOpt(o)
-  if type(o) == "table" then return { value = o.Value or o.value, label = o.Text or o.Label, icon = o.Icon, desc = o.Desc, divider = o.Divider == true } end
+  -- Accept both PascalCase (EzUI convention) and lowercase keys, since LoadOptions often
+  -- returns data decoded from JSON/HTTP where keys are lowercase.
+  if type(o) == "table" then
+    return {
+      value = o.Value ~= nil and o.Value or o.value,
+      label = o.Text or o.Label or o.text or o.label,
+      icon = o.Icon or o.icon,
+      desc = o.Desc or o.desc,
+      divider = o.Divider == true or o.divider == true,
+    }
+  end
   return { value = o }
 end
 
@@ -388,31 +399,44 @@ function SelectBox.new(opts)
     Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
   end)) end
 
-  -- Async options loader. opts.LoadOptions is a function that returns the options table;
-  -- it may yield (HTTP, datastore, task.wait). The field shows its loading state on its own
-  -- while the call is pending and clears it once the function returns — no manual SetLoading.
-  -- It runs in task.spawn so it never blocks other controls, and a timeout (opts.Timeout
-  -- seconds, default 60) clears the loading state if the function never returns. Call
-  -- api.Reload() to run it again; loadToken supersedes any earlier in-flight run.
+  -- Options loader. opts.LoadOptions is a function that returns the options table; it may
+  -- yield (HTTP, datastore, task.wait). The field shows its loading state on its own while
+  -- the call is pending and clears it once the function returns — no manual SetLoading.
+  --
+  -- The fetch + GUI apply are deferred to the next RunService.Heartbeat. This gives BOTH
+  -- properties we need:
+  --   * Non-blocking: runLoader returns immediately, so a yielding LoadOptions never blocks
+  --     window construction — the controls created AFTER this one still render right away.
+  --   * Capability-safe: the work runs in a RunService signal-handler thread, which (like the
+  --     MouseButton1Click/OnOpen handlers) retains the executor capability across the yield.
+  --     api.SetOptions -> refresh() mutates GUI under a protected parent (gethui()/CoreGui),
+  --     which needs that capability — a task.spawn'd thread loses it ("lacking capability
+  --     Plugin"), and running synchronously keeps it but blocks construction.
+  -- setLoading(true) runs synchronously (the caller — create/main or OnOpen handler — has
+  -- capability) so the spinner shows immediately. A timeout (opts.Timeout, default 60) clears
+  -- the spinner if the loader never returns. Call api.Reload() to run again; loadToken
+  -- supersedes any earlier in-flight run.
   local loadToken = 0
   local function runLoader()
     if type(opts.LoadOptions) ~= "function" then return end
     loadToken = loadToken + 1
     local token = loadToken
-    local settled = false
     setLoading(true)
-    task.spawn(function()
+    local conn
+    conn = RunService.Heartbeat:Once(function()
+      if token ~= loadToken then return end
       local ok, result = pcall(opts.LoadOptions)
-      if settled or token ~= loadToken then return end
-      settled = true
+      if token ~= loadToken then return end
       if ok and type(result) == "table" then api.SetOptions(result) end
       setLoading(false)
     end)
+    if conn then maid:Give(conn) end
+    -- Best-effort timeout: clears the spinner if LoadOptions never returns. token-guarded so a
+    -- newer load (Reload) or destroy supersedes it; only clears the spinner, never the result.
     local timeout = type(opts.Timeout) == "number" and opts.Timeout or 60
     task.delay(timeout, function()
-      if settled or token ~= loadToken then return end
-      settled = true
-      setLoading(false)
+      if token ~= loadToken then return end
+      if loading then setLoading(false) end
     end)
   end
   function api.Reload() runLoader() end

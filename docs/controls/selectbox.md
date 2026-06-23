@@ -22,8 +22,8 @@ local sel = tab:AddSelectBox({ Text = "Mode", Options = { "Auto", "Manual", "Hyb
 | `Loading` | `bool` | `false` | Show a spinner on the field |
 | `Description` | `string` | — | Helper text under the label |
 | `OnOpen` | `function` | — | `OnOpen(api)` — refresh options each time the dropdown opens |
-| `LoadOptions` | `function` | — | Async provider that returns the options table. While the call is pending the field shows `Loading…` (the value is hidden) and the dropdown shows a loading row; both clear when the function returns. Runs in `task.spawn` so it never blocks other controls. Combine with `OnOpen = function(api) api.Reload() end` to refetch on every open. |
-| `Timeout` | `number` | `60` | Seconds before `LoadOptions` is given up on and the loading state is cleared. |
+| `LoadOptions` | `function` | — | Provider that returns the options table. While the call is pending the field shows `Loading…` (the value is hidden) and the dropdown shows a loading row; both clear when the function returns. The fetch is **deferred to the next `Heartbeat`**, so a loader that yields (HTTP/datastore) never blocks the rest of the UI from rendering; the GUI update runs in a signal-handler context that keeps the executor capability needed to mutate a protected (`gethui`/`CoreGui`) UI (a `task.spawn` thread loses it). Combine with `OnOpen = function(api) api.Reload() end` to refetch on every open. |
+| `Timeout` | `number` | `60` | Seconds after which the loading spinner is cleared if `LoadOptions` has not returned. A result that arrives later still applies. |
 | `Callback` | `function` | — | Called with the new value on change |
 | `Flag` | `string` | — | Persist the selected `Value` to config |
 

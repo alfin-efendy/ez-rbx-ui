@@ -15,6 +15,13 @@ h.describe("main", function()
     local tab = w:AddTab({ Name = "Home" })
     h.expect(tab:IsSelected()).toBe(true)
   end)
+  h.it("CreateWindow with no Parent resolves the mount chain (CoreGui tier, random name, high DisplayOrder)", function()
+    local w = EzUI:CreateWindow({ Title = "Auto" })
+    h.expect(w.Gui.Parent).toBe(h.mock.coreGui)
+    h.expect(w.Gui.Name).toBe("guid")            -- random GUID at runtime via mock GenerateGUID
+    h.expect(w.Gui.DisplayOrder).toBe(1000000)
+    h.expect(w.Gui:GetAttribute("__ezui")).toBe(true)
+  end)
 end)
 
 h.run()

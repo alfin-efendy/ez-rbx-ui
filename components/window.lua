@@ -2,12 +2,13 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
   Notif = R.Notification; Asset = R.Asset; Themer = R.Themer
+  Mount = R.Mount
 end
 
 local TITLE_H = 40
@@ -101,12 +102,15 @@ function Window.new(config)
     })
   end
 
+  local mountCtx = config._mountCtx or { parent = config.Parent }
   local gui = Create("ScreenGui", {
-    Name = "EzUI",
+    Name = Mount.guiName(config, mountCtx.studio),
     ResetOnSpawn = false,
     ZIndexBehavior = Enum.ZIndexBehavior and Enum.ZIndexBehavior.Sibling or nil,
+    DisplayOrder = config.DisplayOrder or 1000000,
     Parent = config.Parent,
   })
+  Mount.finalize(gui, mountCtx)
 
   local main = Create("Frame", {
     Name = "Main",
