@@ -2,6 +2,10 @@ local h = require("tests.helper")
 local R = h.loadLib()
 local SelectBox, Create, Overlay, Config = R.SelectBox, R.Create, R.Overlay, R.Config
 
+-- Options/dividers/the Loading row live in the inner "List" scroll frame; the search bar
+-- is pinned directly on the dropdown so it stays sticky while the list scrolls.
+local function listChildren(dd) return (dd:FindFirstChild("List") or dd):GetChildren() end
+
 h.describe("selectbox", function()
   h.it("single select reflects default and SetValue persists", function()
     local cfg = Config.new({ FileName = "SB", AutoSave = false })
@@ -44,7 +48,7 @@ h.describe("selectbox", function()
     h.expect(dd:FindFirstChild("Search") ~= nil).toBeTruthy()
     s.Filter("be")
     local function optVisible(text)
-      for _, o in ipairs(dd:GetChildren()) do
+      for _, o in ipairs(listChildren(dd)) do
         if o.Name == "Opt" then
           for _, l in ipairs(o:GetChildren()) do
             if l.ClassName == "TextLabel" and l.Text == text then return o.Visible end
@@ -113,6 +117,36 @@ h.describe("selectbox", function()
     s.SetValue({ "A", "C" })
     h.expect(#s.GetValue()).toBe(2)
   end)
+  h.it("multi pick re-tints the row in place without rebuilding (preserves scroll)", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local big = {}; for i = 1, 20 do big[i] = "I" .. i end
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Multi = true, Options = big, Default = { "I1" } })
+    sb.Open()
+    local function dropdown() for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then return c end end end
+    local dd1 = dropdown()
+    local list = dd1:FindFirstChild("List")
+    list.CanvasPosition = h.roblox.Vector2.new(0, 120) -- scrolled down
+    local optC; for _, o in ipairs(list:GetChildren()) do if o.Name == "Opt" and o:GetAttribute("OptValue") == "I9" then optC = o end end
+    optC.MouseButton1Click:Fire()
+    h.expect(dropdown()).toBe(dd1)                                   -- same instance: not rebuilt
+    h.expect(dropdown():FindFirstChild("List").CanvasPosition.Y).toBe(120) -- scroll preserved
+    h.expect(#sb.GetValue()).toBe(2)
+    h.expect(optC:FindFirstChild("Check").Visible).toBe(true)        -- row re-tinted as selected
+    optC.MouseButton1Click:Fire()                                    -- toggle off
+    h.expect(#sb.GetValue()).toBe(1)
+    h.expect(optC:FindFirstChild("Check").Visible).toBe(false)
+  end)
+  h.it("search box is sticky: a direct child of the dropdown, not inside the scrolling list", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local s = SelectBox.new({ Parent = Create("Frame", {}), Options = { "Alpha", "Beta", "Gamma" }, Default = "Alpha", Searchable = true })
+    s.Open()
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local list = dd:FindFirstChild("List")
+    h.expect(list ~= nil).toBeTruthy()
+    h.expect(list.ClassName).toBe("ScrollingFrame")
+    h.expect(dd:FindFirstChild("Search") ~= nil).toBeTruthy()  -- search pinned on the dropdown
+    h.expect(list:FindFirstChild("Search")).toBe(nil)          -- not scrolling with the options
+  end)
   h.it("renders opts.Text as a Title (and omits it when absent)", function()
     local s = SelectBox.new({ Parent = Create("Frame", {}), Text = "Mode", Options = { "A", "B" }, Default = "A" })
     local ti = s.Frame:FindFirstChild("Title")
@@ -126,7 +160,7 @@ h.describe("selectbox", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B" }, Default = "A" })
     sb.Open()
     local dd; for _, c in ipairs(ov:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
-    local optA; for _, c in ipairs(dd:GetChildren()) do if c.Name == "Opt" and c:GetAttribute("OptValue") == "A" then optA = c end end
+    local optA; for _, c in ipairs(listChildren(dd)) do if c.Name == "Opt" and c:GetAttribute("OptValue") == "A" then optA = c end end
     h.expect(optA.BackgroundTransparency).toBe(0)
     h.expect(optA.BackgroundColor3).toBe(R.Theme.Colors.surface)
     h.expect(optA:FindFirstChild("OptLabel").TextColor3).toBe(R.Theme.Colors.foreground)
@@ -175,8 +209,9 @@ h.describe("selectbox", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = big, Default = "I1" })
     sb.Open()
     local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
-    h.expect(dd.ClassName).toBe("ScrollingFrame")
-    h.expect(dd.AutomaticCanvasSize).toBe(h.roblox.Enum.AutomaticSize.Y)
+    local list = dd:FindFirstChild("List")
+    h.expect(list.ClassName).toBe("ScrollingFrame")
+    h.expect(list.AutomaticCanvasSize).toBe(h.roblox.Enum.AutomaticSize.Y)
   end)
   h.it("Loading shows a spinner + Loading row; SetLoading(false) restores options", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
@@ -186,13 +221,13 @@ h.describe("selectbox", function()
     h.expect(field:FindFirstChild("Caret").Visible).toBe(false)
     sb.Open()
     local function dd() for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then return c end end end
-    h.expect(dd():FindFirstChild("Loading") ~= nil).toBeTruthy()
-    local opts0 = 0; for _, o in ipairs(dd():GetChildren()) do if o.Name == "Opt" then opts0 = opts0 + 1 end end
+    h.expect((dd():FindFirstChild("List")):FindFirstChild("Loading") ~= nil).toBeTruthy()
+    local opts0 = 0; for _, o in ipairs(listChildren(dd())) do if o.Name == "Opt" then opts0 = opts0 + 1 end end
     h.expect(opts0).toBe(0)
     sb.SetLoading(false)
     h.expect(field:FindFirstChild("Spinner").Visible).toBe(false)
     h.expect(field:FindFirstChild("Caret").Visible).toBe(true)
-    local n = 0; for _, o in ipairs(dd():GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    local n = 0; for _, o in ipairs(listChildren(dd())) do if o.Name == "Opt" then n = n + 1 end end
     h.expect(n).toBe(2)
   end)
   h.it("OnOpen fires on open and can refresh options", function()
@@ -203,7 +238,7 @@ h.describe("selectbox", function()
     sb.Open()
     h.expect(calls).toBe(1)
     local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
-    local n = 0; for _, o in ipairs(dd:GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
     h.expect(n).toBe(2)
   end)
   h.it("SetOptions rebuilds an open dropdown", function()
@@ -212,7 +247,7 @@ h.describe("selectbox", function()
     sb.Open()
     sb.SetOptions({ "C", "D", "E" })
     local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
-    local n = 0; for _, o in ipairs(dd:GetChildren()) do if o.Name == "Opt" then n = n + 1 end end
+    local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
     h.expect(n).toBe(3)
   end)
   h.it("option Text shows as label while Value is stored and persisted", function()
@@ -247,7 +282,7 @@ h.describe("selectbox", function()
     sb.Open()
     local dd; for _, c in ipairs(ov:GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
     local hasLead, hasDivider, optA = false, false, nil
-    for _, c in ipairs(dd:GetChildren()) do
+    for _, c in ipairs(listChildren(dd)) do
       if c.Name == "Opt" and c:FindFirstChild("Lead") then hasLead = true end
       if c.Name == "Divider" then hasDivider = true end
       if c.Name == "Opt" and c:GetAttribute("OptValue") == "A" then optA = c end

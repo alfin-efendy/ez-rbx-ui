@@ -10,6 +10,13 @@ return function(window, host)
     sel.SetOptions({ pool[(rot % 5) + 1], pool[((rot + 1) % 5) + 1], pool[((rot + 2) % 5) + 1] })
   end })
   tab:AddSelectBox({ Text = "Tags", Options = { "A", "B", "C" }, Multi = true, Default = { "A" } })
+  -- multi-select with a long list: sticky search stays pinned, and picking an option
+  -- keeps your scroll position instead of jumping back to the top
+  local fruits = { "Apple", "Apricot", "Avocado", "Banana", "Blackberry", "Blueberry", "Cherry", "Coconut",
+    "Cranberry", "Date", "Dragonfruit", "Fig", "Grape", "Guava", "Kiwi", "Lemon", "Lime", "Mango",
+    "Melon", "Nectarine", "Orange", "Papaya", "Peach", "Pear", "Pineapple", "Plum", "Pomegranate",
+    "Raspberry", "Strawberry", "Watermelon" }
+  tab:AddSelectBox({ Text = "Fruits", Options = fruits, Multi = true, Default = { "Apple", "Mango" } })
   tab:AddSection("Per-item + AllowNone")
   tab:AddSelectBox({ Text = "Weapon", AllowNone = true, Options = {
     { Value = "Bow", Icon = "target", Desc = "Ranged" }, { Divider = true },
