@@ -11,7 +11,17 @@ end
 local function contains(arr, v) for _, x in ipairs(arr) do if x == v then return true end end return false end
 
 local function normOpt(o)
-  if type(o) == "table" then return { value = o.Value or o.value, label = o.Text or o.Label, icon = o.Icon, desc = o.Desc, divider = o.Divider == true } end
+  -- Accept both PascalCase (EzUI convention) and lowercase keys, since LoadOptions often
+  -- returns data decoded from JSON/HTTP where keys are lowercase.
+  if type(o) == "table" then
+    return {
+      value = o.Value ~= nil and o.Value or o.value,
+      label = o.Text or o.Label or o.text or o.label,
+      icon = o.Icon or o.icon,
+      desc = o.Desc or o.desc,
+      divider = o.Divider == true or o.divider == true,
+    }
+  end
   return { value = o }
 end
 
@@ -388,32 +398,43 @@ function SelectBox.new(opts)
     Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
   end)) end
 
-  -- Async options loader. opts.LoadOptions is a function that returns the options table;
-  -- it may yield (HTTP, datastore, task.wait). The field shows its loading state on its own
-  -- while the call is pending and clears it once the function returns — no manual SetLoading.
-  -- It runs in task.spawn so it never blocks other controls, and a timeout (opts.Timeout
-  -- seconds, default 60) clears the loading state if the function never returns. Call
+  -- Options loader. opts.LoadOptions is a function that returns the options table; it may
+  -- yield (HTTP, datastore, task.wait). The field shows its loading state on its own while
+  -- the call is pending and clears it once the function returns — no manual SetLoading.
+  --
+  -- It runs SYNCHRONOUSLY (NOT in task.spawn) on purpose: when the loader returns,
+  -- api.SetOptions -> refresh() mutates the GUI instances, which live under a protected
+  -- parent (gethui()/CoreGui). Under an executor, a task.spawn'd thread does not carry the
+  -- elevated capability, so mutating that GUI throws "lacking capability Plugin". Running
+  -- inline keeps SetOptions on the CALLER's thread — the main thread at create time, or the
+  -- OnOpen/Reload signal-handler thread otherwise — both of which retain the capability.
+  -- Trade-off: a LoadOptions that yields briefly blocks the caller; most loaders read cache
+  -- and don't yield. A timeout (opts.Timeout seconds, default 60) is armed beforehand so it
+  -- can still fire while the loader is yielding and clear a never-returning load. Call
   -- api.Reload() to run it again; loadToken supersedes any earlier in-flight run.
   local loadToken = 0
   local function runLoader()
     if type(opts.LoadOptions) ~= "function" then return end
     loadToken = loadToken + 1
     local token = loadToken
-    local settled = false
     setLoading(true)
-    task.spawn(function()
-      local ok, result = pcall(opts.LoadOptions)
-      if settled or token ~= loadToken then return end
-      settled = true
-      if ok and type(result) == "table" then api.SetOptions(result) end
-      setLoading(false)
-    end)
+    -- Timeout safety net: clears the loading spinner if LoadOptions yields and is slow to
+    -- return. Armed before the call so it can fire while the loader is parked. The token check
+    -- drops it if a newer load (Reload) or destroy superseded this one. It only clears the
+    -- spinner — it never blocks the result below — so a result that arrives after the timeout
+    -- still applies (in the synchronous model the caller is parked until the loader returns).
     local timeout = type(opts.Timeout) == "number" and opts.Timeout or 60
     task.delay(timeout, function()
-      if settled or token ~= loadToken then return end
-      settled = true
-      setLoading(false)
+      if token ~= loadToken then return end
+      if loading then setLoading(false) end
     end)
+    -- Run synchronously: when the loader returns, api.SetOptions -> refresh() mutates the GUI,
+    -- which must stay on the caller's capability-bearing thread (see the note above). The token
+    -- check drops a result that arrived after a newer load or a destroy superseded this one.
+    local ok, result = pcall(opts.LoadOptions)
+    if token ~= loadToken then return end
+    if ok and type(result) == "table" then api.SetOptions(result) end
+    setLoading(false)
   end
   function api.Reload() runLoader() end
   maid:Give(function() loadToken = loadToken + 1 end) -- drop pending loads on destroy
