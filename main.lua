@@ -7,6 +7,7 @@ local EzUI = {}
 local R = {}
 R.Theme = require("core/theme")
 R.Create = require("core/create")
+R.Safe = require("core/safe")
 R.Signal = require("core/signal")
 R.Maid = require("core/maid")
 R.Icons = require("core/icons")

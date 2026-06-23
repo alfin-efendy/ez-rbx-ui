@@ -35,6 +35,7 @@ function H.loadLib()
   local R = {}
   R.Theme = H.requireModule("core/theme")
   R.Create = H.requireModule("core/create")
+  R.Safe = H.requireModule("core/safe")
   R.Signal = H.requireModule("core/signal")
   R.Maid = H.requireModule("core/maid")
   R.Icons = H.requireModule("core/icons")
