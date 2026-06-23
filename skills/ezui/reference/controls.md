@@ -56,30 +56,38 @@ tab:AddSelectBox({ Text = "Weapon", Flag = "weapon", Default = "wpn_005",
 ```
 
 ## AddLabel
-`host:AddLabel(opts)` — a single-line text element in the default foreground color.
+`host:AddLabel(opts)` — a text element in the default foreground color. Single-line by default; pass `Variant = "paragraph"` for a multi-line label that wraps and auto-sizes its height.
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| Text | string | `""` | label text; also accepted as the first positional string argument |
+| Text | string | `""` | label text; also accepted as the first positional string argument. Honors explicit `\n` line breaks when `Variant = "paragraph"` |
+| Variant | string | `"default"` | `"default"` (single line), `"paragraph"` (wraps + auto-height, muted color), `"section"` (uppercased heading). `AddParagraph`/`AddSection` are shorthands for the latter two |
 
-**Returns:** `{ SetText(s), SetLocked(b), Destroy() }`
+**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }`
 
 ```lua
 local lbl = tab:AddLabel("Hello, world!")
 lbl.SetText("Updated at runtime!")
+
+-- multi-line label: a default label is single-line (extra lines clip), so use the paragraph variant
+tab:AddLabel({ Variant = "paragraph", Text = "First line\nSecond line\nWraps automatically too." })
 ```
 
 ## AddParagraph
-`host:AddParagraph(opts)` — multi-line wrapped text in the muted foreground color; auto-sizes height.
+`host:AddParagraph(opts)` — multi-line wrapped text in the muted foreground color; auto-sizes height. Honors explicit `\n` line breaks in addition to automatic wrapping. (Shorthand for `AddLabel` with `Variant = "paragraph"`.)
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| Text | string | `""` | paragraph body; also accepted as the first positional string argument |
+| Text | string | `""` | paragraph body; also accepted as the first positional string argument. Use `\n` for explicit line breaks |
 
-**Returns:** no return API (no handle methods documented)
+**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }`
 
 ```lua
 tab:AddParagraph("Use paragraphs for descriptions, changelogs, and help text.")
+
+-- explicit line breaks (e.g. a changelog); SetText can rebuild it at runtime
+local notes = tab:AddParagraph("Changelog v3.1\n• Ratio is now a screen fraction\n• New StartHidden option")
+notes.SetText(notes.Frame.Text .. "\n• Appended at runtime")
 ```
 
 ## AddSection
