@@ -14,7 +14,7 @@ local EzUI = loadstring(game:HttpGet(
 local Window = EzUI:CreateWindow({
     Title    = "My Hub",
     Subtitle = "v1.0",
-    Ratio    = 16 / 10,
+    Ratio    = { Width = 0.4, Height = 0.55 },
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "simple", AutoHide = true },
 })
@@ -62,7 +62,7 @@ local EzUI = loadstring(game:HttpGet(
 local Window = EzUI:CreateWindow({
     Title    = "My Hub",
     Subtitle = "v1.0",
-    Ratio    = 16 / 10,
+    Ratio    = { Width = 0.4, Height = 0.55 },
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "simple", AutoHide = true },
     Config = { Enabled = true, FileName = "MyHub", AutoSave = true, AutoLoad = true },
@@ -111,7 +111,7 @@ local EzUI = loadstring(game:HttpGet(
 
 local Window = EzUI:CreateWindow({
     Title = "Weapon Selector",
-    Ratio = 16 / 10,
+    Ratio = { Width = 0.4, Height = 0.55 },
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "simple", AutoHide = true },
 })
@@ -172,7 +172,7 @@ local EzUI = loadstring(game:HttpGet(
 
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Ratio = 16 / 10,
+    Ratio = { Width = 0.4, Height = 0.55 },
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "simple", AutoHide = true },
 })
@@ -255,7 +255,7 @@ local EzUI = loadstring(game:HttpGet(
 local Window = EzUI:CreateWindow({
     Title    = "Themed Hub",
     Subtitle = "Indigo accent",
-    Ratio    = 16 / 10,
+    Ratio    = { Width = 0.4, Height = 0.55 },
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "circle", AutoHide = true },
     Theme = {
@@ -310,8 +310,9 @@ local EzUI = loadstring(game:HttpGet(
 local Window = EzUI:CreateWindow({
     Title    = "Mobile Hub",
     Subtitle = "Touch-friendly",
-    Ratio    = 4 / 3,  -- taller ratio works better on portrait phones
+    Ratio    = { Width = 0.55, Height = 0.6 },  -- taller, narrower window suits portrait phones
     ToggleKey = Enum.KeyCode.RightControl,  -- keyboard fallback on PC
+    StartHidden = true,         -- load collapsed to just the FAB; player taps it to open
     FloatingToggle = {
         Type      = "simple",   -- chevron tab that docks at the screen edge
         AutoHide  = true,       -- appears only while the window is hidden

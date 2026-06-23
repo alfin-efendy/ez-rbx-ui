@@ -29,7 +29,7 @@ The example below creates a window, adds a tab with three controls, and wires up
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Ratio = 16/10,                            -- window shape; auto-fits the viewport
+    Ratio = { Width = 0.4, Height = 0.55 },   -- 40% of the screen wide, 55% tall; auto-fits
     Subtitle = "v3.0",
     Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,   -- show/hide

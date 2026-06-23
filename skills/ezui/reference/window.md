@@ -13,7 +13,7 @@ local Window = EzUI:CreateWindow({
     Title = "My Hub",
     Subtitle = "v3.0",
     Image = "rbxassetid://0",
-    Ratio = 16/10,
+    Ratio = { Width = 0.4, Height = 0.55 },
     Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,
     FloatingToggle = { Type = "simple", AutoHide = true },
@@ -28,11 +28,12 @@ local Window = EzUI:CreateWindow({
 | `Title` | `string` | — | Title-bar text |
 | `Subtitle` | `string` | — | Secondary line shown under the title (grows the title bar) |
 | `Image` | `string` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
-| `Ratio` | `number` \| `{ Width, Height }` | `4/3` | Window aspect ratio; auto-fits the viewport and stays responsive |
+| `Ratio` | `{ Width, Height }` \| `number` | `{ 0.45, 0.6 }` | Window size as a fraction of the viewport — `{ Width = 0.4, Height = 0.55 }` = 40% × 55% (a single number = same fraction both axes); capped at 92% per axis; auto-fits and stays responsive |
 | `Transparency` | `number` | `0.12` | Window background transparency `0..1`; `0` = opaque |
 | `Animations` | `bool` | `true` | Enable entrance/transition motion (FAB pop, window open/close, accordion + tab transitions); pass `false` for reduced/instant motion on low-end devices or for accessibility |
 | `ToggleKey` | `Enum.KeyCode` | `RightControl` | Show/hide keyboard key |
 | `FloatingToggle` | `table` \| `false` | enabled | Floating toggle button config — see [FloatingToggle](#floatingtoggle) below. Pass `false` to disable |
+| `StartHidden` | `bool` | `false` | Start collapsed to just the floating toggle: the window loads hidden and the FAB is shown so the player can open it (also openable via `ToggleKey`) |
 | `Theme` | `table` | — | Override design tokens (deep-merged onto defaults) |
 | `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | — | Flag persistence options |
 | `Mode` | `"dark"` \| `"light"` | `"dark"` | Initial color mode |

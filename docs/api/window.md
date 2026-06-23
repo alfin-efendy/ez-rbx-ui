@@ -11,7 +11,7 @@ local Window = EzUI:CreateWindow({
     Title = "My Hub",
     Subtitle = "v3.0",
     Image = "rbxassetid://0",
-    Ratio = 16/10,
+    Ratio = { Width = 0.4, Height = 0.55 },
     Transparency = 0.12,
     Animations = true,
     ToggleKey = Enum.KeyCode.RightControl,
@@ -27,11 +27,12 @@ local Window = EzUI:CreateWindow({
 | `Title` | `string` | Title-bar text |
 | `Subtitle` | `string` | Secondary line shown under the title (grows the title bar) |
 | `Image` | `string` | Title-bar logo image — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
-| `Ratio` | `number` \| `{ Width, Height }` | Window aspect ratio (shape); the window auto-fits the viewport and stays responsive. Default `4/3` |
+| `Ratio` | `{ Width, Height }` \| `number` | Window size as a **fraction of the viewport**: `{ Width = 0.4, Height = 0.55 }` = 40% wide × 55% tall. A single number applies the same fraction to both axes. Capped at 92% per axis; stays responsive. Default `{ Width = 0.45, Height = 0.6 }` |
 | `Transparency` | `number` | Window background transparency `0..1`; `0` = opaque, higher = more see-through. Default `0.12` |
 | `Animations` | `bool` | Enable entrance/transition motion (FAB pop, window open/close, accordion + tab transitions). Default `true`. Pass `false` for reduced/instant motion on low-end devices or for accessibility |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
 | `FloatingToggle` | `table` | Floating toggle button config — see [FloatingToggle config](#floatingtoggle-config). Pass `false` to disable |
+| `StartHidden` | `bool` | Start collapsed to just the floating toggle: the window loads hidden and the FAB is shown so the player can open it (also openable via `ToggleKey`). Default `false` |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](#color-mode) |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |

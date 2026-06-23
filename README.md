@@ -27,7 +27,7 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Ratio = 16/10,                            -- window shape; auto-fits the viewport
+    Ratio = { Width = 0.4, Height = 0.55 },   -- 40% of the screen wide, 55% tall; auto-fits
     Subtitle = "v3.0",
     Image = "rbxassetid://0",                 -- rbxassetid:// or http(s):// url
     Transparency = 0.12,
@@ -61,10 +61,11 @@ See [`example/main.lua`](example/main.lua) for a full playground (`make run` to 
 | `Title` | string | title-bar text |
 | `Subtitle` | string | secondary line under the title |
 | `Image` | string | title-bar logo (`rbxassetid://` or `http(s)://`) |
-| `Ratio` | number \| `{ Width, Height }` | window aspect ratio; auto-fits the viewport (default `4/3`) |
+| `Ratio` | `{ Width, Height }` \| number | window size as a fraction of the viewport — `{ Width = 0.4, Height = 0.55 }` = 40% × 55% (a single number = same fraction both axes); default `{ Width = 0.45, Height = 0.6 }` |
 | `Transparency` | number | window background transparency `0..1` (default `0.12`) |
 | `ToggleKey` | `Enum.KeyCode` | show/hide key (default `RightControl`) |
 | `FloatingToggle` | table | `{ Type, Position, Image, Size, Draggable, AutoHide }` (or `false` to disable) |
+| `StartHidden` | bool | start collapsed to just the floating toggle (window loads hidden; open via the FAB or `ToggleKey`); default `false` |
 | `Theme` | table | override design tokens (see [Theming](#theming)) |
 | `Config` | `{ Enabled, FileName, FolderName, AutoSave, AutoLoad }` | flag persistence |
 
@@ -141,7 +142,7 @@ Controls with `Flag` register against the window's `Config`. `Window:ResetConfig
 | v2 | v3 |
 |---|---|
 | `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
-| `Size = { Width, Height }` | `Ratio = w/h` (aspect ratio; auto-fits the viewport) |
+| `Size = { Width, Height }` (pixels) | `Ratio = { Width, Height }` (fraction of the viewport, e.g. `{ Width = 0.4, Height = 0.55 }`; auto-fits) |
 | `tab = window:AddTab({ Name, Icon = "🏠" })` | `Icon = "home"` (Lucide name, not emoji) |
 | `tab:AddLabel/AddButton/AddToggle/AddTextBox/AddNumberBox/AddSelectBox/AddSeparator` | same names |
 | `window:ShowNotification/ShowSuccess/ShowError(...)` | `window:Notify/ShowSuccess/ShowError(...)` |

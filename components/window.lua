@@ -17,7 +17,7 @@ local SIDEBAR_W = 150
 local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
 local VP_MARGIN = 0.92                  -- never exceed 92% of the viewport on either axis
-local COVERAGE_DEF = 0.6                -- default fraction of viewport height the window targets
+local DEF_WF, DEF_HF = 0.45, 0.6       -- default window size as a fraction of the viewport (W x H)
 local FALLBACK_VP = { X = 1280, Y = 720 }
 local FAB_MARGIN = 16
 local FAB_ANCHORS = { TopLeft = true, MidLeft = true, BottomLeft = true, TopRight = true, MidRight = true, BottomRight = true }
@@ -49,17 +49,23 @@ function Window.new(config)
   if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
-  local function aspectFromRatio(r)
-    if type(r) == "number" and r > 0 then return r end
+  -- Ratio = the window size as a fraction of the viewport (per axis):
+  --   { Width = 0.4, Height = 0.55 } -> 40% of viewport width x 55% of viewport height
+  --   a single number n             -> the same fraction n on both axes
+  -- omitted -> the default (DEF_WF x DEF_HF). Values are floored only by MIN_W/MIN_H and
+  -- capped at VP_MARGIN of the viewport (see computeSize).
+  local function fractionsFromRatio(r)
+    local wf, hf
     if type(r) == "table" then
-      local rw = r.Width or r[1]
-      local rh = r.Height or r[2]
-      if type(rw) == "number" and type(rh) == "number" and rh > 0 then return rw / rh end
+      wf = tonumber(r.Width or r[1]); hf = tonumber(r.Height or r[2])
+    elseif type(r) == "number" then
+      wf = r; hf = r
     end
-    return 4 / 3
+    if not (wf and wf > 0) then wf = DEF_WF end
+    if not (hf and hf > 0) then hf = DEF_HF end
+    return wf, hf
   end
-  local aspect = aspectFromRatio(config.Ratio)
-  local coverage = COVERAGE_DEF
+  local widthFrac, heightFrac = fractionsFromRatio(config.Ratio)
   local function viewportSize()
     local cam = workspace and workspace.CurrentCamera
     local vp = cam and cam.ViewportSize
@@ -68,11 +74,11 @@ function Window.new(config)
   end
   local function computeSize()
     local vp = viewportSize()
-    local h = vp.Y * coverage
-    local w = h * aspect
+    local w = vp.X * widthFrac
+    local h = vp.Y * heightFrac
     local maxW, maxH = vp.X * VP_MARGIN, vp.Y * VP_MARGIN
-    if w > maxW then w = maxW; h = w / aspect end
-    if h > maxH then h = maxH; w = h * aspect end
+    if w > maxW then w = maxW end
+    if h > maxH then h = maxH end
     w = math.max(w, MIN_W)
     h = math.max(h, MIN_H)
     return math.floor(w), math.floor(h)
@@ -86,6 +92,7 @@ function Window.new(config)
   local fabEnabled, autoHide
   local sidebarW = SIDEBAR_W
   local closed = false
+  local startHidden = config.StartHidden == true  -- start collapsed to just the FAB; open via the FAB/toggle key
   local userMoved = false  -- set when the user drags/resizes; viewport changes then clamp instead of re-centering
   local closeCallback
   local themer = Themer.new()
@@ -776,8 +783,8 @@ function Window.new(config)
       local vp = viewportSize()
       width = math.min(width, vp.X); height = math.min(height, vp.Y)
       main.Size = UDim2.new(0, width, 0, height)
-      aspect = width / height       -- grip rewrites the ratio…
-      coverage = height / vp.Y      -- …and the coverage, so viewport changes preserve them
+      widthFrac = width / vp.X      -- grip rewrites the size fractions, so later
+      heightFrac = height / vp.Y    -- viewport changes preserve the dragged proportions
       userMoved = true
     end
   end))
@@ -825,16 +832,25 @@ function Window.new(config)
 
   -- mobile/touch floating toggle button
   if fabEnabled then
-    ensureFab() -- reopen button; hidden until the window hides (unless AutoHide = false)
-    if not autoHide then showFab() end
+    ensureFab() -- reopen button; hidden until the window hides (unless AutoHide = false or StartHidden)
+    if not autoHide or startHidden then showFab() end
   end
   function api:SetFloatingToggleVisible(b) if b then showFab() else hideFab() end end
 
-  -- entrance: scale-pop + background fade-in
-  winScale.Scale = userScale * 0.9
-  main.BackgroundTransparency = 1
-  Animate.springTo(winScale, "slow", { Scale = userScale })
-  Animate.to(main, "slow", { BackgroundTransparency = transp })
+  if startHidden then
+    -- start collapsed to just the FAB: no entrance animation; pre-set the final scale/transparency
+    -- so the first api:Show() (FAB tap or toggle key) reveals a correctly-rendered window.
+    visible = false
+    main.Visible = false
+    winScale.Scale = userScale
+    main.BackgroundTransparency = transp
+  else
+    -- entrance: scale-pop + background fade-in
+    winScale.Scale = userScale * 0.9
+    main.BackgroundTransparency = 1
+    Animate.springTo(winScale, "slow", { Scale = userScale })
+    Animate.to(main, "slow", { BackgroundTransparency = transp })
+  end
 
   maid:Give(gui)
 

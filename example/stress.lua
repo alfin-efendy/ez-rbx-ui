@@ -3,7 +3,7 @@ local EzUI = require("../output/bundle")
 
 local window = EzUI:CreateWindow({
   Title = "EzUI Stress Test",
-  Ratio = 16/10,
+  Ratio = { Width = 0.4, Height = 0.55 },
   Transparency = 0.12,
   FloatingToggle = { Type = "simple", AutoHide = true },
   Config = { FileName = "EzUIStress", AutoSave = false },

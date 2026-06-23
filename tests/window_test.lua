@@ -351,13 +351,35 @@ h.describe("window", function()
     h.expect(w:SetTransparency(0.5)).toBe(0.5)
     h.expect(w.Main.BackgroundTransparency).toBe(0.5)
   end)
-  h.it("Ratio sets the window shape: square => equal sides, default ~= 4:3", function()
+  h.it("Ratio is screen fractions: { Width, Height } sizes the window as a % of the viewport", function()
+    -- headless viewport falls back to 1280x720
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
-    local sq = R.Window.new({ Title = "M", Parent = screen, Ratio = 1 })
-    h.expect(sq.Main.Size.X.Offset).toBe(sq.Main.Size.Y.Offset)         -- 1:1
-    local def = R.Window.new({ Title = "M", Parent = screen })          -- default 4/3
-    local r = def.Main.Size.X.Offset / def.Main.Size.Y.Offset
-    h.expect(r > 1.2 and r < 1.45).toBeTruthy()
+    local w = R.Window.new({ Title = "M", Parent = screen, Ratio = { Width = 0.4, Height = 0.55 } })
+    h.expect(w.Main.Size.X.Offset).toBe(math.floor(1280 * 0.4))   -- 512
+    h.expect(w.Main.Size.Y.Offset).toBe(math.floor(720 * 0.55))   -- 396
+  end)
+  h.it("default Ratio (~45% x 60% of the viewport) when none is given", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local def = R.Window.new({ Title = "M", Parent = screen })
+    h.expect(def.Main.Size.X.Offset).toBe(math.floor(1280 * 0.45))  -- 576
+    h.expect(def.Main.Size.Y.Offset).toBe(math.floor(720 * 0.6))    -- 432
+  end)
+  h.it("Ratio as a single number applies the same fraction to both axes", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, Ratio = 0.5 })
+    h.expect(w.Main.Size.X.Offset).toBe(math.floor(1280 * 0.5))   -- 640
+    h.expect(w.Main.Size.Y.Offset).toBe(math.floor(720 * 0.5))    -- 360
+  end)
+  h.it("StartHidden starts the window hidden with only the floating toggle showing", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, StartHidden = true, FloatingToggle = { Type = "simple" } })
+    h.expect(w:IsVisible()).toBe(false)
+    h.expect(w.Main.Visible).toBe(false)
+    local function findFab() for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then return c end end end
+    h.expect(findFab() ~= nil).toBeTruthy()
+    h.expect(findFab().Visible).toBe(true)        -- FAB shown so the user can open the window
+    findFab().MouseButton1Click:Fire()
+    h.expect(w:IsVisible()).toBe(true)            -- tapping the FAB opens it
   end)
   h.it("Subtitle + Image build a taller (56px) title bar with both slots", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
