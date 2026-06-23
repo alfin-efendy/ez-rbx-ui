@@ -1,7 +1,6 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Accordion = {}
 local Create, DefaultTheme, Animate, Maid, Icons, Host, REG, Safe
-local RunService = game:GetService("RunService")
 
 function Accordion.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
@@ -99,44 +98,50 @@ function Accordion.new(opts)
     return y + theme.Spacing.inputY
   end
 
+  -- Height is ENGINE-DRIVEN when expanded: the container uses AutomaticSize.Y so Roblox sizes it to
+  -- fit its content (incl. dynamic/reactive rows) WITHOUT any post-construction script write. That
+  -- matters because some executors deny the GUI capability to Heartbeat/property-changed handlers --
+  -- a script-driven re-measure there silently fails and ClipsDescendants then crops every row past
+  -- the first. Collapsed uses AutomaticSize.None + a fixed header height (so the collapse can tween
+  -- the Size down). Toggle animations run on the header-click handler, which keeps capability.
   local function applyHeight(animated)
-    local target = HEADER_H + (expanded and (theme.Spacing.gap + contentHeight()) or 0)
-    if expanded then content.Visible = true; divider.Visible = true end
     if animated then
       Animate.rotateTo(caret, "base", expanded and 90 or 0)
       if expanded then
-        -- spring the height open (slight overshoot) and slide the content down into place
+        -- reveal: animate the height open + slide the content in, then hand sizing to the engine
+        -- (AutomaticSize.Y) so dynamic content keeps fitting with no further script write. This runs
+        -- on the header-click handler, which keeps the GUI capability even where Heartbeat does not.
+        content.Visible = true; divider.Visible = true
+        container.AutomaticSize = Enum.AutomaticSize.None
+        local target = HEADER_H + theme.Spacing.gap + contentHeight()
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)
         content.Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap + 8)
-        Animate.springTo(container, "base", { Size = UDim2.new(1, 0, 0, target) })
+        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, target) }, function()
+          if expanded then container.AutomaticSize = Enum.AutomaticSize.Y end
+        end)
         Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap) })
       else
-        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, target) }, function()
+        -- collapse: freeze the current engine-fit height, switch AutomaticSize off, animate down
+        local sz = container.AbsoluteSize
+        local from = (sz and sz.Y and sz.Y > HEADER_H) and sz.Y or (HEADER_H + theme.Spacing.gap + contentHeight())
+        container.AutomaticSize = Enum.AutomaticSize.None
+        container.Size = UDim2.new(1, 0, 0, from)
+        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, HEADER_H) }, function()
           if not expanded then content.Visible = false; divider.Visible = false end
         end)
       end
     else
-      container.Size = UDim2.new(1, 0, 0, target)
-      content.Visible = expanded
-      divider.Visible = expanded
+      if expanded then
+        content.Visible = true; divider.Visible = true
+        container.AutomaticSize = Enum.AutomaticSize.Y
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)   -- min; the engine grows it to fit the content
+      else
+        content.Visible = false; divider.Visible = false
+        container.AutomaticSize = Enum.AutomaticSize.None
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)
+      end
       caret.Rotation = expanded and 90 or 0
     end
-  end
-
-  -- The container height is fixed (AutomaticSize=None), so it must be re-derived whenever the content
-  -- size changes. A child's height settles a render step AFTER it is added -- a TextLabel's
-  -- AutomaticSize.Y, and especially a wrapped/reactive paragraph -- so a height measured on the
-  -- add-frame is stale and ClipsDescendants crops the lower rows. reflow() re-applies the height from
-  -- the CURRENT content size; scheduleReflow() defers it one Heartbeat (when AutomaticSize has
-  -- landed) via Heartbeat:Once, which keeps the GUI write in a capability-bearing context (never
-  -- task.defer/spawn -- those drop executor capability). Debounced so rapid AddX calls do one pass.
-  local reflowPending = false
-  local function reflow()
-    if expanded then container.Size = UDim2.new(1, 0, 0, HEADER_H + theme.Spacing.gap + contentHeight()) end
-  end
-  local function scheduleReflow()
-    if reflowPending then return end
-    reflowPending = true
-    RunService.Heartbeat:Once(function() reflowPending = false; reflow() end)
   end
 
   function api:Toggle() expanded = not expanded; applyHeight(true); return expanded end
@@ -149,8 +154,7 @@ function Accordion.new(opts)
   function api.MountRow(child)
     order = order + 1
     child.LayoutOrder = order
-    child.Parent = content
-    scheduleReflow()                    -- the child's AutomaticSize settles next frame; re-measure then
+    child.Parent = content              -- AutomaticSize.Y on the container fits it automatically
     return order
   end
 
@@ -159,9 +163,7 @@ function Accordion.new(opts)
     R = REG, content = content, theme = theme, config = opts.Config, window = opts.Window,
     registerSearchable = opts.RegisterSearchable, accentThemer = opts.AccentThemer,
     registerControl = opts.RegisterControl,
-    -- AddX controls parent straight to `content` (not via MountRow), so re-measure here too: a
-    -- freshly added paragraph/button's height settles next frame and would otherwise be clipped.
-    nextOrder = function() order = order + 1; scheduleReflow(); return order end,
+    nextOrder = function() order = order + 1; return order end,
   })
 
   if opts.AccentThemer then maid:Give(opts.AccentThemer.register(function()
@@ -174,21 +176,12 @@ function Accordion.new(opts)
     divider.BackgroundColor3 = theme.Colors.border
   end)) end
 
-  -- Re-apply height when content grows. The immediate reflow handles add/remove (content size already
-  -- updated when this fires); scheduleReflow re-measures one step later, after a just-added child's
-  -- AutomaticSize has settled -- the signal can first fire while the child is still un-grown.
-  maid:Give(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    reflow()
-    scheduleReflow()
-  end))
-
   maid:Give(header.MouseButton1Click:Connect(function() api:Toggle() end))
   maid:Give(container)
 
   function api.Destroy() maid:DoCleanup() end
 
   applyHeight(false)
-  scheduleReflow()   -- Expanded=true content (paragraphs/buttons) settles next frame; re-measure then
   return api
 end
 

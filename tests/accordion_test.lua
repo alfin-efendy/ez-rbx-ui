@@ -52,13 +52,13 @@ h.describe("accordion", function()
     h.expect(a.Header:FindFirstChild("Caret").Rotation).toBe(0)
     h.expect(a.Content.Visible).toBe(false)
   end)
-  h.it("Expand rotates caret to 90, shows content, grows the container", function()
+  h.it("Expand rotates caret to 90, shows content, hands height to AutomaticSize.Y", function()
     local a = Accordion.new({ Parent = Create("Frame", {}), Title = "Sec" })
     a:Expand()
     h.expect(a:IsExpanded()).toBe(true)
     h.expect(a.Content.Visible).toBe(true)
     h.expect(a.Header:FindFirstChild("Caret").Rotation).toBe(90)
-    h.expect(a.Container.Size.Y.Offset > 34).toBeTruthy()
+    h.expect(a.Container.AutomaticSize.Name).toBe("Y")   -- engine fits content (no script re-measure)
   end)
   h.it("Collapse rotates caret back to 0, hides content, returns to header height", function()
     local a = Accordion.new({ Parent = Create("Frame", {}), Title = "Sec", Expanded = true })
@@ -73,35 +73,26 @@ h.describe("accordion", function()
     h.expect(a:Toggle()).toBe(true)
     h.expect(a:Toggle()).toBe(false)
   end)
-  -- Regression: a child's height settles a render step AFTER it is added (TextLabel AutomaticSize,
-  -- wrapped/reactive paragraphs). The container (AutomaticSize=None, ClipsDescendants) must re-derive
-  -- its height on the next Heartbeat or it stays sized for the un-settled child and clips the rest.
-  local gap = R.Theme.Spacing.gap
-  local inputY = R.Theme.Spacing.inputY
-  h.it("AddParagraph/AddButton schedule a deferred re-measure so tall content is not clipped", function()
+  -- Height is engine-driven (AutomaticSize.Y) when expanded, so tall/dynamic content (reactive
+  -- paragraphs) keeps fitting WITHOUT any post-construction script write -- which is what fails on
+  -- executors that deny the GUI capability to Heartbeat/signal handlers (content was clipped there).
+  h.it("expanded => AutomaticSize.Y (engine-driven), collapsed => fixed header height", function()
     local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = true })
-    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
-    acc:AddParagraph("a\nb\nc\nd\ne\nf")   -- tall content; its AutomaticSize lands next frame
+    h.expect(acc.Container.AutomaticSize.Name).toBe("Y")
+    acc:Collapse()
+    h.expect(acc.Container.AutomaticSize.Name).toBe("None")
+    h.expect(acc.Container.Size.Y.Offset).toBe(34)
+    acc:Expand()
+    h.expect(acc.Container.AutomaticSize.Name).toBe("Y")
+  end)
+  h.it("adding content does not depend on a Heartbeat re-measure (no scheduler write)", function()
+    -- Construction + AddX must not throw or require a stepHeartbeat to size correctly; the engine
+    -- handles it. (A no-op stepHeartbeat must leave an expanded accordion AutomaticSize.Y.)
+    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = true })
+    acc:AddParagraph("a\nb\nc")
     acc:AddButton({ Text = "Go" })
-    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 120) -- engine settles the content height
-    h.mock.stepHeartbeat(0)                                   -- Heartbeat:Once -> deferred reflow runs
-    h.expect(acc.Container.Size.Y.Offset).toBe(34 + gap + 120 + inputY)
-  end)
-  h.it("MountRow schedules a deferred re-measure", function()
-    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = true })
-    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
-    acc.MountRow(Create("Frame", {}))
-    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 90)
     h.mock.stepHeartbeat(0)
-    h.expect(acc.Container.Size.Y.Offset).toBe(34 + gap + 90 + inputY)
-  end)
-  h.it("a collapsed accordion does not grow on a deferred re-measure", function()
-    local acc = Accordion.new({ Parent = parentWithLayout(), Title = "X", Expanded = false })
-    local layout = acc.Content:FindFirstChildOfClass("UIListLayout")
-    acc.MountRow(Create("Frame", {}))
-    layout.AbsoluteContentSize = h.roblox.Vector2.new(0, 200)
-    h.mock.stepHeartbeat(0)
-    h.expect(acc.Container.Size.Y.Offset).toBe(34)            -- stays header-height while collapsed
+    h.expect(acc.Container.AutomaticSize.Name).toBe("Y")
   end)
 end)
 
