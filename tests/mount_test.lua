@@ -66,6 +66,26 @@ h.describe("mount", function()
     local ctx = Mount.resolve({})
     h.expect(ctx.studio).toBe(true)
   end)
+
+  h.it("guiName: random GUID at runtime", function()
+    resetEnv()
+    h.expect(Mount.guiName({}, false)).toBe("guid") -- mock HttpService:GenerateGUID returns "guid"
+  end)
+
+  h.it("guiName: readable EzUI in studio", function()
+    resetEnv()
+    h.expect(Mount.guiName({}, true)).toBe("EzUI")
+  end)
+
+  h.it("guiName: readable EzUI when Stealth=false", function()
+    resetEnv()
+    h.expect(Mount.guiName({ Stealth = false }, false)).toBe("EzUI")
+  end)
+
+  h.it("guiName: explicit GuiName wins", function()
+    resetEnv()
+    h.expect(Mount.guiName({ GuiName = "MyHub" }, true)).toBe("MyHub")
+  end)
 end)
 
 h.run()

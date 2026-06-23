@@ -55,4 +55,17 @@ function Mount.resolve(config)
   return { parent = nil, studio = studio }
 end
 
+-- Readable in Studio / when overridden; random at runtime.
+function Mount.guiName(config, studio)
+  config = config or {}
+  if type(config.GuiName) == "string" and config.GuiName ~= "" then return config.GuiName end
+  if config.Stealth == false or studio then return "EzUI" end
+  local hs = Mount.service("HttpService")
+  if hs then
+    local ok, guid = pcall(function() return hs:GenerateGUID(false) end)
+    if ok and guid then return guid end
+  end
+  return "_" .. tostring(math.random(100000, 999999999))
+end
+
 return Mount
