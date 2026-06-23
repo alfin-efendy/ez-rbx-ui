@@ -134,8 +134,7 @@ function Window.new(config)
   local userScale = 1
 
   -- title bar (grows to fit a subtitle and/or image)
-  local resolvedTitleImg = Asset.image(config.Image)
-  local hasTitleImg = resolvedTitleImg ~= nil
+  local hasTitleImg = Asset.resolvable(config.Image)
   local hasSubtitle = type(config.Subtitle) == "string" and config.Subtitle ~= ""
   local titleH = (hasTitleImg or hasSubtitle) and TITLE_H_TALL or TITLE_H
   local titleBar = Create("Frame", {
@@ -148,12 +147,17 @@ function Window.new(config)
   local titleTextX = 0
   if hasTitleImg then
     local imgSize = 36
-    Create("ImageLabel", {
+    local titleImg = Create("ImageLabel", {
       Name = "TitleImage", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
       AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
-      Size = UDim2.new(0, imgSize, 0, imgSize), Image = resolvedTitleImg, Parent = titleBar,
+      Size = UDim2.new(0, imgSize, 0, imgSize), Image = "", Parent = titleBar,
       Create.corner(theme.Radius.md),
     })
+    -- Fill it as soon as the asset resolves. URLs download off the construction thread, so the
+    -- window never blocks on game:HttpGet; the write is marshalled to a capability-bearing context.
+    Asset.imageAsync(config.Image, function(id)
+      Safe.mutate(function() if titleImg.Parent then titleImg.Image = id end end)
+    end)
     titleTextX = imgSize + 8
   end
   local titleLabel = Create("TextLabel", {
@@ -454,10 +458,11 @@ function Window.new(config)
     end)
   end
   function api:SetImage(v)
-    local resolved = Asset.image(v)
-    Safe.mutate(function()
-      local img = titleBar:FindFirstChild("TitleImage")
-      if img and resolved then img.Image = resolved end
+    Asset.imageAsync(v, function(id)
+      Safe.mutate(function()
+        local img = titleBar:FindFirstChild("TitleImage")
+        if img then img.Image = id end
+      end)
     end)
   end
   function api:Dialog(o) o = o or {}; o.Theme = theme; o.Window = api; return DialogMod.open(o) end
@@ -600,7 +605,34 @@ function Window.new(config)
     if fabMaid then fabMaid:DoCleanup() end
     fabMaid = Maid.new(); maid:Give(fabMaid)
     local kind = fabOpts.Type or "simple"
-    local resolved = Asset.image(fabOpts.Image)
+    local hasImage = type(fabOpts.Image) == "string" and fabOpts.Image ~= ""
+    -- Fill the FAB with the configured logo edge-to-edge (no background frame showing around it), once
+    -- the asset resolves (URLs fetch off-thread so the FAB never blocks). Reset the glyph's sprite crop
+    -- and tint so a full image renders clean. The write is marshalled to a capability-bearing context.
+    -- No-op when no Image is configured (the gamepad placeholder stays).
+    local function applyFabImage(img)
+      Asset.imageAsync(fabOpts.Image, function(id)
+        Safe.mutate(function()
+          if not img.Parent then return end
+          img.Image = id
+          img.ImageRectOffset = Vector2.new(0, 0)
+          img.ImageRectSize = Vector2.new(0, 0)
+          img.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        end)
+      end)
+    end
+    -- A logo fills the whole FAB (rounded to the FAB shape); the gamepad placeholder is a small
+    -- centered glyph. `radius` clips the fill to match the FAB's own corner.
+    local function makeFabImg(radius)
+      if hasImage then
+        return Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+          Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0), Image = "", Parent = fab, Create.corner(radius) })
+      end
+      local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
+      Icons.apply(img, "gamepad-2", theme.Colors.primary)
+      return img
+    end
     local chev, chevDir = nil, "chevron-right"
     fab = Create("ImageButton", { Name = "FloatingToggle", AutoButtonColor = false, BackgroundTransparency = 0,
       Visible = false, Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 16, 1, -60), ZIndex = 1700, Parent = Overlay.get(gui) })
@@ -609,16 +641,11 @@ function Window.new(config)
     if kind == "square" then
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
-      Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = fab })
-      local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
-        Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3), Parent = fab, Create.corner(theme.Radius.md) })
-      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primary) end
+      applyFabImage(makeFabImg(theme.Radius.lg))
     elseif kind == "circle" then
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
-      local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(0.5, -12, 0.5, -12), Parent = fab })
-      if resolved then img.Image = resolved else Icons.apply(img, "gamepad-2", theme.Colors.primary) end
+      applyFabImage(makeFabImg(22))
     else -- simple: 50x50 chevron square, neutral surface (follows the mode)
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
@@ -648,27 +675,22 @@ function Window.new(config)
     end
     fabFullSize = fab.Size
 
+    -- Only the "simple" slide-out tab magnets to an edge. circle/square FABs are free-floating:
+    -- they stay wherever the user drops them (no snap), so this is a no-op for them.
     fabSnap = function()
+      if kind ~= "simple" then return end
       local vp = Overlay.get(gui).AbsoluteSize
       if not vp or vp.X <= 0 then return end
       local w2 = (fabFullSize and fabFullSize.X.Offset) or 50
       local cx = fab.Position.X.Scale * vp.X + fab.Position.X.Offset + w2 / 2
       local ys, yo = fab.Position.Y.Scale, fab.Position.Y.Offset
-      if kind == "simple" then -- slide-out tab: dock to the edge, peeking ~15px
-        local peek = 15
-        if cx < vp.X / 2 then
-          chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, ys, yo) }, Enum.EasingStyle.Quad)
-        else
-          chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, ys, yo) }, Enum.EasingStyle.Quad)
-        end
-      else -- circle/square: snap to the nearest edge but stay fully visible (with a margin)
-        if cx < vp.X / 2 then
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, FAB_MARGIN, ys, yo) }, Enum.EasingStyle.Quad)
-        else
-          Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 - FAB_MARGIN, ys, yo) }, Enum.EasingStyle.Quad)
-        end
+      local peek = 15 -- slide-out tab: dock to the edge, peeking ~15px
+      if cx < vp.X / 2 then
+        chevDir = "chevron-right"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
+        Animate.to(fab, 0.3, { Position = UDim2.new(0, -peek, ys, yo) }, Enum.EasingStyle.Quad)
+      else
+        chevDir = "chevron-left"; if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
+        Animate.to(fab, 0.3, { Position = UDim2.new(0, vp.X - w2 + peek, ys, yo) }, Enum.EasingStyle.Quad)
       end
     end
 
@@ -743,12 +765,18 @@ function Window.new(config)
   function api:SetFloatingToggle(opts)
     local wasHidden = not visible
     if fab then fab:Destroy(); fab = nil end
-    fabOpts = opts or {}
+    -- Merge over the current options so changing one field (e.g. Type, from the Settings selector)
+    -- keeps the rest -- otherwise switching type would drop a configured Image/Size/Position.
+    local merged = {}
+    for k, v in pairs(fabOpts) do merged[k] = v end
+    for k, v in pairs(opts or {}) do merged[k] = v end
+    fabOpts = merged
     fabEnabled = true
     autoHide = fabOpts.AutoHide ~= false
     ensureFab()
     if wasHidden or not autoHide then showFab() end
   end
+  function api:GetFloatingToggleType() return fabOpts.Type or "simple" end
 
   function api:Minimize()
     Overlay.closeAll()

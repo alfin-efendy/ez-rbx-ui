@@ -17,7 +17,8 @@ return function(window)
   accentPicker = tab:AddColorPicker({ Text = "Custom accent", Default = Color3.fromRGB(99, 102, 241),
     Callback = function(c) window:SetAccent(c) end })
   accentPicker.Frame.Visible = false
-  tab:AddSelectBox({ Text = "Floating button", Options = { "simple", "square", "circle" }, Default = "simple",
+  tab:AddSelectBox({ Text = "Floating button", Options = { "simple", "square", "circle" },
+    Default = window:GetFloatingToggleType(),   -- reflect the type configured in CreateWindow
     Callback = function(t) window:SetFloatingToggle({ Type = t }) end })
   tab:AddSlider({ Text = "UI scale (%)", Min = 80, Max = 130, Default = 100,
     Callback = function(v) window:SetUIScale(v / 100) end })
