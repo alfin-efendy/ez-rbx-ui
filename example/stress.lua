@@ -139,4 +139,39 @@ end
 local concGroup = window:AddTabGroup("Concurrency")
 buildConcurrencyTab(concGroup:AddTab({ Name = "Threads", Icon = "activity" }))
 
-window:ShowInfo({ Title = "Welcome", Message = "EzUI stress test loaded. Open Concurrency → Threads.", Duration = 5000 })
+-- ───────────────────────────────────────────────────────────────────────────
+-- Realtime stress: a large fleet of function-valued (reactive) labels & paragraphs. Pass a
+-- function as the text and EzUI re-evaluates it on its Interval and updates the label itself --
+-- no manual loop. All of them share ONE Heartbeat scheduler (O(1) connections, active only while
+-- >=1 reactive label exists), so this is the load test for that scheduler: RT_LABELS + RT_PARAS
+-- live controls per tab x 4 tabs, all updating at mixed cadences (0.05s .. 1s), single-line and
+-- multi-line, even on the tabs that aren't currently visible.
+local RT_LABELS, RT_PARAS, RT_INTERVALS = 30, 6, { 0.05, 0.1, 0.25, 0.5, 1 }
+local function buildRealtimeTab(tab, idx)
+  tab:AddSection(("Reactive labels (%d per tab, intervals 0.05s..1s)"):format(RT_LABELS))
+  for i = 1, RT_LABELS do
+    local n = 0                                        -- per-label counter, bumped on every eval
+    tab:AddLabel({
+      Text = function() n = n + 1; return ("RT%d L%02d  ticks=%-6d  %s"):format(idx, i, n, os.date("%H:%M:%S")) end,
+      Interval = RT_INTERVALS[(i % #RT_INTERVALS) + 1],
+    })
+  end
+  tab:AddSection(("Reactive paragraphs (%d per tab, multi-line, 0.2s)"):format(RT_PARAS))
+  for i = 1, RT_PARAS do
+    local started = os.clock()
+    tab:AddParagraph({
+      Text = function()
+        local up = os.clock() - started
+        return ("RT%d P%d\n  uptime: %.1fs\n  clock:  %s\n  ms:     %d"):format(idx, i, up, os.date("%H:%M:%S"), math.floor(up * 1000) % 1000)
+      end,
+      Interval = 0.2,
+    })
+  end
+end
+
+local rtGroup = window:AddTabGroup("Realtime")
+for i = 1, 4 do buildRealtimeTab(rtGroup:AddTab({ Name = "RT " .. i, Icon = "gauge" }), i) end
+
+window:ShowInfo({ Title = "Welcome",
+  Message = ("EzUI stress test loaded. Try Concurrency → Threads and Realtime → RT 1 (%d reactive labels live)."):format(4 * (RT_LABELS + RT_PARAS)),
+  Duration = 5000 })
