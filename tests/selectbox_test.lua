@@ -7,6 +7,12 @@ local SelectBox, Create, Overlay, Config = R.SelectBox, R.Create, R.Overlay, R.C
 local function listChildren(dd) return (dd:FindFirstChild("List") or dd):GetChildren() end
 
 h.describe("selectbox", function()
+  h.it("the closed value truncates (does not overflow into the caret)", function()
+    local s = SelectBox.new({ Parent = Create("Frame", {}), Text = "Mode",
+      Options = { "A", "B", "C" }, Default = "A" })
+    local val = s.Frame:FindFirstChild("Field"):FindFirstChild("Value")
+    h.expect(val.TextTruncate.Name).toBe("AtEnd")
+  end)
   h.it("single select reflects default and SetValue persists", function()
     local cfg = Config.new({ FileName = "SB", AutoSave = false })
     local s = SelectBox.new({ Parent = Create("Frame", {}), Text = "Mode",

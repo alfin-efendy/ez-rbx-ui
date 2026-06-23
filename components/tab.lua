@@ -74,11 +74,16 @@ function Tab.new(opts)
     return (s and s.Y and s.Y > 0 and s.Y) or 360
   end
   local function syncCanvas()
-    local sf = content.Parent
-    if selected and sf then
-      local acs = contentLayout.AbsoluteContentSize
-      sf.CanvasSize = UDim2.new(0, 0, 0, ((acs and acs.Y) or 0) + contentPad * 2)
-    end
+    -- Driven by the AbsoluteContentSize property-changed signal below (engine thread, no GUI
+    -- capability on strict executors) AND by Select() (capability). Reading AbsoluteContentSize and
+    -- writing CanvasSize are both protected -> marshal through Safe.mutate (inline when capable).
+    Safe.mutate(function()
+      local sf = content.Parent
+      if selected and sf then
+        local acs = contentLayout.AbsoluteContentSize
+        sf.CanvasSize = UDim2.new(0, 0, 0, ((acs and acs.Y) or 0) + contentPad * 2)
+      end
+    end)
   end
   maid:Give(contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(syncCanvas))
 

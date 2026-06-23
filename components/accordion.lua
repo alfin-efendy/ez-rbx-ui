@@ -98,25 +98,48 @@ function Accordion.new(opts)
     return y + theme.Spacing.inputY
   end
 
+  -- Height is ENGINE-DRIVEN when expanded: the container uses AutomaticSize.Y so Roblox sizes it to
+  -- fit its content (incl. dynamic/reactive rows) WITHOUT any post-construction script write. That
+  -- matters because some executors deny the GUI capability to Heartbeat/property-changed handlers --
+  -- a script-driven re-measure there silently fails and ClipsDescendants then crops every row past
+  -- the first. Collapsed uses AutomaticSize.None + a fixed header height (so the collapse can tween
+  -- the Size down). Toggle animations run on the header-click handler, which keeps capability.
   local function applyHeight(animated)
-    local target = HEADER_H + (expanded and (theme.Spacing.gap + contentHeight()) or 0)
-    if expanded then content.Visible = true; divider.Visible = true end
     if animated then
       Animate.rotateTo(caret, "base", expanded and 90 or 0)
       if expanded then
-        -- spring the height open (slight overshoot) and slide the content down into place
+        -- reveal: animate the height open + slide the content in, then hand sizing to the engine
+        -- (AutomaticSize.Y) so dynamic content keeps fitting with no further script write. This runs
+        -- on the header-click handler, which keeps the GUI capability even where Heartbeat does not.
+        content.Visible = true; divider.Visible = true
+        container.AutomaticSize = Enum.AutomaticSize.None
+        local target = HEADER_H + theme.Spacing.gap + contentHeight()
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)
         content.Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap + 8)
-        Animate.springTo(container, "base", { Size = UDim2.new(1, 0, 0, target) })
+        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, target) }, function()
+          if expanded then container.AutomaticSize = Enum.AutomaticSize.Y end
+        end)
         Animate.to(content, "base", { Position = UDim2.new(0, 0, 0, HEADER_H + theme.Spacing.gap) })
       else
-        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, target) }, function()
+        -- collapse: freeze the current engine-fit height, switch AutomaticSize off, animate down
+        local sz = container.AbsoluteSize
+        local from = (sz and sz.Y and sz.Y > HEADER_H) and sz.Y or (HEADER_H + theme.Spacing.gap + contentHeight())
+        container.AutomaticSize = Enum.AutomaticSize.None
+        container.Size = UDim2.new(1, 0, 0, from)
+        Animate.toThen(container, "base", { Size = UDim2.new(1, 0, 0, HEADER_H) }, function()
           if not expanded then content.Visible = false; divider.Visible = false end
         end)
       end
     else
-      container.Size = UDim2.new(1, 0, 0, target)
-      content.Visible = expanded
-      divider.Visible = expanded
+      if expanded then
+        content.Visible = true; divider.Visible = true
+        container.AutomaticSize = Enum.AutomaticSize.Y
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)   -- min; the engine grows it to fit the content
+      else
+        content.Visible = false; divider.Visible = false
+        container.AutomaticSize = Enum.AutomaticSize.None
+        container.Size = UDim2.new(1, 0, 0, HEADER_H)
+      end
       caret.Rotation = expanded and 90 or 0
     end
   end
@@ -131,7 +154,7 @@ function Accordion.new(opts)
   function api.MountRow(child)
     order = order + 1
     child.LayoutOrder = order
-    child.Parent = content
+    child.Parent = content              -- AutomaticSize.Y on the container fits it automatically
     return order
   end
 
@@ -152,11 +175,6 @@ function Accordion.new(opts)
     if leadIcon then Icons.apply(leadIcon, opts.Icon, theme.Colors.primary) end
     divider.BackgroundColor3 = theme.Colors.border
   end)) end
-
-  -- Re-apply height when content grows (engine drives sibling reflow via parent UIListLayout).
-  maid:Give(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    if expanded then container.Size = UDim2.new(1, 0, 0, HEADER_H + theme.Spacing.gap + contentHeight()) end
-  end))
 
   maid:Give(header.MouseButton1Click:Connect(function() api:Toggle() end))
   maid:Give(container)

@@ -46,7 +46,11 @@ local function ensureContainer()
         local e = order[i]
         if e.frame and e.total and not e.paused then
           e.remaining = e.remaining - dt
-          if e.bar then e.bar.Size = UDim2.new(math.max(0, e.remaining / e.total), 0, 0, 3) end
+          -- Heartbeat handlers lack the GUI capability on strict executors, so a raw write throws.
+          -- pcall (not Safe.mutate) because this is a per-frame cosmetic write -- skip it cleanly when
+          -- there's no capability rather than deferring 60 writes/sec. The countdown + dismiss below
+          -- run on plain Lua state / Safe.mutate, so the toast still expires correctly.
+          if e.bar then pcall(function() e.bar.Size = UDim2.new(math.max(0, e.remaining / e.total), 0, 0, 3) end) end
           if e.remaining <= 0 then Notification.dismiss(e.id) end
         end
       end
@@ -112,7 +116,9 @@ function Notification.show(opts)
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = toast })
     local scale = Instance.new("UIScale"); scale.Parent = toast
     toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-      if expanded then Notification.relayout() end
+      -- property-changed handler -> engine thread without GUI capability on strict executors; relayout
+      -- reads AbsoluteContentSize/AbsoluteSize raw, so marshal it through Safe.mutate.
+      if expanded then Safe.mutate(Notification.relayout) end
     end)
     local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
       Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })

@@ -30,6 +30,39 @@ h.describe("label", function()
     h.expect(lbl.Frame.Text).toBe("updated")  -- applied in a capability context
     R.Safe._setCapabilityCheck(nil)
   end)
+  h.it("a yielding source does not block construction or error; it lands on a later non-yielding tick", function()
+    -- In Luau pcall is yieldable, so a source that yields (e.g. a RemoteFunction:InvokeServer getter)
+    -- used to STALL Label.new -- which stalled UI construction and stopped every later control from
+    -- being created. The poll must isolate the yield and never block.
+    local p = Create("Frame", {})
+    local phase = "yield"
+    local src = function()
+      if phase == "yield" then coroutine.yield() end   -- simulate an async getter on the first call
+      return "ready"
+    end
+    local l = Label.new({ Parent = p, Text = src, Interval = 1 })
+    h.expect(l.Frame.Text).toBe("")        -- first eval yielded -> not applied, but did NOT block/throw
+    phase = "ready"                         -- source no longer yields (value now cached)
+    h.mock.stepHeartbeat(1)                 -- next tick completes synchronously -> applies
+    h.expect(l.Frame.Text).toBe("ready")
+    l.Destroy()
+  end)
+  h.it("reactive poll is capability-safe: defers its write instead of a direct GUI write on the Heartbeat thread", function()
+    -- Some executors' Heartbeat handlers LACK the GUI capability; a direct write there throws
+    -- "lacking capability Plugin" every interval (and aborted the whole scheduler). The poll must
+    -- route through Safe.mutate, exactly like SetText, so it degrades quietly.
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local n = 0
+    local l = R.Label.new({ Parent = R.Create("Frame", {}), Text = function() n = n + 1; return "v" .. n end, Interval = 1 })
+    h.expect(l.Frame.Text).toBe("v1")          -- initial render (at construction, on a capability thread)
+    R.Safe._setCapabilityCheck(function() return false end)
+    h.mock.stepHeartbeat(1)                     -- interval reached -> tick re-evaluates
+    h.expect(l.Frame.Text).toBe("v1")          -- write DEFERRED (Safe.mutate), NOT a direct write
+    h.mock.stepHeartbeat(0)                     -- flushed in a capability-bearing context
+    h.expect(l.Frame.Text).toBe("v2")
+    R.Safe._setCapabilityCheck(nil)
+    l.Destroy()
+  end)
 end)
 
 h.describe("reactive label (function-valued, auto-updating text)", function()

@@ -53,6 +53,29 @@ h.describe("window", function()
     findFab().MouseButton1Click:Fire()
     h.expect(w:IsVisible()).toBe(true)
   end)
+  -- Drag a revealed FAB to mid-screen, release, and report its resting X offset.
+  local function dragReleaseFabX(fabType)
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = fabType } })
+    R.Overlay.get(screen).AbsoluteSize = h.roblox.Vector2.new(1280, 720)
+    w:Minimize() -- reveal the FAB and wire its drag handlers
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local UIS = h.roblox.game:GetService("UserInputService")
+    local MB1 = h.roblox.Enum.UserInputType.MouseButton1
+    fab.InputBegan:Fire({ UserInputType = MB1, Position = h.roblox.Vector2.new(0, 0) })
+    fab.Position = h.roblox.UDim2.new(0, 700, 0.5, -25) -- dropped near the middle, right of center
+    UIS.InputEnded:Fire({ UserInputType = MB1, Position = h.roblox.Vector2.new(700, 0) })
+    return fab.Position.X.Offset
+  end
+  h.it("circle/square FAB has no magnet: it stays where it is dropped", function()
+    h.expect(dragReleaseFabX("circle")).toBe(700)
+    h.expect(dragReleaseFabX("square")).toBe(700)
+  end)
+  h.it("simple FAB still magnets to the nearest edge on release", function()
+    local x = dragReleaseFabX("simple")
+    h.expect(x ~= 700).toBeTruthy()        -- it moved off the drop point
+    h.expect(x).toBe(1280 - 50 + 15)       -- docked at the right edge, peeking 15px
+  end)
   h.it("minimize hides the whole window and a floating toggle restores it", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
@@ -222,6 +245,40 @@ h.describe("window", function()
     w:Minimize()
     fab2.MouseButton1Click:Fire()
     h.expect(w:IsVisible()).toBe(true)
+  end)
+  h.it("the square floating toggle has no border stroke", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "square", Image = "rbxassetid://9" } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    h.expect(fab:FindFirstChildOfClass("UIStroke")).toBe(nil)
+  end)
+  h.it("a configured logo fills the FAB edge-to-edge (no background frame)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "square", Image = "rbxassetid://7" } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.Size.X.Scale).toBe(1); h.expect(img.Size.X.Offset).toBe(0)  -- fills, no inset frame
+    h.expect(img.Size.Y.Scale).toBe(1); h.expect(img.Size.Y.Offset).toBe(0)
+    h.expect(img.Position.X.Offset).toBe(0); h.expect(img.Position.Y.Offset).toBe(0)
+    h.expect(img.Image).toBe("rbxassetid://7")
+  end)
+  h.it("GetFloatingToggleType reflects the configured/current type", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = { Type = "square", Image = "rbxassetid://1" } })
+    h.expect(w:GetFloatingToggleType()).toBe("square")
+    w:SetFloatingToggle({ Type = "circle" })
+    h.expect(w:GetFloatingToggleType()).toBe("circle")
+    local w2 = R.Window.new({ Title = "M2", Parent = h.roblox.Instance.new("ScreenGui"), FloatingToggle = true })
+    h.expect(w2:GetFloatingToggleType()).toBe("simple")     -- default when no Type given
+  end)
+  h.it("SetFloatingToggle merges over existing options: changing Type keeps the Image", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://123" } })
+    w:SetFloatingToggle({ Type = "circle" })       -- only the type changes; the logo must survive
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    h.expect(fab:GetAttribute("FabType")).toBe("circle")
+    h.expect(fab:FindFirstChild("Img").Image).toBe("rbxassetid://123")
   end)
   h.it("SetAccent(Color3) picks a readable foreground by luminance", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)

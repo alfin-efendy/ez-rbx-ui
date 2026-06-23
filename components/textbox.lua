@@ -85,6 +85,9 @@ function TextBox.new(opts)
   -- ---- box (horizontal flex row) -------------------------------------------
   local box = Create("Frame", {
     Name = "Box", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+    -- clip so a long value doesn't overflow past the field edge (a TextBox doesn't clip its own text;
+    -- while editing, Roblox scrolls the text to keep the caret visible inside the clipped box).
+    ClipsDescendants = true,
     Position = boxX, Size = boxW, Parent = root, Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
     Create.listLayout({ FillDirection = Enum.FillDirection.Horizontal, Padding = 6 }),
@@ -223,7 +226,9 @@ function TextBox.new(opts)
       commit(""); if opts.Callback then opts.Callback(real, api) end
       if input.CaptureFocus then input:CaptureFocus() end
     end)
-    local function sync() clear.Visible = #real > 0 end
+    -- Text-changed fires on an engine thread (no GUI capability on strict executors); clear.Visible
+    -- is a protected write -> marshal through Safe.mutate (inline when capable, e.g. the sync() below).
+    local function sync() Safe.mutate(function() clear.Visible = #real > 0 end) end
     sync()
     maid:Give(input:GetPropertyChangedSignal("Text"):Connect(sync))
   end

@@ -76,9 +76,15 @@ tab:AddLabel({ Variant = "paragraph", Text = "First line\nSecond line\nWraps aut
 
 **Reactive text (function-valued).** Pass a function instead of a string and EzUI re-evaluates it every `Interval` seconds (default 1), updating the label for you — no manual loop. One shared `Heartbeat` scheduler drives every reactive label (active only while ≥1 exists), it's capability-safe, and a value that hasn't changed isn't re-written. If the function errors, the last good value is kept and a warning is logged once. `SetText(fn)` switches a static label to reactive; `SetText("...")` switches it back and stops polling; `Destroy()` deregisters it.
 
+- **Pass the function — don't call it.** `AddLabel(getter)` is reactive; `AddLabel(getter())` runs the getter ONCE and passes the resulting string → a static label that never updates.
+- **Yielding getters are safe.** The getter runs on its own thread, so it may yield (`RemoteFunction:InvokeServer`/`task.wait`/`WaitForChild`) without blocking window construction. This is the other reason to pass it, not call it: `getter()` runs on your line, so a yielding getter there stalls construction and the controls after it never appear.
+- Executor note: on some capability-strict executors the background scheduler can't write the GUI, so the reactive text may not visibly update — fall back to `SetText(...)` from your own loop there.
+
 ```lua
-tab:AddLabel(function() return "Clock: " .. os.date("%H:%M:%S") end)            -- polls every 1s
+tab:AddLabel(function() return "Clock: " .. os.date("%H:%M:%S") end)            -- polls every 1s; pass the fn, don't call it
 tab:AddLabel({ Text = function() return "FPS: " .. getFps() end, Interval = 0.5 })
+local s = function() return Boss:GetStatusText() end                            -- a named getter (may InvokeServer/yield)
+acc:AddLabel(s)        -- reactive (good)        acc:AddLabel(s())  -- static, called once (wrong)
 ```
 
 ## AddParagraph

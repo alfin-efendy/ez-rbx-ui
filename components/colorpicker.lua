@@ -139,7 +139,7 @@ function ColorPicker.new(opts)
 
     -- close on scroll: the screen-space popover would otherwise detach or float
     -- outside the window once the control leaves the content viewport.
-    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() api.Close() end)
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() Safe.mutate(api.Close) end)
     Overlay.mount(popover)
     Overlay.trackPopover(api.Close)
     Animate.pop(popover, "base")

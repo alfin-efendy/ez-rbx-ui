@@ -6,14 +6,19 @@
 ]]
 local EzUI = require("../output/bundle")
 
+-- A remote PNG (downloaded once via the executor's writefile + getcustomasset). Requires an executor
+-- that exposes those globals + HttpGet; under Studio/headless it is a graceful no-op (no logo).
+local LOGO = "https://upload.wikimedia.org/wikipedia/commons/1/1e/Roblox_Logo_2025.png"
+
 local window = EzUI:CreateWindow({
   Title = "EzUI Demo",
   Ratio = { Width = 0.4, Height = 0.55 },   -- 40% of the screen wide, 55% tall
   Subtitle = "Component playground",
+  Image = LOGO,                             -- title-bar logo
   Transparency = 0.12,
   ToggleKey = Enum.KeyCode.RightControl,
   StartHidden = false,
-  FloatingToggle = { Type = "simple", AutoHide = true },
+  FloatingToggle = { Type = "square", Image = LOGO, AutoHide = true }, -- square FAB shows the logo (no magnet)
   Config = { Enabled = true, FileName = "EzUIDemo", AutoSave = true, AutoLoad = true },
   OnClose = function() print("EzUI closed — settings saved.") end,
 })

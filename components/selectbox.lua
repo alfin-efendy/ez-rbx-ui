@@ -112,6 +112,9 @@ function SelectBox.new(opts)
   local valueLabel = Create("TextLabel", { Name = "Value", BackgroundTransparency = 1, Text = display(),
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+    -- a long value must end with "…" inside the label, not overflow under the caret (a TextLabel does
+    -- NOT clip its own text to its bounds; relayout() keeps the label's width clear of the caret).
+    TextTruncate = Enum.TextTruncate.AtEnd,
     Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 8, 0, 0), Parent = field })
   local caret = Create("ImageLabel", { Name = "Caret", BackgroundTransparency = 1,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -20, 0.5, -7), Parent = field })
@@ -292,7 +295,7 @@ function SelectBox.new(opts)
         PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
         TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
         ClearTextOnFocus = false, ZIndex = 1003, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
-      searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
+      searchInput:GetPropertyChangedSignal("Text"):Connect(function() Safe.mutate(function() api.Filter(searchInput.Text) end) end)
     end
 
     -- scrolling list of options/dividers, below the pinned search
@@ -356,7 +359,7 @@ function SelectBox.new(opts)
     -- would either detach from the control or float outside the window once the control
     -- leaves the content viewport (standard <select> behavior). Scrolling inside the
     -- dropdown itself doesn't move the control's AbsolutePosition, so it stays open.
-    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() api.Close() end)
+    posConn = btn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() Safe.mutate(api.Close) end)
     Overlay.mount(dropdown)
     Overlay.trackPopover(api.Close)
   end

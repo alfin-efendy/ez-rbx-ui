@@ -235,6 +235,32 @@ EzUI:CreateWindow({ Title = "Hub", Ratio = 0.5 })  -- 50% x 50%
 
 ---
 
+## Reactive labels: pass the function — don't call it
+
+A function-valued `AddLabel` / `AddParagraph` is **reactive**: EzUI re-evaluates it every `Interval` (default 1s) on its own thread and updates the text for you. Pass the function **reference** — calling it yourself produces a static label, and if the getter yields it blocks construction.
+
+**Don't:**
+```lua
+local function bossStatus() return Boss:GetStatusText() end   -- may InvokeServer / WaitForChild / yield
+
+acc:AddLabel(bossStatus())   -- WRONG: calls it once → a static string. And if bossStatus yields, this
+                             -- LINE blocks before AddLabel even runs, so every control added after it
+                             -- never appears (the section looks half-built).
+```
+
+**Do:**
+```lua
+acc:AddLabel(bossStatus)     -- Correct: pass the function. EzUI calls it on its own thread, so a
+                             -- yielding getter is safe, and the label auto-updates every Interval.
+
+-- need a one-time snapshot instead of live updates? pass a plain string:
+acc:AddLabel(bossStatus())   -- only OK when bossStatus returns instantly AND you don't want updates
+```
+
+On a capability-strict executor a reactive label may not visibly update (the background thread can't write the GUI). Drive it with `SetText(...)` from your own loop there.
+
+---
+
 ## EzUI is safe to call from coroutines / task.spawn
 
 Notifications (`Window:ShowInfo/...`), window methods (`Show`, `Hide`, `Minimize`, `SetMode`,
