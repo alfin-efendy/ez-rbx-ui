@@ -60,10 +60,11 @@ tab:AddSelectBox({ Text = "Weapon", Flag = "weapon", Default = "wpn_005",
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| Text | string | `""` | label text; also accepted as the first positional string argument. Honors explicit `\n` line breaks when `Variant = "paragraph"` |
+| Text | string \| function | `""` | label text; also accepted as the first positional argument. Honors explicit `\n` line breaks when `Variant = "paragraph"`. **If a function**, EzUI re-evaluates it on `Interval` and updates the label itself (see Reactive text below) |
+| Interval | number | `1` | seconds between re-evaluations when `Text` (or `SetText`) is a function. Ignored for a static string |
 | Variant | string | `"default"` | `"default"` (single line), `"paragraph"` (wraps + auto-height, muted color), `"section"` (uppercased heading). `AddParagraph`/`AddSection` are shorthands for the latter two |
 
-**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }`
+**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }` — `SetText` accepts a string (static) or a function (reactive).
 
 ```lua
 local lbl = tab:AddLabel("Hello, world!")
@@ -73,14 +74,22 @@ lbl.SetText("Updated at runtime!")
 tab:AddLabel({ Variant = "paragraph", Text = "First line\nSecond line\nWraps automatically too." })
 ```
 
+**Reactive text (function-valued).** Pass a function instead of a string and EzUI re-evaluates it every `Interval` seconds (default 1), updating the label for you — no manual loop. One shared `Heartbeat` scheduler drives every reactive label (active only while ≥1 exists), it's capability-safe, and a value that hasn't changed isn't re-written. If the function errors, the last good value is kept and a warning is logged once. `SetText(fn)` switches a static label to reactive; `SetText("...")` switches it back and stops polling; `Destroy()` deregisters it.
+
+```lua
+tab:AddLabel(function() return "Clock: " .. os.date("%H:%M:%S") end)            -- polls every 1s
+tab:AddLabel({ Text = function() return "FPS: " .. getFps() end, Interval = 0.5 })
+```
+
 ## AddParagraph
 `host:AddParagraph(opts)` — multi-line wrapped text in the muted foreground color; auto-sizes height. Honors explicit `\n` line breaks in addition to automatic wrapping. (Shorthand for `AddLabel` with `Variant = "paragraph"`.)
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| Text | string | `""` | paragraph body; also accepted as the first positional string argument. Use `\n` for explicit line breaks |
+| Text | string \| function | `""` | paragraph body; also accepted as the first positional argument. Use `\n` for explicit line breaks. **If a function**, it auto-updates every `Interval` (see Reactive text under `AddLabel`) — multi-line makes it a natural live status block |
+| Interval | number | `1` | seconds between re-evaluations when `Text`/`SetText` is a function |
 
-**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }`
+**Returns:** `{ Frame, SetText(s), SetLocked(b), Destroy() }` — `SetText` accepts a string (static) or a function (reactive).
 
 ```lua
 tab:AddParagraph("Use paragraphs for descriptions, changelogs, and help text.")
@@ -88,6 +97,9 @@ tab:AddParagraph("Use paragraphs for descriptions, changelogs, and help text.")
 -- explicit line breaks (e.g. a changelog); SetText can rebuild it at runtime
 local notes = tab:AddParagraph("Changelog v3.1\n• Ratio is now a screen fraction\n• New StartHidden option")
 notes.SetText(notes.Frame.Text .. "\n• Appended at runtime")
+
+-- reactive multi-line status block: a function auto-updates every Interval (default 1s)
+tab:AddParagraph(function() return "Clock: " .. os.date("%H:%M:%S") .. "\nUptime: " .. uptime() .. "s" end)
 ```
 
 ## AddSection

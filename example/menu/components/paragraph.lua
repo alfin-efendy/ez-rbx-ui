@@ -9,6 +9,20 @@ return function(window, host)
   tab:AddButton({ Text = "Add a note line", Callback = function()
     notes.SetText(notes.Frame.Text .. "\n• Appended at runtime")
   end })
+
+  tab:AddSection("Live status (function-valued, auto-updating)")
+  -- A paragraph whose text is a FUNCTION: EzUI re-evaluates it every interval and updates itself.
+  -- Being multi-line, it's a natural live status block (clock + uptime + countdown) -- no manual
+  -- loop, capability-safe, one shared scheduler. Use { Text = fn, Interval = n } to set the cadence.
+  local started = os.time()
+  tab:AddParagraph(function()
+    local up = os.time() - started
+    local left = 30 - up % 31                       -- counts 30 -> 0, then loops
+    return "Clock:     " .. os.date("%H:%M:%S")
+      .. "\nUptime:    " .. up .. "s"
+      .. "\nCountdown: " .. (left > 0 and (left .. "s") or "done, restarting")
+  end)
+
   local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
   acc:AddParagraph("Nested paragraph text.")
   local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })

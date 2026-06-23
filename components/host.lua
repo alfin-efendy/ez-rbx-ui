@@ -29,6 +29,8 @@ function Host.attach(api, ctx)
       local opts = {}
       if type(arg) == "string" then
         opts.Text = arg
+      elseif type(arg) == "function" then
+        opts.Text = arg                  -- reactive shorthand: AddLabel(function() return ... end)
       elseif type(arg) == "table" then
         for k, v in pairs(arg) do opts[k] = v end
       end
@@ -47,7 +49,9 @@ function Host.attach(api, ctx)
         ctx.R.Tooltip.attach(control.Frame, opts.Tooltip, ctx.theme)
       end
       if ctx.registerSearchable and control and control.Frame then
-        ctx.registerSearchable(control.Frame, opts.Text or opts.Title or opts.Name or "")
+        -- opts.Text may be a function (reactive label); index a stable string only.
+        local searchText = (type(opts.Text) == "string" and opts.Text) or opts.Title or opts.Name or ""
+        ctx.registerSearchable(control.Frame, searchText)
       end
       if control and control.Frame then
         local C = ctx.R.Create

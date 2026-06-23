@@ -16,6 +16,20 @@ return function(window, host)
   tab:AddButton({ Text = "Append a line", Callback = function()
     multi.SetText(multi.Frame.Text .. "\nAdded at runtime!")
   end })
+
+  tab:AddSection("Live value (function-valued, auto-updating)")
+  -- Pass a FUNCTION instead of a string: EzUI re-evaluates it on an interval (default 1s) and
+  -- updates the label itself -- no manual loop, no SetText calls. One shared scheduler drives every
+  -- reactive label, and it's capability-safe. Ideal for clocks, countdowns, timers, score/FPS, etc.
+  tab:AddLabel(function() return "Clock: " .. os.date("%H:%M:%S") end)
+  local started = os.time()
+  tab:AddLabel(function()
+    local left = 10 - (os.time() - started) % 11      -- counts 10 -> 0, then loops
+    return left > 0 and ("Countdown: " .. left .. "s") or "Countdown: liftoff!"
+  end)
+  -- The opts form lets you pick the cadence with Interval (seconds):
+  tab:AddLabel({ Text = function() return "Uptime: " .. (os.time() - started) .. "s" end, Interval = 1 })
+
   local acc = tab:AddAccordion({ Title = "Inside an accordion", Icon = "rows-3", Expanded = false })
   acc:AddLabel("Nested label")
   local acc2 = tab:AddAccordion({ Title = "Expanded by default", Icon = "rows-3", Expanded = true })
