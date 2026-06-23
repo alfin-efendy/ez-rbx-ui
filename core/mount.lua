@@ -9,8 +9,8 @@ function Mount.Init(R) end -- no deps
 function Mount.service(name)
   local ok, s = pcall(function() return game:GetService(name) end)
   if not ok or not s then return nil end
-  local cr = cloneref or clonereference
-  if type(cr) == "function" then
+  local okcr, cr = pcall(function() return cloneref or clonereference end)
+  if okcr and type(cr) == "function" then
     local ok2, ref = pcall(cr, s)
     if ok2 and ref then return ref end
   end
@@ -31,7 +31,12 @@ function Mount.resolve(config)
   if ok and hui then return { parent = hui, studio = studio } end
 
   -- 2) protect_gui family -> CoreGui (protect applied in finalize)
-  local protect = protectgui or (syn and syn.protect_gui) or nil
+  local protect = nil
+  if type(protectgui) == "function" then
+    protect = protectgui
+  elseif type(syn) == "table" and type(syn.protect_gui) == "function" then
+    protect = syn.protect_gui
+  end
   local cg = Mount.service("CoreGui")
   if cg then return { parent = cg, protect = protect, studio = studio } end
 
