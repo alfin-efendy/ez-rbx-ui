@@ -3,16 +3,21 @@ local Label = {}
 local Create, DefaultTheme, Safe
 local RunService = game:GetService("RunService")
 local warn = warn or function() end   -- Roblox global; no-op fallback under the headless test mock
+-- Run a function on its OWN task-scheduler thread (never the caller's). Falls back to inline only if
+-- `task` is missing. Used so a yielding label source never touches the construction/Heartbeat thread.
+local spawn = (type(task) == "table" and task.spawn) or function(fn) return fn() end
 
 function Label.Init(R) Create = R.Create; DefaultTheme = R.Theme; Safe = R.Safe end
 
 -- ── Shared reactive scheduler ───────────────────────────────────────────────
 -- ONE Heartbeat connection drives EVERY function-valued (reactive) label. It exists only while at
 -- least one label is registered (zero idle cost) and is dropped when the last one deregisters, so
--- N reactive labels cost O(1) connections, not O(N). Per frame it only accumulates dt; the pcall +
--- write happen at most once per label-interval. The write is DIRECT -- a Heartbeat handler already
--- holds the GUI capability -- so the poll path skips Safe.mutate (its capability probe is only
--- needed for user calls that may arrive on a coroutine/task.spawn thread).
+-- N reactive labels cost O(1) connections, not O(N). Per frame it only accumulates dt; the re-eval +
+-- write happen at most once per label-interval. The poll's GUI access (reading frame.Parent, writing
+-- frame.Text) is capability-gated and routed through Safe.mutate: NOT every executor grants the GUI
+-- capability to a RunService.Heartbeat handler, and a raw access there throws "lacking capability
+-- Plugin" every interval (and aborted the whole drain, killing every other reactive label). Safe.mutate
+-- writes inline when the capability is present and defers/degrades quietly when it is not.
 local entries = {}            -- list of { acc, interval, tick }; tick() returns false when dead
 local conn = nil
 
@@ -71,10 +76,11 @@ function Label.new(opts)
 
   local lastText, erroring, entry = nil, false, nil
 
-  -- Write a value to the label. direct=true writes inline (already in a capability context: label
-  -- creation on the main thread, or the scheduler's Heartbeat tick); otherwise routes through
-  -- Safe.mutate so a coroutine/task.spawn caller stays capability-safe. The lastText guard skips
-  -- redundant property writes (a value that hasn't changed costs nothing).
+  -- Write a value to the label. direct=true writes inline (label creation runs on the main thread,
+  -- which holds the capability); otherwise routes through Safe.mutate so a caller that may lack the
+  -- GUI capability (a coroutine/task.spawn thread, OR the reactive poll's Heartbeat handler on
+  -- executors that don't grant it there) stays capability-safe. The lastText guard skips redundant
+  -- property writes (a value that hasn't changed costs nothing).
   local function applyText(s, direct)
     s = (variant == "section") and string.upper(tostring(s)) or tostring(s)
     if s == lastText then return end
@@ -82,25 +88,39 @@ function Label.new(opts)
     if direct then frame.Text = s else Safe.mutate(function() frame.Text = s end) end
   end
 
-  -- Re-evaluate a function source. On error, keep the last good value (no per-tick flicker) and
-  -- warn once per error-streak.
-  local function evaluate(direct)
+  -- Re-evaluate a function source on its OWN scheduler thread, never on the caller's. The caller is UI
+  -- construction (initial eval) or the shared Heartbeat tick. A source that yields (a
+  -- RemoteFunction:InvokeServer / task.wait getter) called inline would yield the caller -- and on a
+  -- capability-strict executor the caller resumes WITHOUT the GUI capability, after which the NEXT
+  -- control's write threw "lacking capability Plugin" and aborted the whole section. task.spawn isolates
+  -- the source completely, so construction never yields/degrades; the write is always capability-safe
+  -- (Safe.mutate). On error, keep the last good value (no per-tick flicker) and warn once per streak.
+  local function evaluate()
     if type(source) ~= "function" then return end
-    local ok, res = pcall(source)
-    if ok then
-      erroring = false
-      applyText(res, direct)
-    elseif not erroring then
-      erroring = true
-      warn("[EzUI] Label dynamic text error: " .. tostring(res))
-    end
+    local fn = source
+    spawn(function()
+      local ok, res = pcall(fn)
+      if fn ~= source then return end                   -- source swapped while we ran -> drop stale result
+      if ok then
+        erroring = false
+        applyText(res, false)
+      elseif not erroring then
+        erroring = true
+        warn("[EzUI] Label dynamic text error: " .. tostring(res))
+      end
+    end)
   end
 
   local function startReactive()
     if entry then return end
     entry = { acc = 0, interval = interval, tick = function()
-      if frame.Parent == nil then return false end   -- destroyed -> drop from the scheduler
-      evaluate(true)                                  -- direct write: we're inside the Heartbeat tick
+      -- Reading frame.Parent and writing frame.Text both touch the protected GUI, which throws on a
+      -- Heartbeat thread that lacks the executor capability. pcall the destroyed-probe and route the
+      -- write through Safe.mutate so the poll never throws/spams -- it updates when the capability is
+      -- present and degrades quietly otherwise (instead of aborting the whole drain).
+      local ok, parent = pcall(function() return frame.Parent end)
+      if ok and parent == nil then return false end  -- destroyed -> drop from the scheduler
+      evaluate()                                      -- runs the source off-thread; write is capability-safe
       return true
     end }
     register(entry)
@@ -116,10 +136,10 @@ function Label.new(opts)
     source = v
     if type(v) == "function" then
       startReactive()
-      evaluate(direct)
+      evaluate()                  -- function source: evaluated off-thread (a string never yields)
     else
       stopReactive()
-      applyText(v, direct)
+      applyText(v, direct)        -- static string: safe to write inline on the caller's thread
     end
   end
 
