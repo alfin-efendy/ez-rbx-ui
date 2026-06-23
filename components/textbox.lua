@@ -85,6 +85,9 @@ function TextBox.new(opts)
   -- ---- box (horizontal flex row) -------------------------------------------
   local box = Create("Frame", {
     Name = "Box", BackgroundColor3 = theme.Colors.background, BorderSizePixel = 0,
+    -- clip so a long value doesn't overflow past the field edge (a TextBox doesn't clip its own text;
+    -- while editing, Roblox scrolls the text to keep the caret visible inside the clipped box).
+    ClipsDescendants = true,
     Position = boxX, Size = boxW, Parent = root, Create.corner(theme.Radius.md),
     Create.padding({ left = theme.Spacing.inputX, right = theme.Spacing.inputX }),
     Create.listLayout({ FillDirection = Enum.FillDirection.Horizontal, Padding = 6 }),

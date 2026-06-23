@@ -3,6 +3,10 @@ local R = h.loadLib()
 local TextBox, Create, Config = R.TextBox, R.Create, R.Config
 
 h.describe("textbox", function()
+  h.it("the input box clips so a long value does not overflow the field", function()
+    local tb = TextBox.new({ Parent = Create("Frame", {}), Text = "URL", Default = string.rep("x", 200) })
+    h.expect(tb.Frame:FindFirstChild("Box").ClipsDescendants).toBe(true)
+  end)
   h.it("SetText/GetText round-trip and persist", function()
     local cfg = Config.new({ FileName = "TB", AutoSave = false })
     local tb = TextBox.new({ Parent = Create("Frame", {}), Text = "Name", Default = "Player", Flag = "name", Config = cfg })

@@ -112,6 +112,9 @@ function SelectBox.new(opts)
   local valueLabel = Create("TextLabel", { Name = "Value", BackgroundTransparency = 1, Text = display(),
     TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
+    -- a long value must end with "…" inside the label, not overflow under the caret (a TextLabel does
+    -- NOT clip its own text to its bounds; relayout() keeps the label's width clear of the caret).
+    TextTruncate = Enum.TextTruncate.AtEnd,
     Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 8, 0, 0), Parent = field })
   local caret = Create("ImageLabel", { Name = "Caret", BackgroundTransparency = 1,
     Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -20, 0.5, -7), Parent = field })

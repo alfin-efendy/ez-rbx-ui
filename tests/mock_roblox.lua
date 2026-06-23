@@ -127,6 +127,7 @@ function M.installInto(env, mock, strict)
     SortOrder = enumNs({ "LayoutOrder", "Name" }),
     TextXAlignment = enumNs({ "Left", "Center", "Right" }),
     TextYAlignment = enumNs({ "Top", "Center", "Bottom" }),
+    TextTruncate = enumNs({ "None", "AtEnd", "SplitWord" }),
     VerticalAlignment = enumNs({ "Top", "Center", "Bottom" }),
     HorizontalAlignment = enumNs({ "Left", "Center", "Right" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
