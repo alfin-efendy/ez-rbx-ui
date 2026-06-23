@@ -180,17 +180,29 @@ function M.installInto(env, mock, strict)
   }
   local UserInputService = { InputBegan = makeSignal(), InputChanged = makeSignal(), InputEnded = makeSignal(), TouchEnabled = false }
   local playerList = { { Name = "Tester", UserId = 1 } }
+  local PlayerGui = newInstance("PlayerGui"); PlayerGui.Name = "PlayerGui"
+  local LocalPlayer = { Name = "Tester", UserId = 1 }
+  function LocalPlayer:FindFirstChildOfClass(c) if c == "PlayerGui" then return PlayerGui end end
+  function LocalPlayer:WaitForChild(n) if n == "PlayerGui" then return PlayerGui end end
   local Players = {
-    LocalPlayer = { Name = "Tester", UserId = 1 },
+    LocalPlayer = LocalPlayer,
     GetPlayers = function() return playerList end, -- persistent list; tests mutate the returned ref
     PlayerAdded = makeSignal(),
     PlayerRemoving = makeSignal(),
     GetUserThumbnailAsync = function() return "rbxassetid://0" end,
   }
-  local RunService = { RenderStepped = makeSignal(), Heartbeat = makeSignal() }
+  local RunService = { RenderStepped = makeSignal(), Heartbeat = makeSignal(),
+    IsStudio = function() return mock.isStudio == true end }
   mock.stepHeartbeat = function(dt) RunService.Heartbeat:Fire(dt) end
-  local services = { HttpService = HttpService, TweenService = TweenService, UserInputService = UserInputService, Players = Players, RunService = RunService }
-  env.game = { GetService = function(_, name) return services[name] end, HttpGet = function() return "" end }
+  local CoreGui = newInstance("CoreGui"); CoreGui.Name = "CoreGui"
+  mock.coreGui = CoreGui
+  mock.playerGui = PlayerGui
+  local services = { HttpService = HttpService, TweenService = TweenService, UserInputService = UserInputService,
+    Players = Players, RunService = RunService, CoreGui = CoreGui }
+  env.game = { GetService = function(_, name)
+    if mock.hidden and mock.hidden[name] then return nil end
+    return services[name]
+  end, HttpGet = function() return "" end }
   env.TweenInfo = { new = function(t, style, dir) return { Time = t, EasingStyle = style, EasingDirection = dir } end }
   env.NumberSequence = { new = function(a) return { keypoints = a } end }
   env.NumberSequenceKeypoint = { new = function(t, v) return { Time = t, Value = v } end }
