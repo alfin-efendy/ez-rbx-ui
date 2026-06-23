@@ -1,6 +1,6 @@
 # Label
 
-A single-line text element that renders in the default foreground color. It returns a handle so the text can be updated at runtime via `SetText`.
+A text element that renders in the default foreground color. It returns a handle so the text can be updated at runtime via `SetText`. Single-line by default; use `Variant = "paragraph"` for a multi-line label.
 
 ## Basic usage
 
@@ -14,7 +14,8 @@ tab:AddLabel({ Text = "Hello, world!" })
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `Text` | `string` | `""` | Label text. Also accepted as the first positional string argument. |
+| `Text` | `string` | `""` | Label text. Also accepted as the first positional string argument. Honors explicit `\n` line breaks when `Variant = "paragraph"`. |
+| `Variant` | `string` | `"default"` | `"default"` — single line (extra lines are clipped). `"paragraph"` — wraps and auto-sizes its height, in the muted color. `"section"` — an uppercased group heading. `AddParagraph` and `AddSection` are shorthands for the last two. |
 
 ## API
 
@@ -37,6 +38,13 @@ tab:AddButton({
   Callback = function()
     dyn.SetText("Updated at runtime!")
   end,
+})
+
+-- Multi-line label: a default label is single-line (extra lines clip), so use the
+-- paragraph variant — it wraps, auto-sizes its height, and honors explicit \n breaks.
+tab:AddLabel({
+  Variant = "paragraph",
+  Text = "First line\nSecond line\nThird line — wraps automatically when a line is too long to fit.",
 })
 
 -- Label inside an accordion

@@ -30,6 +30,13 @@ local function removeCatcher()
   if catcher then catcher:Destroy(); catcher = nil end
 end
 
+-- Non-creating getter: the live overlay root or nil. Used by Safe's capability probe so it
+-- never forces root creation. Roblox-safe liveness check (a destroyed Instance has Parent=nil).
+function Overlay.peek()
+  if root and root.Parent ~= nil then return root end
+  return nil
+end
+
 function Overlay.get(parentGui)
   -- Roblox-safe liveness check: reading a non-existent member (e.g. a mock-only
   -- "_destroyed" flag) THROWS on real Instances. A destroyed Instance has Parent=nil.

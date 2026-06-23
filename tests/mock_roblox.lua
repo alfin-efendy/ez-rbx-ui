@@ -35,7 +35,15 @@ local function makeSignal()
   -- tagged so mock typeof() reports "RBXScriptConnection" (real events return userdata)
   function sig:Connect(fn) handlers[fn] = true; return { __isConnection = true, Disconnect = function() handlers[fn] = nil end } end
   function sig:Once(fn) local c; c = sig:Connect(function(...) c.Disconnect(); fn(...) end); return c end
-  function sig:Fire(...) for fn in pairs(handlers) do fn(...) end end
+  -- Snapshot handlers before dispatch (like a real RBXScriptSignal): a handler may connect or
+  -- disconnect during the fire (e.g. Heartbeat:Once flush, or a deferred build that connects a
+  -- new Heartbeat handler) without breaking iteration. Handlers disconnected before their turn
+  -- are skipped; handlers connected during the fire run on the next fire, not this one.
+  function sig:Fire(...)
+    local snap, i = {}, 0
+    for fn in pairs(handlers) do i = i + 1; snap[i] = fn end
+    for k = 1, i do local fn = snap[k]; if handlers[fn] then fn(...) end end
+  end
   return sig
 end
 M.makeSignal = makeSignal

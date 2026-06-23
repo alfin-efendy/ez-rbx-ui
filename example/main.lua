@@ -8,10 +8,11 @@ local EzUI = require("../output/bundle")
 
 local window = EzUI:CreateWindow({
   Title = "EzUI Demo",
-  Ratio = 16/10,
+  Ratio = { Width = 0.4, Height = 0.55 },   -- 40% of the screen wide, 55% tall
   Subtitle = "Component playground",
   Transparency = 0.12,
   ToggleKey = Enum.KeyCode.RightControl,
+  StartHidden = false,
   FloatingToggle = { Type = "simple", AutoHide = true },
   Config = { Enabled = true, FileName = "EzUIDemo", AutoSave = true, AutoLoad = true },
   OnClose = function() print("EzUI closed — settings saved.") end,

@@ -1,10 +1,10 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Tab = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Accordion, Host, REG
+local Create, DefaultTheme, Animate, Maid, Icons, Accordion, Host, REG, Safe
 
 function Tab.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate
-  Maid = R.Maid; Icons = R.Icons; Accordion = R.Accordion; Host = R.Host; REG = R
+  Maid = R.Maid; Icons = R.Icons; Accordion = R.Accordion; Host = R.Host; REG = R; Safe = R.Safe
 end
 
 function Tab.new(opts)
@@ -156,8 +156,8 @@ function Tab.new(opts)
     return Accordion.new(accOpts)
   end
 
-  function api:SetIcon(name) opts.Icon = name; Icons.apply(icon, name, selected and theme.Colors.foreground or theme.Colors.mutedForeground); icon.Visible = true end
-  function api:SetTitle(s) label.Text = s end
+  function api:SetIcon(name) opts.Icon = name; Safe.mutate(function() Icons.apply(icon, name, selected and theme.Colors.foreground or theme.Colors.mutedForeground); icon.Visible = true end) end
+  function api:SetTitle(s) Safe.mutate(function() label.Text = s end) end
 
   maid:Give(button.MouseEnter:Connect(function()
     if not selected then Animate.to(button, "fast", { BackgroundTransparency = 0.92 }) end

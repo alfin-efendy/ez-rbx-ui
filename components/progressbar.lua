@@ -1,7 +1,7 @@
 -- Deps injected via Init(R).
 local ProgressBar = {}
-local Create, DefaultTheme, Animate
-function ProgressBar.Init(R) Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate end
+local Create, DefaultTheme, Animate, Safe
+function ProgressBar.Init(R) Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Safe = R.Safe end
 local function clamp01(n) n = tonumber(n) or 0; if n < 0 then return 0 elseif n > 1 then return 1 end return n end
 function ProgressBar.new(opts)
   opts = opts or {}
@@ -23,7 +23,7 @@ function ProgressBar.new(opts)
   return {
     Frame = root,
     Get = function() return value end,
-    Set = function(p) value = clamp01(p); Animate.to(fill, "fast", { Size = UDim2.new(value, 0, 1, 0) }) end,
+    Set = function(p) value = clamp01(p); Safe.mutate(function() Animate.to(fill, "fast", { Size = UDim2.new(value, 0, 1, 0) }) end) end,
     Destroy = function() if unreg then unreg() end; root:Destroy() end,
   }
 end

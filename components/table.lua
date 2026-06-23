@@ -1,7 +1,7 @@
 -- Deps injected via Init(R).
 local Table = {}
-local Create, DefaultTheme, Maid
-function Table.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid end
+local Create, DefaultTheme, Maid, Safe
+function Table.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Safe = R.Safe end
 
 function Table.new(opts)
   opts = opts or {}
@@ -37,10 +37,18 @@ function Table.new(opts)
 
   local order = 0
   local api = { Frame = root, Body = body }
-  function api.AddRow(cells) order = order + 1; return makeRow(body, cells, false, order) end
+  function api.AddRow(cells)
+    order = order + 1
+    local o = order
+    local row
+    Safe.mutate(function() row = makeRow(body, cells, false, o) end)
+    return row
+  end
   function api.Clear()
-    for _, c in ipairs(body:GetChildren()) do if c.Name == "Row" then c:Destroy() end end
     order = 0
+    Safe.mutate(function()
+      for _, c in ipairs(body:GetChildren()) do if c.Name == "Row" then c:Destroy() end end
+    end)
   end
   function api.SetData(rows) api.Clear(); for _, r in ipairs(rows or {}) do api.AddRow(r) end end
   function api.Destroy() maid:DoCleanup(); root:Destroy() end

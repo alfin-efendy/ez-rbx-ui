@@ -1,8 +1,8 @@
 -- Deps injected via Init(R).
 local Label = {}
-local Create, DefaultTheme
+local Create, DefaultTheme, Safe
 
-function Label.Init(R) Create = R.Create; DefaultTheme = R.Theme end
+function Label.Init(R) Create = R.Create; DefaultTheme = R.Theme; Safe = R.Safe end
 
 function Label.new(opts)
   opts = opts or {}
@@ -36,7 +36,7 @@ function Label.new(opts)
 
   return {
     Frame = frame,
-    SetText = function(s) frame.Text = (variant == "section") and string.upper(s) or s end,
+    SetText = function(s) Safe.mutate(function() frame.Text = (variant == "section") and string.upper(s) or s end) end,
     Destroy = function() frame:Destroy() end,
   }
 end

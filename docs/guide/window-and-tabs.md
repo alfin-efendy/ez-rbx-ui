@@ -7,7 +7,7 @@ Call `EzUI:CreateWindow(config)` once to create the main window frame. All contr
 ```lua
 local Window = EzUI:CreateWindow({
     Title = "My Hub",
-    Ratio = 16/10,
+    Ratio = { Width = 0.4, Height = 0.55 },
     Subtitle = "v3.0",
     Transparency = 0.12,
     ToggleKey = Enum.KeyCode.RightControl,
@@ -24,10 +24,11 @@ local Window = EzUI:CreateWindow({
 | `Title` | `string` | Title-bar text |
 | `Subtitle` | `string` | Secondary line under the title (grows the title bar) |
 | `Image` | `string` | Title-bar logo — `rbxassetid://` or an `http(s)://` URL |
-| `Ratio` | `number` \| `{ Width, Height }` | Window aspect ratio; auto-fits the viewport and stays responsive. Default `4/3` |
+| `Ratio` | `{ Width, Height }` \| `number` | Window size as a fraction of the viewport — `{ Width = 0.4, Height = 0.55 }` = 40% × 55% (a single number = same fraction both axes); capped at 92% per axis; auto-fits and stays responsive. Default `{ Width = 0.45, Height = 0.6 }` |
 | `Transparency` | `number` | Window background transparency `0..1` (default `0.12`) |
 | `ToggleKey` | `Enum.KeyCode` | Show/hide key (default `RightControl`) |
 | `FloatingToggle` | `table` | `{ Type, Position, Image, Size, Draggable, AutoHide }` (or `false` to disable) |
+| `StartHidden` | `bool` | Start collapsed to just the floating toggle (window loads hidden; open via the FAB or `ToggleKey`). Default `false` |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](/guide/theming#color-mode-dark-light) |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |

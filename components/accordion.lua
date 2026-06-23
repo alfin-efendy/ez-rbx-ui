@@ -1,10 +1,10 @@
 -- Deps injected via Init(R) (bundler cannot rewrite require() inside embedded modules).
 local Accordion = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Host, REG
+local Create, DefaultTheme, Animate, Maid, Icons, Host, REG, Safe
 
 function Accordion.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
-  Host = R.Host; REG = R
+  Host = R.Host; REG = R; Safe = R.Safe
 end
 
 local HEADER_H = 34
@@ -125,8 +125,8 @@ function Accordion.new(opts)
   function api:Expand() if not expanded then expanded = true; applyHeight(true) end end
   function api:Collapse() if expanded then expanded = false; applyHeight(true) end end
   function api:IsExpanded() return expanded end
-  function api:SetTitle(s) title.Text = s end
-  function api:SetIcon(name) if leadIcon then Icons.apply(leadIcon, name, theme.Colors.primary) end end
+  function api:SetTitle(s) Safe.mutate(function() title.Text = s end) end
+  function api:SetIcon(name) if leadIcon then Safe.mutate(function() Icons.apply(leadIcon, name, theme.Colors.primary) end) end end
 
   function api.MountRow(child)
     order = order + 1

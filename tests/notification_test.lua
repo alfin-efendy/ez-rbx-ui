@@ -52,5 +52,23 @@ h.describe("notification", function()
       for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" and t:FindFirstChild("Progress") then has = true end end end end
     h.expect(has).toBe(false)
   end)
+  h.it("show returns id synchronously and defers GUI when capability is absent (FIFO)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); local ov = R.Overlay.get(screen)
+    R.Notification.clearAll()
+    R.Safe._setCapabilityCheck(function() return false end)
+    local function toasts() local n = 0 for _, c in ipairs(ov:GetChildren()) do
+      if c.Name == "ToastContainer" then for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then n = n + 1 end end end
+    end return n end
+    local id1 = R.Notification.show({ Title = "A", Duration = 0 })
+    local id2 = R.Notification.show({ Title = "B", Duration = 0 })
+    h.expect(type(id1)).toBe("number")          -- id available synchronously
+    h.expect(id2).toBe(id1 + 1)                 -- seq is synchronous + FIFO
+    h.expect(R.Notification.count()).toBe(2)    -- order slots reserved synchronously
+    h.expect(toasts()).toBe(0)                  -- GUI not built yet (deferred)
+    h.mock.stepHeartbeat(0)                     -- flush Safe queue
+    h.expect(toasts()).toBe(2)                  -- toasts built in a capability context
+    R.Safe._setCapabilityCheck(nil)
+    R.Notification.clearAll()
+  end)
 end)
 h.run()

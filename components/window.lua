@@ -2,13 +2,13 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount, Safe
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
   Notif = R.Notification; Asset = R.Asset; Themer = R.Themer
-  Mount = R.Mount
+  Mount = R.Mount; Safe = R.Safe
 end
 
 local TITLE_H = 40
@@ -17,7 +17,7 @@ local SIDEBAR_W = 150
 local SIDEBAR_MIN, SIDEBAR_MAX = 110, 260
 local MIN_W, MIN_H = 380, 260
 local VP_MARGIN = 0.92                  -- never exceed 92% of the viewport on either axis
-local COVERAGE_DEF = 0.6                -- default fraction of viewport height the window targets
+local DEF_WF, DEF_HF = 0.45, 0.6       -- default window size as a fraction of the viewport (W x H)
 local FALLBACK_VP = { X = 1280, Y = 720 }
 local FAB_MARGIN = 16
 local FAB_ANCHORS = { TopLeft = true, MidLeft = true, BottomLeft = true, TopRight = true, MidRight = true, BottomRight = true }
@@ -49,17 +49,23 @@ function Window.new(config)
   if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
-  local function aspectFromRatio(r)
-    if type(r) == "number" and r > 0 then return r end
+  -- Ratio = the window size as a fraction of the viewport (per axis):
+  --   { Width = 0.4, Height = 0.55 } -> 40% of viewport width x 55% of viewport height
+  --   a single number n             -> the same fraction n on both axes
+  -- omitted -> the default (DEF_WF x DEF_HF). Values are floored only by MIN_W/MIN_H and
+  -- capped at VP_MARGIN of the viewport (see computeSize).
+  local function fractionsFromRatio(r)
+    local wf, hf
     if type(r) == "table" then
-      local rw = r.Width or r[1]
-      local rh = r.Height or r[2]
-      if type(rw) == "number" and type(rh) == "number" and rh > 0 then return rw / rh end
+      wf = tonumber(r.Width or r[1]); hf = tonumber(r.Height or r[2])
+    elseif type(r) == "number" then
+      wf = r; hf = r
     end
-    return 4 / 3
+    if not (wf and wf > 0) then wf = DEF_WF end
+    if not (hf and hf > 0) then hf = DEF_HF end
+    return wf, hf
   end
-  local aspect = aspectFromRatio(config.Ratio)
-  local coverage = COVERAGE_DEF
+  local widthFrac, heightFrac = fractionsFromRatio(config.Ratio)
   local function viewportSize()
     local cam = workspace and workspace.CurrentCamera
     local vp = cam and cam.ViewportSize
@@ -68,11 +74,11 @@ function Window.new(config)
   end
   local function computeSize()
     local vp = viewportSize()
-    local h = vp.Y * coverage
-    local w = h * aspect
+    local w = vp.X * widthFrac
+    local h = vp.Y * heightFrac
     local maxW, maxH = vp.X * VP_MARGIN, vp.Y * VP_MARGIN
-    if w > maxW then w = maxW; h = w / aspect end
-    if h > maxH then h = maxH; w = h * aspect end
+    if w > maxW then w = maxW end
+    if h > maxH then h = maxH end
     w = math.max(w, MIN_W)
     h = math.max(h, MIN_H)
     return math.floor(w), math.floor(h)
@@ -86,6 +92,7 @@ function Window.new(config)
   local fabEnabled, autoHide
   local sidebarW = SIDEBAR_W
   local closed = false
+  local startHidden = config.StartHidden == true  -- start collapsed to just the FAB; open via the FAB/toggle key
   local userMoved = false  -- set when the user drags/resizes; viewport changes then clamp instead of re-centering
   local closeCallback
   local themer = Themer.new()
@@ -420,39 +427,48 @@ function Window.new(config)
   function api:IsVisible() return visible end
   function api:Show()
     if closed then return end
-    visible = true; main.Visible = true
-    winScale.Scale = userScale * 0.92
-    Animate.springTo(winScale, "base", { Scale = userScale })
+    visible = true
+    Safe.mutate(function()
+      main.Visible = true
+      winScale.Scale = userScale * 0.92
+      Animate.springTo(winScale, "base", { Scale = userScale })
+    end)
     if autoHide and hideFab then hideFab() end
   end
   function api:Hide()
     if closed then return end
     visible = false
-    Animate.toThen(winScale, "base", { Scale = userScale * 0.92 }, function()
-      if not visible then main.Visible = false; winScale.Scale = userScale end
+    Safe.mutate(function()
+      Animate.toThen(winScale, "base", { Scale = userScale * 0.92 }, function()
+        if not visible then main.Visible = false; winScale.Scale = userScale end
+      end)
     end)
     if showFab then showFab() end
   end
   function api:Toggle() if closed then return end; if visible then api:Hide() else api:Show() end end
-  function api:SetTitle(s) titleLabel.Text = s end
+  function api:SetTitle(s) Safe.mutate(function() titleLabel.Text = s end) end
   function api:SetSubtitle(s)
-    local sub = titleBar:FindFirstChild("Subtitle")
-    if sub then sub.Text = s end
+    Safe.mutate(function()
+      local sub = titleBar:FindFirstChild("Subtitle")
+      if sub then sub.Text = s end
+    end)
   end
   function api:SetImage(v)
-    local img = titleBar:FindFirstChild("TitleImage")
     local resolved = Asset.image(v)
-    if img and resolved then img.Image = resolved end
+    Safe.mutate(function()
+      local img = titleBar:FindFirstChild("TitleImage")
+      if img and resolved then img.Image = resolved end
+    end)
   end
   function api:Dialog(o) o = o or {}; o.Theme = theme; o.Window = api; return DialogMod.open(o) end
   function api:Notify(o) o = o or {}; o.Theme = theme; return Notif.show(o) end
   function api:SetNotificationsEnabled(b) Notif.setEnabled(b); return b end
-  function api:SetTransparency(n) main.BackgroundTransparency = n; return n end
+  function api:SetTransparency(n) Safe.mutate(function() main.BackgroundTransparency = n end); return n end
   function api:SetAnimationsEnabled(b) Animate.setEnabled(b and true or false); return b end
   function api:SetToggleKey(k) toggleKey = k; return k end
   function api:SetUIScale(n)
     userScale = n
-    winScale.Scale = n
+    Safe.mutate(function() winScale.Scale = n end)
     return n
   end
   function api:ShowSuccess(o) o = o or {}; o.Type = "success"; return api:Notify(o) end
@@ -514,7 +530,7 @@ function Window.new(config)
       txt.TextColor3 = theme.Colors.foreground
       local ic = pill:FindFirstChild("TagIcon"); if ic then Icons.apply(ic, o.Icon, theme.Colors.primary) end
     end)
-    return { SetText = function(s) txt.Text = s end, Destroy = function() unreg(); pill:Destroy() end }
+    return { SetText = function(s) Safe.mutate(function() txt.Text = s end) end, Destroy = function() unreg(); pill:Destroy() end }
   end
   local function fgForColor(c)
     local lum = 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
@@ -537,7 +553,7 @@ function Window.new(config)
       theme.Colors.primary = a.Primary
       theme.Colors.primaryForeground = a.Foreground
     end
-    themer.reskin()
+    Safe.mutate(function() themer.reskin() end)
   end
   function api:GetMode() return theme.Mode end
   function api:SetMode(mode)
@@ -547,7 +563,7 @@ function Window.new(config)
       theme.Colors.primary = p.primary
       theme.Colors.primaryForeground = p.primaryForeground
     end
-    themer.reskin()
+    Safe.mutate(function() themer.reskin() end)
   end
 
   -- window-shell live re-skin (mode/accent)
@@ -706,17 +722,21 @@ function Window.new(config)
 
   showFab = function()
     if not fabEnabled then return end
-    ensureFab()
-    fab.Visible = true
-    fabScale.Scale = 0.6
-    Animate.toThen(fabScale, "slow", { Scale = 1 }, function()
-      if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end
-    end, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    Safe.mutate(function()
+      ensureFab()
+      fab.Visible = true
+      fabScale.Scale = 0.6
+      Animate.toThen(fabScale, "slow", { Scale = 1 }, function()
+        if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end
+      end, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    end)
   end
   hideFab = function()
-    if not fab or not fab.Visible then return end
-    Animate.toThen(fabScale, "fast", { Scale = 0.6 }, function()
-      fab.Visible = false; fabScale.Scale = 1
+    Safe.mutate(function()
+      if not fab or not fab.Visible then return end
+      Animate.toThen(fabScale, "fast", { Scale = 0.6 }, function()
+        fab.Visible = false; fabScale.Scale = 1
+      end)
     end)
   end
 
@@ -776,8 +796,8 @@ function Window.new(config)
       local vp = viewportSize()
       width = math.min(width, vp.X); height = math.min(height, vp.Y)
       main.Size = UDim2.new(0, width, 0, height)
-      aspect = width / height       -- grip rewrites the ratio…
-      coverage = height / vp.Y      -- …and the coverage, so viewport changes preserve them
+      widthFrac = width / vp.X      -- grip rewrites the size fractions, so later
+      heightFrac = height / vp.Y    -- viewport changes preserve the dragged proportions
       userMoved = true
     end
   end))
@@ -825,16 +845,25 @@ function Window.new(config)
 
   -- mobile/touch floating toggle button
   if fabEnabled then
-    ensureFab() -- reopen button; hidden until the window hides (unless AutoHide = false)
-    if not autoHide then showFab() end
+    ensureFab() -- reopen button; hidden until the window hides (unless AutoHide = false or StartHidden)
+    if not autoHide or startHidden then showFab() end
   end
   function api:SetFloatingToggleVisible(b) if b then showFab() else hideFab() end end
 
-  -- entrance: scale-pop + background fade-in
-  winScale.Scale = userScale * 0.9
-  main.BackgroundTransparency = 1
-  Animate.springTo(winScale, "slow", { Scale = userScale })
-  Animate.to(main, "slow", { BackgroundTransparency = transp })
+  if startHidden then
+    -- start collapsed to just the FAB: no entrance animation; pre-set the final scale/transparency
+    -- so the first api:Show() (FAB tap or toggle key) reveals a correctly-rendered window.
+    visible = false
+    main.Visible = false
+    winScale.Scale = userScale
+    main.BackgroundTransparency = transp
+  else
+    -- entrance: scale-pop + background fade-in
+    winScale.Scale = userScale * 0.9
+    main.BackgroundTransparency = 1
+    Animate.springTo(winScale, "slow", { Scale = userScale })
+    Animate.to(main, "slow", { BackgroundTransparency = transp })
+  end
 
   maid:Give(gui)
 

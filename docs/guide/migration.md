@@ -7,7 +7,7 @@ v3 is a full rewrite with a clean-break API. The table below maps every changed 
 | v2 | v3 |
 |---|---|
 | `EzUI:CreateNew({ Name = ... })` | `EzUI:CreateWindow({ Title = ... })` |
-| `Size = { Width, Height }` | `Ratio = w/h` (aspect ratio; window auto-fits the viewport) |
+| `Size = { Width, Height }` (pixels) | `Ratio = { Width, Height }` (fraction of the viewport, e.g. `{ Width = 0.4, Height = 0.55 }`; window auto-fits) |
 | `tab = window:AddTab({ Name, Icon = "🏠" })` | `Icon = "home"` (Lucide name, not emoji) |
 | `tab:AddLabel/AddButton/AddToggle/AddTextBox/AddNumberBox/AddSelectBox/AddSeparator` | same names |
 | `window:ShowNotification/ShowSuccess/ShowError(...)` | `window:Notify/ShowSuccess/ShowError(...)` |
@@ -82,4 +82,4 @@ tab:AddToggle({
 
 ### New `CreateWindow` options
 
-v3 adds `Subtitle`, `Image` (title-bar logo), `Ratio` (aspect ratio — replaces `Size`; always responsive), `Transparency` (replaces `Acrylic`), `Mode` (`"dark"` / `"light"`), `ConfirmClose`, `OnClose`, `Parent`, and a richer `FloatingToggle` table (`{ Type, Position, Image, Size, Draggable, AutoHide }`, or `false` to disable), plus live `GetMode()` / `SetMode()` / `SetTransparency()` methods. See [Window & Tabs](/guide/window-and-tabs).
+v3 adds `Subtitle`, `Image` (title-bar logo), `Ratio` (window size as a fraction of the viewport, e.g. `{ Width = 0.4, Height = 0.55 }` — replaces `Size`; always responsive), `Transparency` (replaces `Acrylic`), `Mode` (`"dark"` / `"light"`), `ConfirmClose`, `OnClose`, `Parent`, `StartHidden` (load collapsed to just the floating toggle), and a richer `FloatingToggle` table (`{ Type, Position, Image, Size, Draggable, AutoHide }`, or `false` to disable), plus live `GetMode()` / `SetMode()` / `SetTransparency()` methods. See [Window & Tabs](/guide/window-and-tabs).

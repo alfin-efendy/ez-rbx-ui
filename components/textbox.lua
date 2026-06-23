@@ -1,10 +1,10 @@
 -- Deps injected via Init(R).
 local TweenService = game:GetService("TweenService")
 local TextBox = {}
-local Create, DefaultTheme, Maid, Icons, Flag, Animate
+local Create, DefaultTheme, Maid, Icons, Flag, Animate, Safe
 
 function TextBox.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Animate = R.Animate
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Animate = R.Animate; Safe = R.Safe
 end
 
 -- compact inline-button palette (mirrors components/button.lua)
@@ -125,10 +125,12 @@ function TextBox.new(opts)
   local function render()
     local d = display()
     if input.Text == d then return end
-    suppress = true
-    input.Text = d
-    if masked and not revealed then input.CursorPosition = #d + 1 end
-    suppress = false
+    Safe.mutate(function()
+      suppress = true
+      input.Text = d
+      if masked and not revealed then input.CursorPosition = #d + 1 end
+      suppress = false
+    end)
   end
   local function apply(v)
     real = tostring(v or "")
@@ -236,17 +238,19 @@ function TextBox.new(opts)
     return spinner
   end
   local function setLoading(b)
-    local s = mkSpinner()
-    s.Visible = b and true or false
-    if spinTween then spinTween:Cancel(); spinTween = nil end
-    if b then
-      spinTween = TweenService:Create(s,
-        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
-        { Rotation = 360 })
-      spinTween:Play()
-    else
-      s.Rotation = 0
-    end
+    Safe.mutate(function()
+      local s = mkSpinner()
+      s.Visible = b and true or false
+      if spinTween then spinTween:Cancel(); spinTween = nil end
+      if b then
+        spinTween = TweenService:Create(s,
+          TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
+          { Rotation = 360 })
+        spinTween:Play()
+      else
+        s.Rotation = 0
+      end
+    end)
   end
   if opts.Loading then setLoading(true) end
 
@@ -274,8 +278,10 @@ function TextBox.new(opts)
   end))
   local function setDisabled(b)
     b = b and true or false
-    input.TextEditable = not b and not opts.Copyable
-    input.TextColor3 = b and theme.Colors.mutedForeground or theme.Colors.foreground
+    Safe.mutate(function()
+      input.TextEditable = not b and not opts.Copyable
+      input.TextColor3 = b and theme.Colors.mutedForeground or theme.Colors.foreground
+    end)
   end
   if opts.Disabled then setDisabled(true) end
 
@@ -293,15 +299,19 @@ function TextBox.new(opts)
   end
   local function setInvalid(msg)
     state.invalid = true
-    local m = mkMessage(); m.Text = msg or ""; m.Visible = true
-    root.Size = UDim2.new(1, 0, 0, baseH + 18)
-    stroke.Color = strokeColor()
+    Safe.mutate(function()
+      local m = mkMessage(); m.Text = msg or ""; m.Visible = true
+      root.Size = UDim2.new(1, 0, 0, baseH + 18)
+      stroke.Color = strokeColor()
+    end)
   end
   local function setValid()
     state.invalid = false
-    if message then message.Visible = false end
-    root.Size = UDim2.new(1, 0, 0, baseH)
-    stroke.Color = strokeColor()
+    Safe.mutate(function()
+      if message then message.Visible = false end
+      root.Size = UDim2.new(1, 0, 0, baseH)
+      stroke.Color = strokeColor()
+    end)
   end
   local function runValidate()
     if not opts.Validate then return end

@@ -11,7 +11,7 @@ Common mistakes and v2→v3 migration guide.
 | v2 | v3 |
 |---|---|
 | `EzUI:CreateNew({ Name = "My Hub" })` | `EzUI:CreateWindow({ Title = "My Hub" })` |
-| `Size = { Width = 800, Height = 500 }` | `Ratio = 16/10` (aspect ratio; auto-fits viewport) |
+| `Size = { Width = 800, Height = 500 }` (pixels) | `Ratio = { Width = 0.4, Height = 0.55 }` (fraction of the viewport; auto-fits) |
 | `Icon = "🏠"` (emoji) | `Icon = "home"` (Lucide name) |
 | `window:ShowNotification(...)` | `Window:Notify(...)` or `Window:ShowSuccess/ShowWarning/ShowError/ShowInfo(...)` |
 
@@ -215,18 +215,44 @@ Window:ResetConfiguration()
 
 ---
 
-## `Ratio` replaces the old `Size` table
+## `Ratio` replaces the old `Size` table (and is now a viewport fraction, not pixels or an aspect ratio)
 
 **Don't:**
 ```lua
 -- WRONG: v2 style; Size is not a valid key in v3
 EzUI:CreateWindow({ Title = "Hub", Size = { Width = 800, Height = 500 } })
+-- WRONG: Ratio is no longer an aspect ratio; values > 1 are clamped to ~92% of the screen
+EzUI:CreateWindow({ Title = "Hub", Ratio = 16 / 10 })
 ```
 
 **Do:**
 ```lua
--- Correct: pass a single aspect-ratio number; EzUI auto-fits the viewport
-EzUI:CreateWindow({ Title = "Hub", Ratio = 16 / 10 })
--- or as a table:
-EzUI:CreateWindow({ Title = "Hub", Ratio = { Width = 16, Height = 10 } })
+-- Correct: Ratio is the window size as a fraction of the viewport (per axis)
+EzUI:CreateWindow({ Title = "Hub", Ratio = { Width = 0.4, Height = 0.55 } })  -- 40% x 55%
+-- a single number applies the same fraction to both axes:
+EzUI:CreateWindow({ Title = "Hub", Ratio = 0.5 })  -- 50% x 50%
 ```
+
+---
+
+## EzUI is safe to call from coroutines / task.spawn
+
+Notifications (`Window:ShowInfo/...`), window methods (`Show`, `Hide`, `Minimize`, `SetMode`,
+`SetAccent`, `SetFloatingToggleVisible`), and handle-mutators (`SetText`, `SetValue`, `Set`,
+`SetOptions`, `SetData`, `SetColor`, `SetImage`, `SetLocked`, ...) are safe to call from any
+thread — including a `task.spawn`/`coroutine` loop. EzUI routes the GUI write through a
+capability-safe dispatcher (`Safe.mutate`): on a thread that holds the GUI capability it runs
+inline (synchronous, as before); on a `task.spawn`/`coroutine` thread it defers the write to the
+next `RunService.Heartbeat` (which holds the capability). Values/callbacks stay synchronous; only
+the GUI write may land one frame later. You do NOT need to wrap EzUI calls in your own Heartbeat.
+
+`````lua
+local lbl = tab:AddLabel("init")
+task.spawn(function()
+  while true do
+    Window:ShowInfo({ Title = "Loop", Message = "tick" })
+    lbl.SetText("t=" .. tostring(os.clock()))
+    task.wait(1)
+  end
+end)
+`````

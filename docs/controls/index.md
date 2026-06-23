@@ -16,8 +16,8 @@ Any control that accepts a `Flag` option automatically saves and restores its va
 
 | Control | Purpose |
 |---|---|
-| [Label](/controls/label) | Single-line text; supports runtime `SetText` |
-| [Paragraph](/controls/paragraph) | Multi-line wrapped text for descriptions |
+| [Label](/controls/label) | Text with runtime `SetText`; single-line, or multi-line via `Variant = "paragraph"` |
+| [Paragraph](/controls/paragraph) | Multi-line wrapped text (wraps + honors `\n`) for descriptions |
 | [Section](/controls/section) | Uppercase group heading |
 | [Separator](/controls/separator) | 1 px horizontal divider |
 | [Button](/controls/button) | Clickable action button |

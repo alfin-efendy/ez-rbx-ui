@@ -56,7 +56,7 @@ function Host.attach(api, ctx)
           Size = UDim2.new(1, 0, 1, 0), Parent = control.Frame, C.corner(ctx.theme.Radius.md) })
         local shield = C("ImageButton", { Name = "LockShield", AutoButtonColor = false, BackgroundTransparency = 1,
           Active = true, Visible = false, ZIndex = 51, Size = UDim2.new(1, 0, 1, 0), Parent = control.Frame })
-        control.SetLocked = function(b) local v = b and true or false; scrim.Visible = v; shield.Visible = v end
+        control.SetLocked = function(b) local v = b and true or false; ctx.R.Safe.mutate(function() scrim.Visible = v; shield.Visible = v end) end
         if opts.Locked then control.SetLocked(true) end
         if ctx.registerControl then ctx.registerControl(control) end
       end
