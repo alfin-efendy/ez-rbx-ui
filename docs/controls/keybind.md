@@ -23,6 +23,7 @@ local kb = tab:AddKeybind({
 | `Description` | `string` | — | Muted secondary line rendered below the label. |
 | `Flag` | `string` | — | Config key used to persist the binding across sessions. |
 | `Callback` | `function()` | — | Called (no arguments) whenever the bound key is pressed. |
+| `OnChanged` | `function(key)` | — | Called with the new `Enum.KeyCode` when the binding changes (user rebind or `SetKey`). Use this to rebind something — e.g. `OnChanged = function(key) window:SetToggleKey(key) end` — instead of `Callback`, so you don't add a second handler on the same key. |
 
 ## API
 
@@ -59,4 +60,13 @@ kb.OnPressed(function()
   print("current key is", kb.GetKey().Name)
 end)
 kb.SetKey(Enum.KeyCode.P)  -- change binding programmatically
+
+-- Rebinding the window's toggle key. The window ALREADY toggles on its ToggleKey, so use
+-- OnChanged to repoint it — do NOT use Callback = window:Toggle (that adds a second handler
+-- on the same key, firing alongside the built-in one and just making the window blink).
+tab:AddKeybind({
+  Text     = "Toggle UI key",
+  Default  = Enum.KeyCode.RightControl,
+  OnChanged = function(key) window:SetToggleKey(key) end,
+})
 ```

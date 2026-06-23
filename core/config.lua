@@ -9,7 +9,7 @@ end
 
 function Config.new(opts)
   opts = opts or {}
-  return setmetatable({
+  local self = setmetatable({
     folder = opts.FolderName or "EzUI",
     file = opts.FileName or "Settings",
     autoSave = opts.AutoSave ~= false,
@@ -19,11 +19,20 @@ function Config.new(opts)
     defaults = {},
     setters = {},
   }, Config)
+  -- AutoLoad (the documented default) reads the saved file on startup so flags
+  -- restore their values as controls register against this config.
+  if self.autoLoad then self:Load() end
+  return self
 end
 
 function Config:_dir() return self.folder .. "/" .. self.file end
-function Config:_path() return self:_dir() .. "/" .. self.profile .. ".json" end
-function Config:_legacyPath() return self.folder .. "/" .. self.file .. ".json" end
+-- The Default profile is the saved file itself: <FolderName>/<FileName>.json. Named
+-- profiles live in a <FolderName>/<FileName>/ subfolder so FileName stays a file name.
+function Config:_pathFor(name)
+  if name == "Default" then return self.folder .. "/" .. self.file .. ".json" end
+  return self:_dir() .. "/" .. name .. ".json"
+end
+function Config:_path() return self:_pathFor(self.profile) end
 
 function Config:ActiveProfile() return self.profile end
 
@@ -51,7 +60,7 @@ end
 
 function Config:DeleteProfile(name)
   if type(delfile) == "function" and type(isfile) == "function" then
-    local p = self:_dir() .. "/" .. name .. ".json"
+    local p = self:_pathFor(name)
     if isfile(p) then pcall(delfile, p) end
   end
 end
@@ -79,14 +88,24 @@ function Config:Save()
   if not hasFS() then return false end
   local ok, encoded = pcall(function() return HttpService:JSONEncode(self.values) end)
   if not ok then return false end
-  if type(makefolder) == "function" then pcall(makefolder, self.folder); pcall(makefolder, self:_dir()) end
+  if type(makefolder) == "function" then
+    pcall(makefolder, self.folder)
+    -- only named profiles need the <FolderName>/<FileName>/ subfolder; the Default
+    -- profile is written straight to <FolderName>/<FileName>.json
+    if self.profile ~= "Default" then pcall(makefolder, self:_dir()) end
+  end
   return pcall(writefile, self:_path(), encoded)
 end
 
 function Config:Load()
   if not hasFS() then return false end
   local path = self:_path()
-  if not isfile(path) and self.profile == "Default" and isfile(self:_legacyPath()) then path = self:_legacyPath() end
+  -- migrate from the older multi-profile layout where Default lived at
+  -- <FolderName>/<FileName>/Default.json instead of <FolderName>/<FileName>.json
+  if not isfile(path) and self.profile == "Default" then
+    local nested = self:_dir() .. "/Default.json"
+    if isfile(nested) then path = nested end
+  end
   if not isfile(path) then return false end
   local ok, content = pcall(readfile, path)
   if not ok then return false end

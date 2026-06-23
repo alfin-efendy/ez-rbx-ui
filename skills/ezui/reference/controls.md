@@ -36,16 +36,23 @@ t.Set(true)
 | Disabled | boolean | `false` | non-interactive |
 | Loading | boolean | `false` | spinner state |
 | Description | string | nil | helper text under label |
-| OnOpen | function | nil | `OnOpen(api)` — refresh options on open |
+| OnOpen | function | nil | `OnOpen(api)` — refresh options on open; combine with `api.Reload()` to refetch every open |
+| LoadOptions | function | nil | async provider returning the options table (may yield). Shows `Loading…` (value hidden) until it returns; runs non-blocking |
+| Timeout | number | `60` | seconds before `LoadOptions` is given up on and the loading state clears |
 | Flag | string | nil | stores `Value` |
 | Callback | function | nil | receives the new value on change |
 
-**Returns:** `{ GetValue(), SetValue(v), SetOptions(o), SetDisabled(b), SetLoading(b) }`
+**Returns:** `{ GetValue(), SetValue(v), SetOptions(o), SetDisabled(b), SetLoading(b), Reload() }`
 
 ```lua
 local s = tab:AddSelectBox({ Text = "Mode", Multi = true, Searchable = true,
   Options = { { Value = "a", Text = "Alpha" }, { Value = "b", Text = "Beta" } },
   Flag = "modes" })
+
+-- async: one function returns the options (may yield). The field shows "Loading…" until it
+-- returns; no manual SetLoading. Default pre-selects; Reload() re-runs it.
+tab:AddSelectBox({ Text = "Weapon", Flag = "weapon", Default = "wpn_005",
+  LoadOptions = function() return fetchWeapons() end })  -- -> { { Value, Text }, ... }
 ```
 
 ## AddLabel

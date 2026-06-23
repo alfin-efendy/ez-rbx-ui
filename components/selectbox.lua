@@ -35,7 +35,7 @@ function SelectBox.new(opts)
   local dropdown
   local posConn -- repositions the open dropdown when the control scrolls
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
-  local buildDropdown, rebuild, computePos
+  local buildDropdown, rebuild, computePos, refresh
   local onChanged = opts.Callback
 
   local function labelFor(v)
@@ -147,10 +147,19 @@ function SelectBox.new(opts)
         TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
       spinTween:Play()
     end
+    refresh()
     if dropdown then rebuild() end
   end
 
-  local function refresh()
+  function refresh()
+    if loading then
+      -- while loading, hide the (possibly stale) value and show a placeholder instead
+      fieldIcon.Visible = false
+      clearBtn.Visible = false
+      relayout()
+      valueLabel.Text = "Loading…"
+      return
+    end
     local ic = selectedIcon()
     if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground); fieldIcon.Visible = true
     else fieldIcon.Visible = false end
@@ -186,6 +195,24 @@ function SelectBox.new(opts)
   function api.SetDisabled(b) setDisabled(b) end
   function api.SetLoading(b) setLoading(b) end
 
+  local function isSelected(opt) return multi and contains(value, opt) or (value == opt) end
+
+  -- Re-tint the open option rows in place to match the current selection. Used for multi
+  -- picks so the dropdown is NOT torn down and rebuilt — that reset the scroll position
+  -- and wiped any active search query. Each row already owns a Check icon child.
+  local function retintRows()
+    for _, e in ipairs(optButtons) do
+      local o = e.btn
+      local sel = isSelected(o:GetAttribute("OptValue"))
+      o.BackgroundTransparency = sel and 0 or 1
+      local check = o:FindFirstChild("Check")
+      if check then
+        if sel then Icons.apply(check, "check", theme.Colors.foreground) end
+        check.Visible = sel
+      end
+    end
+  end
+
   local function pick(opt)
     if multi then
       local nv = {}
@@ -196,7 +223,7 @@ function SelectBox.new(opts)
         nv[#nv + 1] = opt
       end
       api.SetValue(nv)
-      if dropdown then rebuild() end -- re-render to re-tint (no OnOpen)
+      if dropdown then retintRows() end -- re-tint in place (keeps scroll + search; no OnOpen)
     else
       if opts.AllowNone and value == opt then
         api.SetValue(nil)
@@ -206,8 +233,6 @@ function SelectBox.new(opts)
       api.Close()
     end
   end
-
-  local function isSelected(opt) return multi and contains(value, opt) or (value == opt) end
 
   function api.Filter(query)
     query = (query or ""):lower()
@@ -227,48 +252,61 @@ function SelectBox.new(opts)
     local width = math.max(140, sz.X or 140)
     local ddH = math.min((loading and 28 or (#options * 28)) + (searchable and 44 or 8), 240)
     local x, y = computePos(width, ddH)
-    dropdown = Create("ScrollingFrame", {
-      Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0,
+    -- Outer popover container. Active so clicks on its chrome don't fall through to the
+    -- overlay catcher (which would close it). The search bar is pinned here (sticky); the
+    -- options live in a nested ScrollingFrame so the search stays put while the list scrolls.
+    dropdown = Create("Frame", {
+      Name = "SelectDropdown", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0, Active = true,
       Position = UDim2.new(0, x, 0, y),
       Size = UDim2.new(0, width, 0, ddH),
       ClipsDescendants = true, ZIndex = 1001,
-      ScrollBarThickness = 4, ScrollBarImageColor3 = theme.Colors.border,
-      AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0, 0, 0, 0),
       Create.corner(theme.Radius.md),
-      Create.padding({ all = 4 }),
-      Create.listLayout({ Padding = 2 }),
     })
     Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = dropdown })
 
-    -- search box (filters options live) — only for longer lists, or when forced
+    -- sticky search box (filters options live) — only for longer lists, or when forced
+    local listTop = 4
     if searchable then
+      listTop = 34 -- 4 top pad + 26 search + 4 gap
       local searchBox = Create("Frame", { Name = "Search", BackgroundColor3 = theme.Colors.surface, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 0, ZIndex = 1002, Parent = dropdown,
+        Position = UDim2.new(0, 4, 0, 4), Size = UDim2.new(1, -8, 0, 26), ZIndex = 1003, Parent = dropdown,
         Create.corner(theme.Radius.sm), Create.padding({ left = 8, right = 8 }) })
       local searchInput = Create("TextBox", { Name = "Input", BackgroundTransparency = 1, Text = "",
         PlaceholderText = "Search…", PlaceholderColor3 = theme.Colors.mutedForeground, TextColor3 = theme.Colors.foreground,
         TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        ClearTextOnFocus = false, ZIndex = 1002, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
+        ClearTextOnFocus = false, ZIndex = 1003, Size = UDim2.new(1, 0, 1, 0), Parent = searchBox })
       searchInput:GetPropertyChangedSignal("Text"):Connect(function() api.Filter(searchInput.Text) end)
     end
+
+    -- scrolling list of options/dividers, below the pinned search
+    local list = Create("ScrollingFrame", {
+      Name = "List", BackgroundTransparency = 1, BorderSizePixel = 0,
+      Position = UDim2.new(0, 4, 0, listTop),
+      Size = UDim2.new(1, -8, 1, -(listTop + 4)),
+      ClipsDescendants = true, ZIndex = 1001,
+      ScrollBarThickness = 4, ScrollBarImageColor3 = theme.Colors.border,
+      AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0, 0, 0, 0),
+      Parent = dropdown,
+      Create.listLayout({ Padding = 2 }),
+    })
 
     if loading then
       Create("TextLabel", { Name = "Loading", BackgroundTransparency = 1, Text = "Loading…", ZIndex = 1002,
         TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Center,
         TextSize = theme.Font.body.Size, Font = Enum.Font.BuilderSans,
-        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 1, Parent = dropdown })
+        Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 1, Parent = list })
     else
     for i, raw in ipairs(options) do
       local e = normOpt(raw)
       if e.divider then
         Create("Frame", { Name = "Divider", BackgroundColor3 = theme.Colors.border, BorderSizePixel = 0,
-          Size = UDim2.new(1, -8, 0, 1), LayoutOrder = i, ZIndex = 1002, Parent = dropdown })
+          Size = UDim2.new(1, -8, 0, 1), LayoutOrder = i, ZIndex = 1002, Parent = list })
       else
         local rowH = e.desc and 38 or 26
         local sel = isSelected(e.value)
         local o = Create("TextButton", { Name = "Opt", AutoButtonColor = false, Text = "",
           BackgroundColor3 = theme.Colors.surface, BackgroundTransparency = sel and 0 or 1, ZIndex = 1002,
-          Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = i, Parent = dropdown, Create.corner(theme.Radius.sm),
+          Size = UDim2.new(1, 0, 0, rowH), LayoutOrder = i, Parent = list, Create.corner(theme.Radius.sm),
           Create.padding({ left = 6, right = 6 }) })
         o:SetAttribute("OptValue", e.value)
         local check = Create("ImageLabel", { Name = "Check", BackgroundTransparency = 1, ZIndex = 1003,
@@ -349,6 +387,37 @@ function SelectBox.new(opts)
     setDisabled(disabled)
     Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
   end)) end
+
+  -- Async options loader. opts.LoadOptions is a function that returns the options table;
+  -- it may yield (HTTP, datastore, task.wait). The field shows its loading state on its own
+  -- while the call is pending and clears it once the function returns — no manual SetLoading.
+  -- It runs in task.spawn so it never blocks other controls, and a timeout (opts.Timeout
+  -- seconds, default 60) clears the loading state if the function never returns. Call
+  -- api.Reload() to run it again; loadToken supersedes any earlier in-flight run.
+  local loadToken = 0
+  local function runLoader()
+    if type(opts.LoadOptions) ~= "function" then return end
+    loadToken = loadToken + 1
+    local token = loadToken
+    local settled = false
+    setLoading(true)
+    task.spawn(function()
+      local ok, result = pcall(opts.LoadOptions)
+      if settled or token ~= loadToken then return end
+      settled = true
+      if ok and type(result) == "table" then api.SetOptions(result) end
+      setLoading(false)
+    end)
+    local timeout = type(opts.Timeout) == "number" and opts.Timeout or 60
+    task.delay(timeout, function()
+      if settled or token ~= loadToken then return end
+      settled = true
+      setLoading(false)
+    end)
+  end
+  function api.Reload() runLoader() end
+  maid:Give(function() loadToken = loadToken + 1 end) -- drop pending loads on destroy
+  if opts.LoadOptions then runLoader() end
 
   return api
 end

@@ -18,5 +18,26 @@ h.describe("keybind", function()
     uis.InputBegan:Fire({ KeyCode = h.roblox.Enum.KeyCode.E, UserInputType = h.roblox.Enum.UserInputType.Keyboard }, false)
     h.expect(fired).toBe(1)
   end)
+  h.it("fires OnChanged with the new key when rebound (and not on a normal press)", function()
+    local got, changes = nil, 0
+    local k = Keybind.new({ Text = "Toggle", Default = h.roblox.Enum.KeyCode.RightControl,
+      OnChanged = function(key) got = key; changes = changes + 1 end })
+    local uis = h.roblox.game:GetService("UserInputService")
+    -- pressing the bound key must NOT count as a change
+    uis.InputBegan:Fire({ KeyCode = h.roblox.Enum.KeyCode.RightControl, UserInputType = h.roblox.Enum.UserInputType.Keyboard }, false)
+    h.expect(changes).toBe(0)
+    -- click to listen, then press a new key -> rebind fires OnChanged with that key
+    k.Frame.MouseButton1Click:Fire()
+    uis.InputBegan:Fire({ KeyCode = h.roblox.Enum.KeyCode.LeftAlt, UserInputType = h.roblox.Enum.UserInputType.Keyboard }, false)
+    h.expect(changes).toBe(1)
+    h.expect(got.Name).toBe("LeftAlt")
+    h.expect(k.GetKey().Name).toBe("LeftAlt")
+  end)
+  h.it("fires OnChanged from SetKey too", function()
+    local got
+    local k = Keybind.new({ Text = "T", Default = "P", OnChanged = function(key) got = key end })
+    k.SetKey(h.roblox.Enum.KeyCode.LeftAlt)
+    h.expect(got.Name).toBe("LeftAlt")
+  end)
 end)
 h.run()
