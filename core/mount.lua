@@ -68,4 +68,20 @@ function Mount.guiName(config, studio)
   return "_" .. tostring(math.random(100000, 999999999))
 end
 
+-- After the ScreenGui exists: dedupe prior EzUI roots (by attribute, since names may be
+-- random) and apply protect. Studio skips protect (protect functions don't exist there).
+-- Runs synchronously on the caller's thread to keep executor capability (do not defer).
+function Mount.finalize(gui, ctx)
+  ctx = ctx or {}
+  gui:SetAttribute("__ezui", true)
+  local parent = gui.Parent
+  if parent then
+    for _, inst in ipairs(parent:GetChildren()) do
+      if inst ~= gui and inst:GetAttribute("__ezui") then inst:Destroy() end
+    end
+  end
+  if ctx.protect and not ctx.studio then pcall(ctx.protect, gui) end
+  return gui
+end
+
 return Mount

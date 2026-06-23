@@ -86,6 +86,36 @@ h.describe("mount", function()
     resetEnv()
     h.expect(Mount.guiName({ GuiName = "MyHub" }, true)).toBe("MyHub")
   end)
+
+  h.it("finalize: marks the gui and dedupes prior EzUI roots only", function()
+    resetEnv()
+    local parent = h.roblox.Instance.new("Folder")
+    local old = h.roblox.Instance.new("ScreenGui"); old.Parent = parent; old:SetAttribute("__ezui", true)
+    local other = h.roblox.Instance.new("ScreenGui"); other.Parent = parent -- not an EzUI root
+    local gui = h.roblox.Instance.new("ScreenGui"); gui.Parent = parent
+    Mount.finalize(gui, {})
+    h.expect(gui:GetAttribute("__ezui")).toBe(true)
+    local present = {}
+    for _, c in ipairs(parent:GetChildren()) do present[c] = true end
+    h.expect(present[old]).toBeNil()  -- destroyed
+    h.expect(present[other]).toBe(true)
+    h.expect(present[gui]).toBe(true)
+  end)
+
+  h.it("finalize: applies protect outside studio, skips in studio", function()
+    resetEnv()
+    local p1 = h.roblox.Instance.new("Folder")
+    local gui1 = h.roblox.Instance.new("ScreenGui"); gui1.Parent = p1
+    local got1
+    Mount.finalize(gui1, { protect = function(g) got1 = g end, studio = false })
+    h.expect(got1).toBe(gui1)
+
+    local p2 = h.roblox.Instance.new("Folder")
+    local gui2 = h.roblox.Instance.new("ScreenGui"); gui2.Parent = p2
+    local got2
+    Mount.finalize(gui2, { protect = function(g) got2 = g end, studio = true })
+    h.expect(got2).toBeNil()
+  end)
 end)
 
 h.run()
