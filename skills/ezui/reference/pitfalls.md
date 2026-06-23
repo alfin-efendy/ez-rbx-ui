@@ -237,7 +237,8 @@ EzUI:CreateWindow({ Title = "Hub", Ratio = 0.5 })  -- 50% x 50%
 
 ## EzUI is safe to call from coroutines / task.spawn
 
-Notifications (`Window:ShowInfo/...`) and handle-mutators (`SetText`, `SetValue`, `Set`,
+Notifications (`Window:ShowInfo/...`), window methods (`Show`, `Hide`, `Minimize`, `SetMode`,
+`SetAccent`, `SetFloatingToggleVisible`), and handle-mutators (`SetText`, `SetValue`, `Set`,
 `SetOptions`, `SetData`, `SetColor`, `SetImage`, `SetLocked`, ...) are safe to call from any
 thread — including a `task.spawn`/`coroutine` loop. EzUI routes the GUI write through a
 capability-safe dispatcher (`Safe.mutate`): on a thread that holds the GUI capability it runs

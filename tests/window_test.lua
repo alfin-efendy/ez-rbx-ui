@@ -535,6 +535,26 @@ h.describe("window", function()
     w2:SetAnimationsEnabled(true)   -- restore the global default for any later suites
     h.expect(R.Animate.isEnabled()).toBe(true)
   end)
+  h.it("Hide defers the floating-toggle reveal when capability is absent", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen, FloatingToggle = true })
+    local function fab() for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then return c end end end
+    R.Safe._setCapabilityCheck(function() return false end)
+    w:Hide()
+    h.expect(fab().Visible).toBe(false)        -- deferred: FAB not revealed yet
+    h.mock.stepHeartbeat(0)
+    h.expect(fab().Visible).toBe(true)         -- revealed in a capability context
+    R.Safe._setCapabilityCheck(nil)
+  end)
+  h.it("SetMode from a no-capability thread does not error and state is synchronous", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    R.Safe._setCapabilityCheck(function() return false end)
+    w:SetMode("light")
+    h.expect(w:GetMode()).toBe("light")        -- Lua state is synchronous, not deferred
+    h.mock.stepHeartbeat(0)                    -- reskin flushes without error
+    R.Safe._setCapabilityCheck(nil)
+  end)
 end)
 
 h.run()

@@ -553,7 +553,7 @@ function Window.new(config)
       theme.Colors.primary = a.Primary
       theme.Colors.primaryForeground = a.Foreground
     end
-    themer.reskin()
+    Safe.mutate(function() themer.reskin() end)
   end
   function api:GetMode() return theme.Mode end
   function api:SetMode(mode)
@@ -563,7 +563,7 @@ function Window.new(config)
       theme.Colors.primary = p.primary
       theme.Colors.primaryForeground = p.primaryForeground
     end
-    themer.reskin()
+    Safe.mutate(function() themer.reskin() end)
   end
 
   -- window-shell live re-skin (mode/accent)
@@ -722,17 +722,21 @@ function Window.new(config)
 
   showFab = function()
     if not fabEnabled then return end
-    ensureFab()
-    fab.Visible = true
-    fabScale.Scale = 0.6
-    Animate.toThen(fabScale, "slow", { Scale = 1 }, function()
-      if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end
-    end, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    Safe.mutate(function()
+      ensureFab()
+      fab.Visible = true
+      fabScale.Scale = 0.6
+      Animate.toThen(fabScale, "slow", { Scale = 1 }, function()
+        if fabSnap and fab:GetAttribute("FabType") == "simple" then fabSnap() end
+      end, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    end)
   end
   hideFab = function()
-    if not fab or not fab.Visible then return end
-    Animate.toThen(fabScale, "fast", { Scale = 0.6 }, function()
-      fab.Visible = false; fabScale.Scale = 1
+    Safe.mutate(function()
+      if not fab or not fab.Visible then return end
+      Animate.toThen(fabScale, "fast", { Scale = 0.6 }, function()
+        fab.Visible = false; fabScale.Scale = 1
+      end)
     end)
   end
 
