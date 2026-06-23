@@ -1,8 +1,8 @@
 -- Deps injected via Init(R).
 local Keybind = {}
-local Create, DefaultTheme, Maid, Flag
+local Create, DefaultTheme, Maid, Flag, Safe
 local UserInputService = game:GetService("UserInputService")
-function Keybind.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Flag = R.Flag end
+function Keybind.Init(R) Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Flag = R.Flag; Safe = R.Safe end
 
 -- A real Enum.KeyCode is an EnumItem (userdata), NOT a table — so type(k)=="table"
 -- is false in Roblox and the key would always read as "Unknown". Read .Name directly
@@ -53,7 +53,7 @@ function Keybind.new(opts)
 
   local function apply(name)
     keyCode = keyName(name)
-    keyBox.Text = listening and "..." or keyCode
+    Safe.mutate(function() keyBox.Text = listening and "..." or keyCode end)
   end
   local commit = Flag.bind(opts, keyName(opts.Default or "Unknown"), apply)
 

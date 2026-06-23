@@ -1,10 +1,10 @@
 -- Deps injected via Init(R).
 local RunService = game:GetService("RunService")
 local NumberBox = {}
-local Create, DefaultTheme, Maid, Icons, Flag, Numfmt
+local Create, DefaultTheme, Maid, Icons, Flag, Numfmt, Safe
 
 function NumberBox.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Numfmt = R.Numfmt
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Icons = R.Icons; Flag = R.Flag; Numfmt = R.Numfmt; Safe = R.Safe
 end
 
 function NumberBox.new(opts)
@@ -69,15 +69,17 @@ function NumberBox.new(opts)
   local function updateBounds()
     atMin = minV ~= nil and value <= minV
     atMax = maxV ~= nil and value >= maxV
-    dim(minus, atMin); minus.Active = not atMin
-    dim(plus, atMax); plus.Active = not atMax
+    Safe.mutate(function()
+      dim(minus, atMin); minus.Active = not atMin
+      dim(plus, atMax); plus.Active = not atMax
+    end)
   end
 
   local function fmt(n)
     return Numfmt.format(n, { Format = opts.Format, Decimals = opts.Decimals, Prefix = opts.Prefix, Suffix = opts.Suffix })
   end
   local focused = false
-  local function render() input.Text = focused and tostring(value) or fmt(value) end
+  local function render() Safe.mutate(function() input.Text = focused and tostring(value) or fmt(value) end) end
   local function apply(n) value = clamp(n); render(); updateBounds() end
   local commit = Flag.bind(opts, clamp(opts.Default or 0), apply)
   local function set(n) commit(clamp(n)); if opts.Callback then opts.Callback(value) end end

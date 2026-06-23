@@ -1,9 +1,9 @@
 -- Deps injected via Init(R).
 local Slider = {}
-local Create, DefaultTheme, Animate, Maid, Flag
+local Create, DefaultTheme, Animate, Maid, Flag, Safe
 local UserInputService = game:GetService("UserInputService")
 function Slider.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Flag = R.Flag
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Flag = R.Flag; Safe = R.Safe
 end
 function Slider.new(opts)
   opts = opts or {}
@@ -57,9 +57,11 @@ function Slider.new(opts)
   local function apply(v)
     value = snap(v)
     local scale = (maxV > minV) and (value - minV) / (maxV - minV) or 0
-    fill.Size = UDim2.new(scale, 0, 1, 0)
-    handle.Position = UDim2.new(scale, -6, 0.5, -6)
-    if valueLabel then valueLabel.Text = tostring(value) end
+    Safe.mutate(function()
+      fill.Size = UDim2.new(scale, 0, 1, 0)
+      handle.Position = UDim2.new(scale, -6, 0.5, -6)
+      if valueLabel then valueLabel.Text = tostring(value) end
+    end)
   end
   local commit = Flag.bind(opts, snap(opts.Default or minV), apply)
 

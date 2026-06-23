@@ -1,10 +1,10 @@
 -- Deps injected via Init(R). Swatch row + an overlay HSV picker (SV square + hue slider,
 -- click/drag). Value persists as an {r,g,b} array (JSON-safe).
 local ColorPicker = {}
-local Create, DefaultTheme, Maid, Overlay, Flag, Animate
+local Create, DefaultTheme, Maid, Overlay, Flag, Animate, Safe
 local UserInputService = game:GetService("UserInputService")
 function ColorPicker.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Flag = R.Flag; Animate = R.Animate
+  Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Flag = R.Flag; Animate = R.Animate; Safe = R.Safe
 end
 
 -- Color3 channels are .R/.G/.B (0-1 floats) in real Roblox.
@@ -56,7 +56,7 @@ function ColorPicker.new(opts)
     Size = UDim2.new(0, 28, 0, 18), Position = UDim2.new(1, -28, 0.5, -9), Parent = btn, Create.corner(theme.Radius.sm) })
   Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = swatch })
 
-  local function apply(v) color = toColor(v); swatch.BackgroundColor3 = color end
+  local function apply(v) color = toColor(v); Safe.mutate(function() swatch.BackgroundColor3 = color end) end
   local commit = Flag.bind(opts, toArr(color), apply)
 
   local api = { Frame = btn }

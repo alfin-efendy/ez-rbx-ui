@@ -2,11 +2,11 @@
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local SelectBox = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Flag
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Flag, Safe
 
 function SelectBox.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
-  Icons = R.Icons; Overlay = R.Overlay; Flag = R.Flag
+  Icons = R.Icons; Overlay = R.Overlay; Flag = R.Flag; Safe = R.Safe
 end
 
 local function contains(arr, v) for _, x in ipairs(arr) do if x == v then return true end end return false end
@@ -141,25 +141,29 @@ function SelectBox.new(opts)
   local disabled = false
   local function setDisabled(b)
     disabled = b and true or false
-    valueLabel.TextColor3 = disabled and theme.Colors.mutedForeground or theme.Colors.foreground
-    Icons.apply(caret, "chevron-down", disabled and theme.Colors.mutedForeground or theme.Colors.primary)
-    field.BackgroundTransparency = disabled and 0.4 or 0
+    Safe.mutate(function()
+      valueLabel.TextColor3 = disabled and theme.Colors.mutedForeground or theme.Colors.foreground
+      Icons.apply(caret, "chevron-down", disabled and theme.Colors.mutedForeground or theme.Colors.primary)
+      field.BackgroundTransparency = disabled and 0.4 or 0
+    end)
   end
 
   local loading = false
   local spinTween
   local function setLoading(b)
     loading = b and true or false
-    caret.Visible = not loading
-    spinner.Visible = loading
-    if spinTween then spinTween:Cancel(); spinTween = nil end
-    if loading then
-      spinTween = TweenService:Create(spinner,
-        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
-      spinTween:Play()
-    end
-    refresh()
-    if dropdown then rebuild() end
+    Safe.mutate(function()
+      caret.Visible = not loading
+      spinner.Visible = loading
+      if spinTween then spinTween:Cancel(); spinTween = nil end
+      if loading then
+        spinTween = TweenService:Create(spinner,
+          TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
+        spinTween:Play()
+      end
+      refresh()
+      if dropdown then rebuild() end
+    end)
   end
 
   function refresh()
@@ -178,7 +182,7 @@ function SelectBox.new(opts)
     relayout()
     valueLabel.Text = display()
   end
-  local function apply(v) value = v; refresh() end
+  local function apply(v) value = v; Safe.mutate(function() refresh() end) end
   local commit = Flag.bind(opts, value, apply)
 
   local api = { Frame = btn }
@@ -200,8 +204,10 @@ function SelectBox.new(opts)
     elseif value ~= nil and not present(value) then
       value = opts.AllowNone and nil or firstValue()
     end
-    refresh()
-    if dropdown then rebuild() end
+    Safe.mutate(function()
+      refresh()
+      if dropdown then rebuild() end
+    end)
   end
   function api.SetDisabled(b) setDisabled(b) end
   function api.SetLoading(b) setLoading(b) end

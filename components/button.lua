@@ -1,9 +1,9 @@
 -- Deps injected via Init(R).
 local Button = {}
-local Create, DefaultTheme, Animate, Maid, Icons
+local Create, DefaultTheme, Animate, Maid, Icons, Safe
 
 function Button.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Icons = R.Icons; Safe = R.Safe
 end
 
 local function palette(theme, variant)
@@ -99,8 +99,11 @@ function Button.new(opts)
 
   return {
     Frame = btn,
-    SetText = function(s) label.Text = s end,
-    SetEnabled = function(en) btn.Active = en; label.TextColor3 = en and fg or theme.Colors.mutedForeground end,
+    SetText = function(s) Safe.mutate(function() label.Text = s end) end,
+    SetEnabled = function(en)
+      btn.Active = en
+      Safe.mutate(function() label.TextColor3 = en and fg or theme.Colors.mutedForeground end)
+    end,
     Destroy = function() maid:DoCleanup() end,
   }
 end

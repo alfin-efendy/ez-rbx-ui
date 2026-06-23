@@ -38,6 +38,17 @@ h.describe("button", function()
     b.Frame.MouseButton1Up:Fire()
     h.expect(sc.Scale).toBe(1)
   end)
+  h.it("SetText defers the label write when capability is absent", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local b = R.Button.new({ Text = "old", Parent = R.Create("Frame", {}) })
+    local function labelText() return b.Frame:FindFirstChild("Surface"):FindFirstChild("Label").Text end
+    R.Safe._setCapabilityCheck(function() return false end)
+    b.SetText("new")
+    h.expect(labelText()).toBe("old")        -- deferred: not applied yet (fails before the wrap exists)
+    h.mock.stepHeartbeat(0)
+    h.expect(labelText()).toBe("new")        -- applied in a capability context
+    R.Safe._setCapabilityCheck(nil)
+  end)
 end)
 
 h.run()

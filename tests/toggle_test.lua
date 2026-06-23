@@ -29,6 +29,15 @@ h.describe("toggle", function()
     local t2 = Toggle.new({ Text = "X", Default = false, Flag = "x", Config = cfg })
     h.expect(t2.Get()).toBe(true)  -- restored
   end)
+  h.it("Set keeps the value synchronous and defers the visual when capability is absent", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local tg = R.Toggle.new({ Text = "x", Default = false, Parent = R.Create("Frame", {}) })
+    R.Safe._setCapabilityCheck(function() return false end)
+    tg.Set(true)
+    h.expect(tg.Get()).toBe(true)            -- value updates synchronously (state not deferred)
+    h.mock.stepHeartbeat(0)                   -- visual catches up without error
+    R.Safe._setCapabilityCheck(nil)
+  end)
 end)
 
 h.run()

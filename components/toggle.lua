@@ -1,9 +1,9 @@
 -- Deps injected via Init(R).
 local Toggle = {}
-local Create, DefaultTheme, Animate, Maid, Flag
+local Create, DefaultTheme, Animate, Maid, Flag, Safe
 
 function Toggle.Init(R)
-  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Flag = R.Flag
+  Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid; Flag = R.Flag; Safe = R.Safe
 end
 
 function Toggle.new(opts)
@@ -52,11 +52,13 @@ function Toggle.new(opts)
 
   local function apply(v)
     value = v and true or false
-    Animate.to(track, "fast", { BackgroundColor3 = value and theme.Colors.primary or theme.Colors.switchTrackOff })
-    Animate.to(knob, "fast", {
-      Position = value and UDim2.new(0, 22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
-      BackgroundColor3 = value and theme.Colors.primaryForeground or theme.Colors.foreground,
-    })
+    Safe.mutate(function()
+      Animate.to(track, "fast", { BackgroundColor3 = value and theme.Colors.primary or theme.Colors.switchTrackOff })
+      Animate.to(knob, "fast", {
+        Position = value and UDim2.new(0, 22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
+        BackgroundColor3 = value and theme.Colors.primaryForeground or theme.Colors.foreground,
+      })
+    end)
   end
 
   local commit = Flag.bind(opts, opts.Default == true, apply)
