@@ -35,7 +35,7 @@ function SelectBox.new(opts)
   local dropdown
   local posConn -- repositions the open dropdown when the control scrolls
   local optButtons = {} -- { { btn = TextButton, text = optionName } } for live search
-  local buildDropdown, rebuild, computePos
+  local buildDropdown, rebuild, computePos, refresh
   local onChanged = opts.Callback
 
   local function labelFor(v)
@@ -147,10 +147,19 @@ function SelectBox.new(opts)
         TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
       spinTween:Play()
     end
+    refresh()
     if dropdown then rebuild() end
   end
 
-  local function refresh()
+  function refresh()
+    if loading then
+      -- while loading, hide the (possibly stale) value and show a placeholder instead
+      fieldIcon.Visible = false
+      clearBtn.Visible = false
+      relayout()
+      valueLabel.Text = "Loading…"
+      return
+    end
     local ic = selectedIcon()
     if ic then Icons.apply(fieldIcon, ic, theme.Colors.foreground); fieldIcon.Visible = true
     else fieldIcon.Visible = false end
@@ -378,6 +387,37 @@ function SelectBox.new(opts)
     setDisabled(disabled)
     Icons.apply(spinner, "loader", theme.Colors.mutedForeground)
   end)) end
+
+  -- Async options loader. opts.LoadOptions is a function that returns the options table;
+  -- it may yield (HTTP, datastore, task.wait). The field shows its loading state on its own
+  -- while the call is pending and clears it once the function returns — no manual SetLoading.
+  -- It runs in task.spawn so it never blocks other controls, and a timeout (opts.Timeout
+  -- seconds, default 60) clears the loading state if the function never returns. Call
+  -- api.Reload() to run it again; loadToken supersedes any earlier in-flight run.
+  local loadToken = 0
+  local function runLoader()
+    if type(opts.LoadOptions) ~= "function" then return end
+    loadToken = loadToken + 1
+    local token = loadToken
+    local settled = false
+    setLoading(true)
+    task.spawn(function()
+      local ok, result = pcall(opts.LoadOptions)
+      if settled or token ~= loadToken then return end
+      settled = true
+      if ok and type(result) == "table" then api.SetOptions(result) end
+      setLoading(false)
+    end)
+    local timeout = type(opts.Timeout) == "number" and opts.Timeout or 60
+    task.delay(timeout, function()
+      if settled or token ~= loadToken then return end
+      settled = true
+      setLoading(false)
+    end)
+  end
+  function api.Reload() runLoader() end
+  maid:Give(function() loadToken = loadToken + 1 end) -- drop pending loads on destroy
+  if opts.LoadOptions then runLoader() end
 
   return api
 end

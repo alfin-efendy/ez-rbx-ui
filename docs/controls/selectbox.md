@@ -22,6 +22,8 @@ local sel = tab:AddSelectBox({ Text = "Mode", Options = { "Auto", "Manual", "Hyb
 | `Loading` | `bool` | `false` | Show a spinner on the field |
 | `Description` | `string` | — | Helper text under the label |
 | `OnOpen` | `function` | — | `OnOpen(api)` — refresh options each time the dropdown opens |
+| `LoadOptions` | `function` | — | Async provider that returns the options table. While the call is pending the field shows `Loading…` (the value is hidden) and the dropdown shows a loading row; both clear when the function returns. Runs in `task.spawn` so it never blocks other controls. Combine with `OnOpen = function(api) api.Reload() end` to refetch on every open. |
+| `Timeout` | `number` | `60` | Seconds before `LoadOptions` is given up on and the loading state is cleared. |
 | `Callback` | `function` | — | Called with the new value on change |
 | `Flag` | `string` | — | Persist the selected `Value` to config |
 
@@ -36,6 +38,7 @@ When an option is a table, `Value` is stored/flagged and `Text`/`Label` is shown
 | `SetOptions(o)` | `nil` | Replace the option list |
 | `SetDisabled(b)` | `nil` | Enable/disable |
 | `SetLoading(b)` | `nil` | Toggle the loading spinner |
+| `Reload()` | `nil` | Re-run `LoadOptions` (loading state is handled automatically) |
 
 ## Examples
 
@@ -51,21 +54,24 @@ tab:AddSelectBox({ Text = "Weapon", AllowNone = true, Options = {
 } })
 ```
 
-Async load with `OnOpen` (the stored `Value` differs from the shown `Text`):
+Async load with `LoadOptions` — one function returns the options (it may yield). The field
+shows its loading state automatically until the function returns, and the call is async so it
+never blocks other controls. The stored `Value` differs from the shown `Text`:
 
 ```lua
 local WEAPON_DB = { wpn_001 = "Bow", wpn_002 = "Shield", wpn_003 = "Sword" }
 local function weaponOptions()
+  task.wait(3) -- HTTP, datastore, etc. — may take a few seconds
   local out = {}
   for id, name in pairs(WEAPON_DB) do out[#out + 1] = { Value = id, Text = name } end
   return out
 end
 
-local wsel = tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", Loading = true, Options = {},
-  OnOpen = function(api) api.SetOptions(weaponOptions()) end })
+-- loads on creation; Timeout defaults to 60s. No manual SetLoading needed.
+local wsel = tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", LoadOptions = weaponOptions })
 
-wsel.SetLoading(true)
-task.delay(1.5, function() wsel.SetOptions(weaponOptions()); wsel.SetLoading(false) end)
+-- re-run the loader any time (loading is handled for you)
+tab:AddButton({ Text = "Reload", Callback = function() wsel.Reload() end })
 ```
 
 Runtime option replacement and callback notification:

@@ -265,6 +265,45 @@ h.describe("selectbox", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { { Value = "a", Text = "Alpha" } }, Default = "zzz" })
     h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Value").Text).toBe("zzz")
   end)
+  h.it("LoadOptions fills the dropdown automatically and clears the loading state", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), Text = "Weapon",
+      LoadOptions = function() return { { Value = "a", Text = "Alpha" }, { Value = "b", Text = "Beta" } } end })
+    -- provider resolved (synchronously under the test scheduler) -> not stuck loading
+    h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Spinner").Visible).toBe(false)
+    sb.Open()
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    h.expect(dd:FindFirstChild("List"):FindFirstChild("Loading")).toBe(nil)
+    local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
+    h.expect(n).toBe(2)
+  end)
+  h.it("Reload re-runs LoadOptions without a manual SetLoading", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.reset(); R.Overlay.get(gui)
+    local calls, sets = 0, { { { Value = "a", Text = "A" } }, { { Value = "x", Text = "X" }, { Value = "y", Text = "Y" } } }
+    local sb = SelectBox.new({ Parent = Create("Frame", {}),
+      LoadOptions = function() calls = calls + 1; return sets[calls] end })
+    h.expect(calls).toBe(1)
+    sb.Reload()
+    h.expect(calls).toBe(2)
+    sb.Open()
+    local dd; for _, c in ipairs(R.Overlay.get(gui):GetChildren()) do if c.Name == "SelectDropdown" then dd = c end end
+    local n = 0; for _, o in ipairs(listChildren(dd)) do if o.Name == "Opt" then n = n + 1 end end
+    h.expect(n).toBe(2) -- second set
+  end)
+  h.it("LoadOptions errors are swallowed and the loading state still clears", function()
+    local sb = SelectBox.new({ Parent = Create("Frame", {}), LoadOptions = function() error("boom") end })
+    h.expect(sb.Frame:FindFirstChild("Field"):FindFirstChild("Spinner").Visible).toBe(false)
+  end)
+  h.it("field shows 'Loading…' (not the value) while loading, then the value once done", function()
+    local sb = SelectBox.new({ Parent = Create("Frame", {}),
+      Options = { { Value = "A", Icon = "star" }, { Value = "B" } }, Default = "A", Loading = true })
+    local field = sb.Frame:FindFirstChild("Field")
+    h.expect(field:FindFirstChild("Value").Text).toBe("Loading…")
+    h.expect(field:FindFirstChild("FieldIcon").Visible).toBe(false) -- selected icon hidden while loading
+    sb.SetLoading(false)
+    h.expect(field:FindFirstChild("Value").Text).toBe("A")
+    h.expect(field:FindFirstChild("FieldIcon").Visible).toBe(true)
+  end)
   h.it("SetOptions drops values no longer present", function()
     local sb = SelectBox.new({ Parent = Create("Frame", {}), Options = { "A", "B", "C" }, Default = "A" })
     sb.SetOptions({ "X", "Y", "Z" })

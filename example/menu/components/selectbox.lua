@@ -26,25 +26,54 @@ return function(window, host)
   -- long list -> search box appears automatically; flips up near the screen bottom
   tab:AddSelectBox({ Text = "Country", Options = { "ID", "US", "JP", "DE", "FR", "BR", "IN" }, Default = "ID" })
   tab:AddSelectBox({ Text = "Locked", Options = { "X", "Y" }, Default = "X", Disabled = true })
-  tab:AddSection("Data-driven (async + OnOpen)")
-  local WEAPON_DB = { wpn_001 = "Bow", wpn_002 = "Shield", wpn_003 = "Sword" }
+  tab:AddSection("Data-driven (async LoadOptions)")
+  local WEAPON_DB = {
+    wpn_001 = "Bow", wpn_002 = "Shield", wpn_003 = "Sword", wpn_004 = "Dagger",
+    wpn_005 = "Katana", wpn_006 = "Spear", wpn_007 = "Mace", wpn_008 = "Axe",
+    wpn_009 = "Crossbow", wpn_010 = "Staff", wpn_011 = "Wand", wpn_012 = "Hammer",
+    wpn_013 = "Scythe", wpn_014 = "Rapier", wpn_015 = "Halberd", wpn_016 = "Gauntlet",
+  }
+  -- ONE function builds the options. It can take a few seconds (HTTP, datastore, etc.).
+  -- While it hasn't returned, the select shows its loading state automatically — no manual
+  -- SetLoading — and it runs async so it never blocks the other controls. If it never
+  -- returns, the loading state clears after Timeout seconds (default 60).
   local function weaponOptions()
+    task.wait(math.random(3, 5)) -- simulate slow async work
     local out = {}
     for id, name in pairs(WEAPON_DB) do out[#out + 1] = { Value = id, Text = name } end
+    table.sort(out, function(a, b) return a.Value < b.Value end)
     return out
   end
-  -- the Value (wpn_xxx) persists to the flag; the Text (name) is shown in the UI.
-  -- OnOpen refreshes the options every time the dropdown opens.
-  local wsel = tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", Loading = true, Options = {},
-    OnOpen = function(api) api.SetOptions(weaponOptions()) end })
-  local function loadWeapons()
-    wsel.SetLoading(true)
-    task.delay(1.5, function() wsel.SetOptions(weaponOptions()); wsel.SetLoading(false) end)
+  -- the Value (wpn_xxx) persists to the flag; the Text (name) is shown in the UI. Default
+  -- pre-selects a value (its name appears once LoadOptions resolves); Flag persists the choice.
+  tab:AddSelectBox({ Text = "Weapon", Flag = "weapon_id", Default = "wpn_005", LoadOptions = weaponOptions })
+
+  -- same async pattern for a MULTI select: Default pre-selects several values, Flag persists them.
+  local ROLE_DB = { role_dps = "DPS", role_tank = "Tank", role_heal = "Healer", role_supp = "Support",
+    role_scout = "Scout", role_mage = "Mage", role_rogue = "Rogue", role_bard = "Bard" }
+  local function roleOptions()
+    task.wait(math.random(3, 5)) -- simulate slow async work
+    local out = {}
+    for id, name in pairs(ROLE_DB) do out[#out + 1] = { Value = id, Text = name } end
+    table.sort(out, function(a, b) return a.Value < b.Value end)
+    return out
   end
-  loadWeapons() -- initial async load
-  -- click any time to re-trigger loading: spinner shows on the field; open the Weapon
-  -- select to see the "Loading…" row, then options appear ~1.5s later
-  tab:AddButton({ Text = "Reload weapons (loading demo)", Variant = "secondary", Callback = loadWeapons })
+  tab:AddSelectBox({ Text = "Roles", Multi = true, Flag = "roles",
+    Default = { "role_dps", "role_heal" }, LoadOptions = roleOptions })
+
+  -- options that change on every open: OnOpen re-runs the async loader, so the list (and the
+  -- live player counts) are different each time the dropdown opens. Flag persists the pick.
+  local function liveServers()
+    task.wait(math.random(1, 2)) -- quick refetch
+    local out = {}
+    for i = 1, math.random(3, 7) do
+      out[#out + 1] = { Value = "srv_" .. i, Text = ("Server %d — %d/30"):format(i, math.random(0, 30)) }
+    end
+    return out
+  end
+  tab:AddSelectBox({ Text = "Server (live)", Flag = "server_id",
+    LoadOptions = liveServers, OnOpen = function(api) api.Reload() end })
+
   local big = {}; for i = 1, 24 do big[i] = "Item " .. i end
   tab:AddSelectBox({ Text = "Long list", Options = big, Default = "Item 1" })
   tab:AddSelectBox({ Text = "Notify", Options = { "Red", "Green", "Blue" }, Default = "Red",
