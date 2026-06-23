@@ -20,6 +20,16 @@ h.describe("label", function()
     h.expect(l.Frame.TextWrapped).toBe(true)
     l.SetText("b"); h.expect(l.Frame.Text).toBe("b")
   end)
+  h.it("SetText defers the GUI write when capability is absent", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local lbl = R.Label.new({ Text = "init", Parent = R.Create("Frame", {}) })
+    R.Safe._setCapabilityCheck(function() return false end)
+    lbl.SetText("updated")
+    h.expect(lbl.Frame.Text).toBe("init")     -- deferred: not applied yet
+    h.mock.stepHeartbeat(0)
+    h.expect(lbl.Frame.Text).toBe("updated")  -- applied in a capability context
+    R.Safe._setCapabilityCheck(nil)
+  end)
 end)
 
 h.run()
