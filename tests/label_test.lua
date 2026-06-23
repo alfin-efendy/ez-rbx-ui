@@ -32,4 +32,63 @@ h.describe("label", function()
   end)
 end)
 
+h.describe("reactive label (function-valued, auto-updating text)", function()
+  h.it("a function Text renders its initial value immediately", function()
+    local p = Create("Frame", {})
+    local l = Label.new({ Parent = p, Text = function() return "now" end })
+    h.expect(l.Frame.Text).toBe("now")
+    l.Destroy()
+  end)
+
+  h.it("a function Text re-evaluates every Interval on the Heartbeat", function()
+    local p = Create("Frame", {})
+    local n = 0
+    local l = Label.new({ Parent = p, Text = function() n = n + 1; return "tick " .. n end, Interval = 1 })
+    h.expect(l.Frame.Text).toBe("tick 1")          -- initial eval
+    h.mock.stepHeartbeat(0.5); h.expect(l.Frame.Text).toBe("tick 1")   -- sub-interval: no update
+    h.mock.stepHeartbeat(0.5); h.expect(l.Frame.Text).toBe("tick 2")   -- acc reached interval: update
+    l.Destroy()
+  end)
+
+  h.it("SetText(function) makes a static label reactive and evaluates immediately", function()
+    local p = Create("Frame", {})
+    local l = Label.new({ Parent = p, Text = "static" })
+    h.expect(l.Frame.Text).toBe("static")
+    local n = 0
+    l.SetText(function() n = n + 1; return "dyn " .. n end)
+    h.expect(l.Frame.Text).toBe("dyn 1")           -- immediate eval on switch
+    h.mock.stepHeartbeat(1); h.expect(l.Frame.Text).toBe("dyn 2")
+    l.Destroy()
+  end)
+
+  h.it("SetText(string) freezes a reactive label (stops polling)", function()
+    local p = Create("Frame", {})
+    local n = 0
+    local l = Label.new({ Parent = p, Text = function() n = n + 1; return "d " .. n end, Interval = 1 })
+    l.SetText("frozen")
+    h.expect(l.Frame.Text).toBe("frozen")
+    h.mock.stepHeartbeat(1); h.expect(l.Frame.Text).toBe("frozen")     -- no longer polling
+    l.Destroy()
+  end)
+
+  h.it("an error in the function keeps the last good value (no flicker)", function()
+    local p = Create("Frame", {})
+    local boom = false
+    local l = Label.new({ Parent = p, Text = function() if boom then error("x") end return "good" end, Interval = 1 })
+    h.expect(l.Frame.Text).toBe("good")
+    boom = true
+    h.mock.stepHeartbeat(1); h.expect(l.Frame.Text).toBe("good")       -- unchanged on error
+    l.Destroy()
+  end)
+
+  h.it("Destroy deregisters the label so it stops being evaluated", function()
+    local p = Create("Frame", {})
+    local n = 0
+    local l = Label.new({ Parent = p, Text = function() n = n + 1; return tostring(n) end, Interval = 1 })
+    h.expect(n).toBe(1)
+    l.Destroy()
+    h.mock.stepHeartbeat(1); h.expect(n).toBe(1)                       -- not evaluated after Destroy
+  end)
+end)
+
 h.run()

@@ -53,6 +53,14 @@ h.describe("host wiring", function()
     tog.Set(true)
     h.expect(w.Config:Get("feat")).toBe(true)
   end)
+  h.it("AddLabel(function) shorthand wires a reactive label via the host", function()
+    local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local tab = w:AddTab({ Name = "Home" })
+    local lbl = tab:AddLabel(function() return "live" end)   -- function arg, not string/table
+    h.expect(lbl.Frame.Text).toBe("live")                    -- host routed it to opts.Text; label evaluated it
+    lbl.Destroy()
+  end)
 end)
 
 h.run()
