@@ -2,7 +2,7 @@
 -- bottom-right (newest in front), older ones peek behind (scaled + faded); hover the
 -- stack to expand into a full list. Each toast is a CanvasGroup so it can fade.
 local Notification = {}
-local Create, DefaultTheme, Maid, Overlay, Animate, Icons
+local Create, DefaultTheme, Maid, Overlay, Animate, Icons, Safe
 local RunService = game:GetService("RunService")
 local container
 local order = {}   -- array of entries (oldest first, newest last)
@@ -12,6 +12,8 @@ local stepConn
 
 function Notification.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Maid = R.Maid; Overlay = R.Overlay; Animate = R.Animate; Icons = R.Icons
+  Safe = R.Safe
+  container = nil
 end
 
 local enabled = true
@@ -42,7 +44,7 @@ local function ensureContainer()
     stepConn = RunService.Heartbeat:Connect(function(dt)
       for i = #order, 1, -1 do
         local e = order[i]
-        if e.total and not e.paused then
+        if e.frame and e.total and not e.paused then
           e.remaining = e.remaining - dt
           if e.bar then e.bar.Size = UDim2.new(math.max(0, e.remaining / e.total), 0, 0, 3) end
           if e.remaining <= 0 then Notification.dismiss(e.id) end
@@ -59,27 +61,31 @@ function Notification.relayout()
   local y = 0
   for idx = n, 1, -1 do
     local e = order[idx]
-    local i = n - idx -- 0 = newest (bottom-front)
-    local scale, transp, visible, yoff
-    if expanded then
-      visible, scale, transp, yoff = true, 1, 0, y
-      -- Use the toast's intrinsic content height (UIListLayout content + its all=10 padding),
-      -- which is scale-independent -- so expanded gaps stay uniform even while the per-toast
-      -- collapse scale is still animating to 1. Reading AbsoluteSize mid-animation gave the
-      -- scaled (smaller) height and made the gaps jitter/overlap on hover.
-      local lay = e.frame:FindFirstChildOfClass("UIListLayout")
-      local acs = lay and lay.AbsoluteContentSize
-      local h = (acs and acs.Y and acs.Y > 0 and acs.Y + 20) or (e.frame.AbsoluteSize and e.frame.AbsoluteSize.Y) or 60
-      y = y + h + GAP
+    if not e.frame then
+      -- GUI deferred to a later Heartbeat; skip until built (it relayouts itself when ready)
     else
-      visible = i < 3
-      scale = 1 - i * 0.05
-      transp = i * 0.18
-      yoff = i * PEEK
+      local i = n - idx -- 0 = newest (bottom-front)
+      local scale, transp, visible, yoff
+      if expanded then
+        visible, scale, transp, yoff = true, 1, 0, y
+        -- Use the toast's intrinsic content height (UIListLayout content + its all=10 padding),
+        -- which is scale-independent -- so expanded gaps stay uniform even while the per-toast
+        -- collapse scale is still animating to 1. Reading AbsoluteSize mid-animation gave the
+        -- scaled (smaller) height and made the gaps jitter/overlap on hover.
+        local lay = e.frame:FindFirstChildOfClass("UIListLayout")
+        local acs = lay and lay.AbsoluteContentSize
+        local h = (acs and acs.Y and acs.Y > 0 and acs.Y + 20) or (e.frame.AbsoluteSize and e.frame.AbsoluteSize.Y) or 60
+        y = y + h + GAP
+      else
+        visible = i < 3
+        scale = 1 - i * 0.05
+        transp = i * 0.18
+        yoff = i * PEEK
+      end
+      e.frame.Visible = visible
+      Animate.to(e.frame, "base", { Position = UDim2.new(1, 0, 1, -yoff), GroupTransparency = transp }, Animate.EASING.smooth)
+      Animate.to(e.scale, "base", { Scale = scale }, Animate.EASING.smooth)
     end
-    e.frame.Visible = visible
-    Animate.to(e.frame, "base", { Position = UDim2.new(1, 0, 1, -yoff), GroupTransparency = transp }, Animate.EASING.smooth)
-    Animate.to(e.scale, "base", { Scale = scale }, Animate.EASING.smooth)
   end
 end
 
@@ -89,68 +95,61 @@ function Notification.show(opts)
   if not enabled then return nil end
   opts = opts or {}
   local theme = opts.Theme or DefaultTheme
-  ensureContainer()
   seq = seq + 1
   local id = seq
-  local accent = theme.Colors[TYPE_COLOR[opts.Type or "info"]] or theme.Colors.info
-
-  local toast = Create("CanvasGroup", {
-    Name = "Toast", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0, GroupTransparency = 1,
-    AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 320, 1, 0), -- start off-screen right
-    Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = container,
-    Create.corner(theme.Radius.md), Create.padding({ all = 10 }),
-    Create.listLayout({ Padding = 4 }),
-  })
-  Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = toast })
-  local scale = Instance.new("UIScale"); scale.Parent = toast
-  -- While the stack is expanded (hovered), expanded stacking sums each toast's real height, but
-  -- the per-toast collapse scale is still animating to 1 the moment we relayout -- so the first
-  -- pass measures scaled (smaller) heights and the gaps come out uneven. Re-flow as each toast's
-  -- rendered size settles to keep the inter-toast gaps uniform. (Disconnected when the toast is
-  -- Destroyed; in collapsed mode relayout uses fixed offsets, so this is a no-op then.)
-  toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-    if expanded then Notification.relayout() end
+  local entry = { id = id, onDismiss = opts.OnDismiss }
+  order[#order + 1] = entry           -- reserve FIFO slot synchronously
+  Safe.mutate(function()
+    local accent = theme.Colors[TYPE_COLOR[opts.Type or "info"]] or theme.Colors.info
+    ensureContainer()
+    local toast = Create("CanvasGroup", {
+      Name = "Toast", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0, GroupTransparency = 1,
+      AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 320, 1, 0),
+      Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = container,
+      Create.corner(theme.Radius.md), Create.padding({ all = 10 }),
+      Create.listLayout({ Padding = 4 }),
+    })
+    Create("UIStroke", { Color = theme.Colors.border, Thickness = 1, Parent = toast })
+    local scale = Instance.new("UIScale"); scale.Parent = toast
+    toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+      if expanded then Notification.relayout() end
+    end)
+    local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
+      Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
+    local tIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
+      Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 0, 0.5, -8), Parent = titleRow })
+    Icons.apply(tIcon, TYPE_ICON[opts.Type or "info"] or "info", accent)
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
+      Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
+    local closeBtn = Create("ImageButton", { Name = "Close", AutoButtonColor = false, BackgroundTransparency = 1,
+      Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0, 0), Parent = titleRow })
+    Icons.apply(closeBtn, "x", theme.Colors.primary)
+    closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
+    if opts.Message then
+      Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
+    end
+    if opts.Action then
+      local act = opts.Action
+      local aBtn = Create("TextButton", { Name = "Action", AutoButtonColor = false,
+        BackgroundColor3 = theme.Colors.surface, Text = act.Text or act.Label or "Action",
+        TextColor3 = theme.Colors.foreground, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Size = UDim2.new(0, 96, 0, 24), LayoutOrder = 3, Parent = toast, Create.corner(theme.Radius.sm) })
+      aBtn.MouseButton1Click:Connect(function() if act.Callback then pcall(act.Callback) end; Notification.dismiss(id) end)
+    end
+    entry.frame = toast; entry.scale = scale
+    if (opts.Duration or 4000) > 0 then
+      local total = (opts.Duration or 4000) / 1000
+      local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
+      entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
+    end
+    Animate.pop(toast, "base")
+    Notification.relayout()
   end)
-
-  local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
-  local tIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
-    Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 0, 0.5, -8), Parent = titleRow })
-  Icons.apply(tIcon, TYPE_ICON[opts.Type or "info"] or "info", accent)
-  Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
-    TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
-  local closeBtn = Create("ImageButton", { Name = "Close", AutoButtonColor = false, BackgroundTransparency = 1,
-    Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0, 0), Parent = titleRow })
-  Icons.apply(closeBtn, "x", theme.Colors.primary)
-  closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
-
-  if opts.Message then
-    Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
-      TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
-      TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
-  end
-  if opts.Action then
-    local act = opts.Action
-    local aBtn = Create("TextButton", { Name = "Action", AutoButtonColor = false,
-      BackgroundColor3 = theme.Colors.surface, Text = act.Text or act.Label or "Action",
-      TextColor3 = theme.Colors.foreground, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-      Size = UDim2.new(0, 96, 0, 24), LayoutOrder = 3, Parent = toast, Create.corner(theme.Radius.sm) })
-    aBtn.MouseButton1Click:Connect(function() if act.Callback then pcall(act.Callback) end; Notification.dismiss(id) end)
-  end
-
-  order[#order + 1] = { id = id, frame = toast, scale = scale, onDismiss = opts.OnDismiss }
-  Animate.pop(toast, "base")      -- subtle scale pop
-  Notification.relayout()         -- slides it from off-screen to its slot + fades in
-
-  if (opts.Duration or 4000) > 0 then
-    local total = (opts.Duration or 4000) / 1000
-    local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
-      Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
-    local e = order[#order]
-    e.total = total; e.remaining = total; e.paused = false; e.bar = bar
-  end
   return id
 end
 
@@ -159,8 +158,10 @@ function Notification.dismiss(id)
   if not i then return end
   local entry = table.remove(order, i)
   if entry.onDismiss then pcall(entry.onDismiss) end
-  if entry.frame then entry.frame:Destroy() end
-  Notification.relayout()
+  Safe.mutate(function()
+    if entry.frame then entry.frame:Destroy() end
+    Notification.relayout()
+  end)
 end
 
 function Notification.clearAll()
