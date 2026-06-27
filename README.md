@@ -38,6 +38,15 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 
 **ModuleScript (Studio):** place the bundled `ez-rbx-ui.lua` in `ReplicatedStorage` and `require` it.
 
+**Try it instantly** — run a full demo or the stress test in your executor, no setup:
+```lua
+-- Component playground
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/example.lua"))()
+
+-- Stress test
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/stress.lua"))()
+```
+
 ---
 
 ## Quick start

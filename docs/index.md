@@ -39,3 +39,15 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 ```
 
 See [Getting Started](/guide/getting-started) for a full walkthrough.
+
+### Try it instantly
+
+Run a full demo or the stress test in your executor — no setup:
+
+```lua
+-- Component playground
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/example.lua"))()
+
+-- Stress test
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/stress.lua"))()
+```

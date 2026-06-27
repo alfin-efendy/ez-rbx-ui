@@ -22,6 +22,18 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 local EzUI = require(game:GetService("ReplicatedStorage")["ez-rbx-ui"])
 ```
 
+### Try the examples
+
+Don't want to write code yet? Run a full demo or the stress test directly in your executor:
+
+```lua
+-- Component playground (every control, themed)
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/example.lua"))()
+
+-- Stress test (large scene, reactive labels, concurrency)
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/stress.lua"))()
+```
+
 ## Quick Start
 
 The example below creates a window, adds a tab with three controls, and wires up a success notification on button click.
