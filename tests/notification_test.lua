@@ -158,7 +158,11 @@ h.describe("notification", function()
     end
     w:Promise(function() return 1 end, { Loading = "Working", Success = "Done", Error = "nope", Duration = 1000 })
     h.expect(findToast()).toBeNil()              -- nothing built yet: show's build + runner are both deferred
-    h.mock.stepHeartbeat(0)                      -- flush Safe queue AND fire the runner's Heartbeat:Once
+    -- Two steps settle the deferred build + morph regardless of mock handler-fire order
+    -- (real Roblox Heartbeat is FIFO and settles in one frame; the mock's pairs() order is not,
+    -- so step once to flush the build and once more to guarantee the morph is applied).
+    h.mock.stepHeartbeat(0)
+    h.mock.stepHeartbeat(0)
     local toast = findToast()
     h.expect(toast ~= nil).toBeTruthy()
     h.expect(toast:FindFirstChild("TitleRow"):FindFirstChild("Title").Text).toBe("Done")  -- pendingUpdate applied

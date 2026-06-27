@@ -238,13 +238,12 @@ function Notification.promise(runner, opts)
   -- `pendingId` is set synchronously (before any Heartbeat fires) so the closure sees the real id.
   local pendingId
   RunService.Heartbeat:Once(function()
-    local id = pendingId
     local ok, res = pcall(runner)
     local dur = opts.Duration or 4000
     if ok then
-      Notification.update(id, { Type = "success", Title = msgText(opts.Success, res) or "Success", Duration = dur })
+      Notification.update(pendingId, { Type = "success", Title = msgText(opts.Success, res) or "Success", Duration = dur })
     else
-      Notification.update(id, { Type = "error", Title = msgText(opts.Error, res) or "Error", Duration = dur })
+      Notification.update(pendingId, { Type = "error", Title = msgText(opts.Error, res) or "Error", Duration = dur })
     end
     if opts.Finally then pcall(opts.Finally) end
   end)
