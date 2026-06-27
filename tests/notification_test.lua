@@ -52,6 +52,25 @@ h.describe("notification", function()
       for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" and t:FindFirstChild("Progress") then has = true end end end end
     h.expect(has).toBe(false)
   end)
+  h.it("loading toast: spinner started, no countdown bar, persists", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local function findToast()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+        for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then return t end end end end
+    end
+    local id = w:ShowLoading({ Title = "Saving" })
+    local toast = findToast()
+    h.expect(toast ~= nil).toBeTruthy()
+    h.expect(toast:FindFirstChild("Progress")).toBeNil()             -- loading has no countdown bar
+    local icon = toast:FindFirstChild("TitleRow"):FindFirstChild("Icon")
+    h.expect(icon.Rotation).toBe(360)                                -- spin tween created + played (mock applies goal)
+    h.mock.stepHeartbeat(5)                                          -- a timed toast would dismiss here
+    h.expect(findToast() ~= nil).toBeTruthy()                        -- still alive: persistent
+    w:DismissNotification(id)
+    h.expect(findToast()).toBeNil()
+  end)
   h.it("show returns id synchronously and defers GUI when capability is absent (FIFO)", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); local ov = R.Overlay.get(screen)
     R.Notification.clearAll()

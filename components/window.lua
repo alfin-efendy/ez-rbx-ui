@@ -517,6 +517,7 @@ function Window.new(config)
   function api:ShowWarning(o) o = o or {}; o.Type = "warning"; return api:Notify(o) end
   function api:ShowError(o) o = o or {}; o.Type = "error"; return api:Notify(o) end
   function api:ShowInfo(o) o = o or {}; o.Type = "info"; return api:Notify(o) end
+  function api:ShowLoading(o) o = o or {}; o.Theme = theme; return Notif.loading(o) end
   function api:DismissNotification(id) Notif.dismiss(id) end
   function api:ClearNotifications() Notif.clearAll() end
 

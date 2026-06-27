@@ -4,6 +4,7 @@
 local Notification = {}
 local Create, DefaultTheme, Maid, Overlay, Animate, Icons, Safe
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local container
 local order = {}   -- array of entries (oldest first, newest last)
 local seq = 0
@@ -19,8 +20,8 @@ end
 local enabled = true
 function Notification.setEnabled(b) enabled = b ~= false end
 
-local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive" }
-local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert" }
+local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive", loading = "info" }
+local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert", loading = "loader" }
 local GAP, PEEK = 8, 10
 
 local function ensureContainer()
@@ -125,7 +126,7 @@ function Notification.show(opts)
     local tIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
       Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 0, 0.5, -8), Parent = titleRow })
     Icons.apply(tIcon, TYPE_ICON[opts.Type or "info"] or "info", accent)
-    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
+    local titleLabel = Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
       Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
     local closeBtn = Create("ImageButton", { Name = "Close", AutoButtonColor = false, BackgroundTransparency = 1,
@@ -147,7 +148,14 @@ function Notification.show(opts)
       aBtn.MouseButton1Click:Connect(function() if act.Callback then pcall(act.Callback) end; Notification.dismiss(id) end)
     end
     entry.frame = toast; entry.scale = scale
-    if (opts.Duration or 4000) > 0 then
+    entry.icon = tIcon; entry.titleLabel = titleLabel; entry.theme = theme
+    entry.type = opts.Type or "info"; entry.accent = accent
+    if entry.type == "loading" then
+      entry.spinTween = TweenService:Create(tIcon,
+        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
+      entry.spinTween:Play()
+    end
+    if entry.type ~= "loading" and (opts.Duration or 4000) > 0 then
       local total = (opts.Duration or 4000) / 1000
       local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
@@ -159,12 +167,19 @@ function Notification.show(opts)
   return id
 end
 
+function Notification.loading(opts)
+  opts = opts or {}
+  opts.Type = "loading"; opts.Duration = 0
+  return Notification.show(opts)
+end
+
 function Notification.dismiss(id)
   local i = indexOf(id)
   if not i then return end
   local entry = table.remove(order, i)
   if entry.onDismiss then pcall(entry.onDismiss) end
   Safe.mutate(function()
+    if entry.spinTween then entry.spinTween:Cancel(); entry.spinTween = nil end
     if entry.frame then entry.frame:Destroy() end
     Notification.relayout()
   end)
