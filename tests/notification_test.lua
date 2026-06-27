@@ -89,5 +89,26 @@ h.describe("notification", function()
     R.Safe._setCapabilityCheck(nil)
     R.Notification.clearAll()
   end)
+  h.it("update morphs loading -> success: bar + color + title, spinner reset", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local function findToast()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+        for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then return t end end end end
+    end
+    local id = w:ShowLoading({ Title = "Saving" })
+    R.Notification.update(id, { Type = "success", Title = "Saved", Duration = 1000 })
+    local toast = findToast()
+    local title = toast:FindFirstChild("TitleRow"):FindFirstChild("Title")
+    h.expect(title.Text).toBe("Saved")
+    local bar = toast:FindFirstChild("Progress")
+    h.expect(bar ~= nil).toBeTruthy()
+    h.expect(bar.BackgroundColor3.G8).toBe(R.Theme.Colors.success.G8)  -- compare by value (window deep-copies theme)
+    local icon = toast:FindFirstChild("TitleRow"):FindFirstChild("Icon")
+    h.expect(icon.Rotation).toBe(0)                                    -- spinner stopped + reset
+    h.mock.stepHeartbeat(1.2)                                          -- countdown expires
+    h.expect(findToast()).toBeNil()
+  end)
 end)
 h.run()

@@ -96,6 +96,14 @@ end
 
 local function indexOf(id) for i, e in ipairs(order) do if e.id == id then return i end end end
 
+local function startCountdown(entry, total, accent, theme)
+  local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
+    Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = entry.frame, Create.corner(2) })
+  entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
+end
+
+local applyUpdate  -- forward declaration; defined after Notification.relayout is set
+
 function Notification.show(opts)
   if not enabled then return nil end
   opts = opts or {}
@@ -133,8 +141,9 @@ function Notification.show(opts)
       Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0, 0), Parent = titleRow })
     Icons.apply(closeBtn, "x", theme.Colors.primary)
     closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
+    local msgLabel
     if opts.Message then
-      Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
+      msgLabel = Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
         TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
         TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
         Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
@@ -150,19 +159,18 @@ function Notification.show(opts)
     entry.frame = toast; entry.scale = scale
     entry.icon = tIcon; entry.titleLabel = titleLabel; entry.theme = theme
     entry.type = opts.Type or "info"; entry.accent = accent
+    entry.msgLabel = msgLabel
     if entry.type == "loading" then
       entry.spinTween = TweenService:Create(tIcon,
         TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
       entry.spinTween:Play()
     end
     if entry.type ~= "loading" and (opts.Duration or 4000) > 0 then
-      local total = (opts.Duration or 4000) / 1000
-      local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
-      entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
+      startCountdown(entry, (opts.Duration or 4000) / 1000, accent, theme)
     end
     Animate.pop(toast, "base")
     Notification.relayout()
+    if entry.pendingUpdate then applyUpdate(entry, entry.pendingUpdate); entry.pendingUpdate = nil end
   end)
   return id
 end
@@ -171,6 +179,44 @@ function Notification.loading(opts)
   opts = opts or {}
   opts.Type = "loading"; opts.Duration = 0
   return Notification.show(opts)
+end
+
+applyUpdate = function(entry, opts)
+  local theme = entry.theme
+  local newType = opts.Type or entry.type
+  local accent = theme.Colors[TYPE_COLOR[newType]] or theme.Colors.info
+  entry.type = newType; entry.accent = accent
+  if entry.spinTween then entry.spinTween:Cancel(); entry.spinTween = nil end
+  if entry.icon then
+    entry.icon.Rotation = 0
+    Icons.apply(entry.icon, TYPE_ICON[newType] or "info", accent)
+  end
+  if opts.Title ~= nil and entry.titleLabel then entry.titleLabel.Text = opts.Title end
+  if opts.Message ~= nil then
+    if entry.msgLabel then
+      entry.msgLabel.Text = opts.Message
+    else
+      entry.msgLabel = Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
+        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = entry.frame })
+    end
+  end
+  if opts.Duration and opts.Duration > 0 then
+    if entry.bar then entry.bar:Destroy(); entry.bar = nil end
+    startCountdown(entry, opts.Duration / 1000, accent, theme)
+  end
+  Notification.relayout()
+end
+
+function Notification.update(id, opts)
+  local i = indexOf(id); if not i then return end
+  local entry = order[i]
+  opts = opts or {}
+  Safe.mutate(function()
+    if not entry.frame then entry.pendingUpdate = opts; return end
+    applyUpdate(entry, opts)
+  end)
 end
 
 function Notification.dismiss(id)
