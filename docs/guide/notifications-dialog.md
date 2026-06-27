@@ -54,8 +54,8 @@ Toasts have a countdown indicator that pauses while the cursor is hovering over 
 `Notify` returns an id. Use it to dismiss a specific notification programmatically:
 
 ```lua
-local id = window:Notify({ Title = "Loading…", Duration = math.huge })
--- later:
+local id = window:ShowLoading({ Title = "Loading…" })
+-- later, when the work is done:
 window:DismissNotification(id)
 ```
 
@@ -64,6 +64,57 @@ To clear all active notifications at once:
 ```lua
 window:ClearNotifications()
 ```
+
+### Loading & Promise Toasts
+
+`ShowLoading` shows a persistent toast with a spinner and **no countdown** — it stays until you dismiss it. It returns an id for `DismissNotification`:
+
+```lua
+local id = window:ShowLoading({ Title = "Saving…" })
+-- later, when your work finishes:
+window:DismissNotification(id)
+```
+
+For async work, `Promise` does this for you: it shows a loading toast, runs a function that may **yield** (HTTP, datastore, `task.wait`), then morphs the toast into success or error when the function returns or errors.
+
+```lua
+window:Promise(function()
+    local res = game:HttpGet(url)            -- yields
+    return game:GetService("HttpService"):JSONDecode(res)
+end, {
+    Loading = "Loading data…",
+    Success = function(data) return "Loaded " .. #data .. " items" end,
+    Error   = function(err) return "Failed: " .. tostring(err) end,
+    Finally = function() print("done") end,   -- optional, runs either way
+})
+```
+
+`Success` and `Error` may each be a plain string or a function that receives the resolved value / error and returns the message. `Promise` returns the toast id.
+
+#### Promise Options
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `Loading` | `string` | `"Loading…"` | Title shown while the function runs |
+| `Success` | `string` \| `function(result)` | `"Success"` | Title after the function returns; a function receives the returned value |
+| `Error` | `string` \| `function(err)` | `"Error"` | Title after the function errors; a function receives the error |
+| `Finally` | `function` | `nil` | Called after the promise settles, on success or error |
+| `Duration` | `number` | `4000` | Auto-dismiss delay (ms) for the success/error state |
+| `Message` | `string` | `nil` | Optional body text on the loading toast |
+
+### Notification Position
+
+Toasts stack in the bottom-right corner by default. Change the corner globally with `SetNotificationPosition`, or set it once at creation with the `NotificationPosition` config key:
+
+```lua
+-- at creation
+local window = EzUI:CreateWindow({ NotificationPosition = "top-right" })
+
+-- or live at runtime
+window:SetNotificationPosition("Top Center")
+```
+
+`pos` is one of `"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"` — case- and space-insensitive, so `"Top Center"` also works. Top positions stack downward, bottom positions stack upward; the default is `"bottom-right"`.
 
 ### Demo from the Example
 
@@ -91,6 +142,10 @@ tab:AddButton({ Text = "With action", Variant = "ghost", Callback = function()
             window:ShowSuccess({ Title = "Restored" })
         end }
     })
+end })
+tab:AddButton({ Text = "Promise", Callback = function()
+    window:Promise(function() task.wait(1.5); return true end,
+        { Loading = "Saving…", Success = "Saved!", Error = "Failed to save" })
 end })
 ```
 

@@ -36,6 +36,7 @@ local Window = EzUI:CreateWindow({
 | `FloatingToggle` | `table` | Floating toggle button config — see [FloatingToggle config](#floatingtoggle-config). Pass `false` to disable |
 | `StartHidden` | `bool` | Start collapsed to just the floating toggle: the window loads hidden and the FAB is shown so the player can open it (also openable via `ToggleKey`). Default `false` |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](#color-mode) |
+| `NotificationPosition` | `string` | Corner toasts appear in: `"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`. Default `"bottom-right"`. See [Notification Position](/guide/notifications-dialog#notification-position) |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
 | `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
@@ -225,13 +226,44 @@ Shorthand for `Notify` with `Type = "error"`.
 
 Shorthand for `Notify` with `Type = "info"`.
 
+### `ShowLoading(opts)`
+
+Shows a persistent toast with a spinner and no countdown — it stays until dismissed. Accepts the same `opts` as `Notify` (`Duration` is ignored). Returns an `id` for `DismissNotification`.
+
+```lua
+local id = Window:ShowLoading({ Title = "Saving…" })
+-- later:
+Window:DismissNotification(id)
+```
+
+### `Promise(fn, opts)`
+
+Runs `fn` (which may yield — HTTP, datastore, `task.wait`) behind a loading toast, then morphs the toast into success or error when `fn` returns or errors. `Success`/`Error` may be a string or a function of the result/error. Returns the toast `id`. See [Loading & Promise Toasts](/guide/notifications-dialog#loading-promise-toasts) for the full options table.
+
+```lua
+Window:Promise(function() task.wait(1.5); return true end, {
+    Loading = "Saving…",
+    Success = function(ok) return "Saved!" end,
+    Error   = function(err) return "Failed: " .. tostring(err) end,
+    Finally = function() end,   -- optional
+})
+```
+
 ### `DismissNotification(id)`
 
-Dismisses the notification identified by `id` (the value returned by `Notify`).
+Dismisses the notification identified by `id` (the value returned by `Notify`, `ShowLoading`, or `Promise`).
 
 ### `ClearNotifications()`
 
 Dismisses all active notifications immediately.
+
+### `SetNotificationPosition(pos)`
+
+Sets the corner toasts stack in (global, affects all windows). `pos` is one of `"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"` — case- and space-insensitive (`"Top Center"` works). Default is `"bottom-right"`. Also settable at creation via the [`NotificationPosition`](#config-table) config key.
+
+```lua
+Window:SetNotificationPosition("top-right")
+```
 
 ---
 
