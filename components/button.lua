@@ -21,21 +21,28 @@ function Button.new(opts)
   local maid = Maid.new()
   local bg, fg, stroke = palette(theme, variant)
   local transparent = (variant == "ghost")
+  local auto = opts.AutoWidth and true or false
 
   -- btn: fixed-size hit area, laid out by UIListLayout. It never scales, so the press
-  -- animation can't change its AbsoluteSize and siblings never reflow.
+  -- animation can't change its AbsoluteSize and siblings never reflow. AutoWidth swaps the
+  -- fixed full width for content-based sizing (a min-width constraint keeps small labels tappable).
   local btn = Create("TextButton", {
     Name = "Button", AutoButtonColor = false, Text = "",
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 34), LayoutOrder = opts.LayoutOrder or 0,
+    Size = auto and UDim2.new(0, 0, 0, 34) or UDim2.new(1, 0, 0, 34),
+    AutomaticSize = auto and Enum.AutomaticSize.X or Enum.AutomaticSize.None,
+    LayoutOrder = opts.LayoutOrder or 0,
     Parent = opts.Parent,
   })
+  if auto then Create("UISizeConstraint", { MinSize = Vector2.new(72, 0), Parent = btn }) end
   -- surface: the visible button. Centred (AnchorPoint 0.5) so the press UIScale shrinks
   -- toward the middle; Active=false so clicks fall through to btn.
   local surface = Create("Frame", {
     Name = "Surface", BackgroundColor3 = bg, BackgroundTransparency = transparent and 1 or 0,
     AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.new(1, 0, 1, 0), Active = false, Parent = btn,
+    Size = auto and UDim2.new(0, 0, 1, 0) or UDim2.new(1, 0, 1, 0),
+    AutomaticSize = auto and Enum.AutomaticSize.X or Enum.AutomaticSize.None,
+    Active = false, Parent = btn,
     Create.corner(theme.Radius.md),
   })
   local scale = Create("UIScale", { Scale = 1, Parent = surface })
@@ -50,21 +57,39 @@ function Button.new(opts)
   local bgPressed = transparent and 0.25 or 0.2
 
   local hasIcon = opts.Icon ~= nil
-  if hasIcon then
-    local img = Create("ImageLabel", {
-      Name = "Icon", BackgroundTransparency = 1,
-      Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0.5, -44, 0.5, -8),
+  local label
+  if auto then
+    -- content-width: pad the surface and lay [icon?][label] out horizontally, centred.
+    Create.padding({ left = 14, right = 14 }).Parent = surface
+    Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal,
+      HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center,
+      SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, theme.Spacing.icon), Parent = surface })
+    if hasIcon then
+      local img = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
+        Size = UDim2.new(0, 16, 0, 16), LayoutOrder = 1, Parent = surface })
+      Icons.apply(img, opts.Icon, fg)
+    end
+    label = Create("TextLabel", { Name = "Label", BackgroundTransparency = 1,
+      Text = opts.Text or "Button", TextColor3 = fg, TextSize = theme.Font.label.Size,
+      Font = Enum.Font.BuilderSans, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0),
+      LayoutOrder = 2, Parent = surface })
+  else
+    if hasIcon then
+      local img = Create("ImageLabel", {
+        Name = "Icon", BackgroundTransparency = 1,
+        Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0.5, -44, 0.5, -8),
+        Parent = surface,
+      })
+      Icons.apply(img, opts.Icon, fg)
+    end
+    label = Create("TextLabel", {
+      Name = "Label", BackgroundTransparency = 1,
+      Text = opts.Text or "Button", TextColor3 = fg, TextSize = theme.Font.label.Size,
+      Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 1, 0),
+      Position = UDim2.new(0, hasIcon and 12 or 0, 0, 0),
       Parent = surface,
     })
-    Icons.apply(img, opts.Icon, fg)
   end
-  local label = Create("TextLabel", {
-    Name = "Label", BackgroundTransparency = 1,
-    Text = opts.Text or "Button", TextColor3 = fg, TextSize = theme.Font.label.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 1, 0),
-    Position = UDim2.new(0, hasIcon and 12 or 0, 0, 0),
-    Parent = surface,
-  })
 
   maid:Give(btn.MouseEnter:Connect(function()
     hovering = true
