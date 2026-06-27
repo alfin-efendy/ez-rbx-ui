@@ -192,5 +192,21 @@ h.describe("notification", function()
     h.expect(cont.AnchorPoint.X).toBe(0.5); h.expect(cont.AnchorPoint.Y).toBe(0)
     R.Notification.setPosition("bottom-right")   -- restore process-wide state
   end)
+  h.it("hover hit-area tracks content height, not full screen (no center-screen false hover)", function()
+    R.Notification.clearAll(); R.Notification.setPosition("top-center")
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    w:ShowLoading({ Title = "Loading" })
+    local cont; for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then cont = c end end
+    h.expect(cont ~= nil).toBeTruthy()
+    -- Container is the MouseEnter/Leave hit-area. It must be sized to the toast stack, NOT the
+    -- full screen height (was UDim2.new(0,300,1,-32)) — otherwise resting the mouse anywhere in
+    -- the centre column of a top-center/bottom-center stack falsely triggers hover/expand.
+    h.expect(cont.Size.Y.Scale).toBe(0)                 -- content-sized, not 1 (full height)
+    h.expect(cont.Size.Y.Offset > 0).toBeTruthy()       -- a real (small) hit area exists
+    h.expect(cont.Size.Y.Offset < 600).toBeTruthy()     -- nowhere near full viewport height
+    R.Notification.setPosition("bottom-right")           -- restore process-wide state
+    R.Notification.clearAll()
+  end)
 end)
 h.run()

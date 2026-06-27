@@ -43,8 +43,12 @@ local function ensureContainer()
   if container and container.Parent ~= nil then return container end
   local cfg = POS[position] or POS["bottom-right"]
   container = Create("Frame", {
+    -- Height starts at 0 and is grown by relayout to wrap the actual toast stack. The container
+    -- IS the MouseEnter/Leave hover hit-area, so it must NOT span the full screen height -- a tall
+    -- strip would falsely trigger hover/expand whenever the pointer sits in that column (most
+    -- visible at top-center/bottom-center, where the column runs down the middle of the screen).
     Name = "ToastContainer", BackgroundTransparency = 1, ZIndex = 1800,
-    AnchorPoint = Vector2.new(cfg.ax, cfg.ay), Position = containerPosition(cfg), Size = UDim2.new(0, 300, 1, -32),
+    AnchorPoint = Vector2.new(cfg.ax, cfg.ay), Position = containerPosition(cfg), Size = UDim2.new(0, 300, 0, 0),
   })
   container.MouseEnter:Connect(function()
     expanded = true
@@ -111,6 +115,23 @@ function Notification.relayout()
       Animate.to(e.scale, "base", { Scale = scale }, Animate.EASING.smooth)
     end
   end
+  -- Size the container (the hover hit-area) to wrap the visible stack so MouseEnter only fires over
+  -- the toasts, never the empty column above/below them. Set directly (not animated) so the hit-area
+  -- never lags the pointer. Anchored at the edge, so growing height extends toward screen centre.
+  if container then
+    local h = 0
+    if n > 0 then
+      if expanded then
+        h = math.max(0, y - GAP)            -- y accumulated a trailing GAP per toast
+      else
+        local front = order[n]              -- newest = front of the collapsed stack
+        local fh = front and front.frame and front.frame.AbsoluteSize and front.frame.AbsoluteSize.Y or 0
+        if fh <= 0 then fh = 60 end         -- fallback before first engine measure (and headless tests)
+        h = fh + math.min(n - 1, 2) * PEEK  -- front toast + the (up to 2) peeking behind it
+      end
+    end
+    container.Size = UDim2.new(0, 300, 0, h)
+  end
 end
 
 local function indexOf(id) for i, e in ipairs(order) do if e.id == id then return i end end end
@@ -162,8 +183,10 @@ function Notification.show(opts)
     local scale = Instance.new("UIScale"); scale.Parent = toast
     toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
       -- property-changed handler -> engine thread without GUI capability on strict executors; relayout
-      -- reads AbsoluteContentSize/AbsoluteSize raw, so marshal it through Safe.mutate.
-      if expanded then Safe.mutate(Notification.relayout) end
+      -- reads AbsoluteContentSize/AbsoluteSize raw, so marshal it through Safe.mutate. Always relayout
+      -- (not only when expanded): the collapsed container height tracks the front toast's measured
+      -- height, so the hover hit-area must update once the engine measures the toast.
+      Safe.mutate(Notification.relayout)
     end)
     local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
       Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
