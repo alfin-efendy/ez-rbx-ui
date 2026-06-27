@@ -27,7 +27,7 @@ local Window = EzUI:CreateWindow({
 |---|---|---|
 | `Title` | `string` | Title-bar text |
 | `Subtitle` | `string` | Secondary line shown under the title (grows the title bar) |
-| `Image` | `string` | Title-bar logo image — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
+| `Image` | `string` \| `{ dark, light }` | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL. Pass a `{ dark = ..., light = ... }` table to swap **per color mode** automatically on `SetMode` (for full-color logo tiles that bake in their own background). See [Color mode](#color-mode) |
 | `ImageAdaptive` | `bool` | Treat `Image` as a **monochrome glyph** and tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Default `false` (the image renders full-color). Supply a **white-on-transparent** PNG — `ImageColor3` multiplies, so white tints cleanly to any color |
 | `Ratio` | `{ Width, Height }` \| `number` | Window size as a **fraction of the viewport**: `{ Width = 0.4, Height = 0.55 }` = 40% wide × 55% tall. A single number applies the same fraction to both axes. Capped at 92% per axis; stays responsive. Default `{ Width = 0.45, Height = 0.6 }` |
 | `Transparency` | `number` | Window background transparency `0..1`; `0` = opaque, higher = more see-through. Default `0.12` |
@@ -114,7 +114,7 @@ Sets the subtitle line shown under the title. Requires the window to have been c
 
 ### `SetImage(v)`
 
-Updates the title-bar image. Accepts an `rbxassetid://` id or an `http(s)://` URL. Requires the window to have been created with an `Image`.
+Updates the title-bar image. Accepts an `rbxassetid://` id, an `http(s)://` URL, or a `{ dark, light }` table (which keeps swapping on `SetMode`). Requires the window to have been created with an `Image`.
 
 ### `SetTransparency(n)`
 
@@ -155,8 +155,8 @@ The `FloatingToggle` config key accepts a table (or `false` to disable the butto
 | Key | Type | Description |
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) docks a chevron tab at the screen edge; `"circle"` is an accent-colored round button; `"square"` is a rounded surface tile |
-| `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon) |
-| `Adaptive` | `bool` | Treat `Image` as a monochrome glyph and tint it to the `foreground` token, following dark/light and re-tinting on `SetMode`. Default `false` (full-color white fill). Use a white-on-transparent PNG |
+| `Image` | `string` \| `{ dark, light }` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon). A `{ dark, light }` table swaps per color mode, same as the window `Image` |
+| `Adaptive` | `bool` | Treat `Image` as a monochrome glyph and tint it to the `foreground` token, following dark/light and re-tinting on `SetMode`. Default `false` (full-color white fill). Use a white-on-transparent PNG. Ignored when `Image` is a `{ dark, light }` table |
 | `Position` | `string` \| `UDim2` | Anchor — `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. For `simple` it sets which edge the tab docks to (and its height); for `circle`/`square` it places the button fully visible at that anchor. Default: `simple` → `MidLeft`, others → `TopLeft` |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |

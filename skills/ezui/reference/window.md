@@ -27,8 +27,8 @@ local Window = EzUI:CreateWindow({
 |---|---|---|---|
 | `Title` | `string` | — | Title-bar text |
 | `Subtitle` | `string` | — | Secondary line shown under the title (grows the title bar) |
-| `Image` | `string` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
-| `ImageAdaptive` | `bool` | `false` | Treat `Image` as a monochrome glyph: tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Use a white-on-transparent PNG (`ImageColor3` multiplies) |
+| `Image` | `string` \| `{ dark, light }` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` / `http(s)://` URL. A `{ dark = ..., light = ... }` table swaps per color mode on `SetMode` (for full-color logo tiles) |
+| `ImageAdaptive` | `bool` | `false` | Treat a single-string `Image` as a monochrome glyph: tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Use a white-on-transparent PNG (`ImageColor3` multiplies). Ignored for a `{ dark, light }` table |
 | `Ratio` | `{ Width, Height }` \| `number` | `{ 0.45, 0.6 }` | Window size as a fraction of the viewport — `{ Width = 0.4, Height = 0.55 }` = 40% × 55% (a single number = same fraction both axes); capped at 92% per axis; auto-fits and stays responsive |
 | `Transparency` | `number` | `0.12` | Window background transparency `0..1`; `0` = opaque |
 | `Animations` | `bool` | `true` | Enable entrance/transition motion (FAB pop, window open/close, accordion + tab transitions); pass `false` for reduced/instant motion on low-end devices or for accessibility |
@@ -56,7 +56,7 @@ local Window = EzUI:CreateWindow({
 | `Minimize()` | Hide the window and reveal the floating toggle button |
 | `SetTitle(s)` | Update the title-bar text |
 | `SetSubtitle(s)` | Update the subtitle text |
-| `SetImage(v)` | Update the title-bar image (`rbxassetid://` or URL) |
+| `SetImage(v)` | Update the title-bar image (`rbxassetid://` / URL, or a `{ dark, light }` table that keeps swapping on `SetMode`) |
 | `SetTransparency(n)` | Set background transparency `0..1` |
 | `GetMode()` | Returns the current color mode: `"dark"` or `"light"` |
 | `SetMode(mode)` | Switch the color palette live (`"dark"` or `"light"`); controls re-skin immediately |
@@ -141,8 +141,8 @@ EzUI:CreateWindow({
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) — a chevron tab that docks at the screen edge; `"circle"` — accent-colored round button; `"square"` — rounded surface tile |
 | `Position` | `string` \| `UDim2` | `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. Default: `simple` → `MidLeft`, others → `TopLeft` |
-| `Image` | `string` | Icon for `circle`/`square` buttons — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL; falls back to a controller icon |
-| `Adaptive` | `bool` | `false` (default): full-color white fill. `true`: tint a monochrome glyph `Image` to the `foreground` token, following dark/light and re-tinting on `SetMode`. Use a white-on-transparent PNG |
+| `Image` | `string` \| `{ dark, light }` | Icon for `circle`/`square` buttons — `rbxassetid://` / `rbxthumb://` / `http(s)://` URL; falls back to a controller icon. A `{ dark, light }` table swaps per color mode |
+| `Adaptive` | `bool` | `false` (default): full-color white fill. `true`: tint a monochrome glyph `Image` to the `foreground` token, following dark/light and re-tinting on `SetMode`. Use a white-on-transparent PNG. Ignored for a `{ dark, light }` table |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | `true` (default): player can drag it; on release it magnet-snaps to the nearest screen edge |
 | `AutoHide` | `bool` | `true` (default): visible only while the window is hidden; `false`: always visible (persistent toggle) |

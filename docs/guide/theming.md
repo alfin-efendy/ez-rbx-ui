@@ -154,3 +154,20 @@ EzUI:CreateWindow({
 ```
 
 EzUI sets `ImageColor3` to the `foreground` token and re-tints it whenever `SetMode` flips the palette. Because `ImageColor3` multiplies, a white source tints cleanly to any color. Leave these `false` (the default) for full-color logos, which render untouched.
+
+### Per-mode logo tiles
+
+For a **full-color** logo that bakes in its own background (e.g. a rounded app-icon tile with a light card in light mode and a dark card in dark mode), tinting won't work — supply a `{ dark, light }` table instead. EzUI shows the variant for the active mode and swaps automatically on `SetMode`:
+
+```lua
+local TILE = {
+    dark  = "https://alfin-efendy.github.io/ez-rbx-ui/brand/ezui-logo-rounded-dark.png",   -- shown in dark mode
+    light = "https://alfin-efendy.github.io/ez-rbx-ui/brand/ezui-logo-rounded-light.png",  -- shown in light mode
+}
+EzUI:CreateWindow({
+    Image = TILE,
+    FloatingToggle = { Type = "square", Image = TILE },
+})
+```
+
+`ImageAdaptive` / `Adaptive` are ignored for a `{ dark, light }` table (the tiles already carry their own colors). Use the single-string + adaptive form for a one-color glyph; use the table form for full-color per-mode artwork.
