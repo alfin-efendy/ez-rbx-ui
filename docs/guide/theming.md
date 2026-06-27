@@ -140,3 +140,17 @@ print(Window:GetMode()) -- "dark" or "light"
 ```
 
 The `Colors` tokens above describe the dark palette. In light mode the same token names map to lighter equivalents — your per-window `Theme.Colors` overrides apply on top of whichever palette is active. See the [Window API](/api/window#color-mode) for `GetMode` / `SetMode` reference.
+
+### Theme-adaptive logo
+
+A brand logo that is a **single-color glyph** (e.g. an SVG exported with `fill="currentColor"`) can follow the mode automatically. Export it as a **white-on-transparent PNG** and opt in with `ImageAdaptive` (title bar) or the floating toggle's `Adaptive`:
+
+```lua
+EzUI:CreateWindow({
+    Image = "rbxassetid://0",          -- a white-on-transparent glyph
+    ImageAdaptive = true,              -- tints to `foreground`: near-white in dark, near-black in light
+    FloatingToggle = { Type = "square", Image = "rbxassetid://0", Adaptive = true },
+})
+```
+
+EzUI sets `ImageColor3` to the `foreground` token and re-tints it whenever `SetMode` flips the palette. Because `ImageColor3` multiplies, a white source tints cleanly to any color. Leave these `false` (the default) for full-color logos, which render untouched.

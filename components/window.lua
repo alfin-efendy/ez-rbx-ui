@@ -146,14 +146,20 @@ function Window.new(config)
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
   })
   local titleTextX = 0
+  local titleImg
+  -- An adaptive logo is a monochrome glyph (the brand SVG uses fill="currentColor"): tint it to the
+  -- foreground token so it follows dark/light and re-tints on SetMode. A non-adaptive logo is a
+  -- full-color image, so it is left untinted (white) -- see the window-shell reskin closure below.
+  local imageAdaptive = config.ImageAdaptive == true
   if hasTitleImg then
     local imgSize = 36
-    local titleImg = Create("ImageLabel", {
+    titleImg = Create("ImageLabel", {
       Name = "TitleImage", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
       AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
       Size = UDim2.new(0, imgSize, 0, imgSize), Image = "", Parent = titleBar,
       Create.corner(theme.Radius.md),
     })
+    if imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
     -- Fill it as soon as the asset resolves. URLs download off the construction thread, so the
     -- window never blocks on game:HttpGet; the write is marshalled to a capability-bearing context.
     Asset.imageAsync(config.Image, function(id)
@@ -576,6 +582,7 @@ function Window.new(config)
   themer.register(function()
     main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
+    if titleImg and imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
     local sub = titleBar:FindFirstChild("Subtitle")
     if sub then sub.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
@@ -607,6 +614,10 @@ function Window.new(config)
     fabMaid = Maid.new(); maid:Give(fabMaid)
     local kind = fabOpts.Type or "simple"
     local hasImage = type(fabOpts.Image) == "string" and fabOpts.Image ~= ""
+    -- Adaptive: treat the logo as a monochrome glyph and tint it to the foreground token (follows the
+    -- mode + re-tints on SetMode via the FAB reskin closure). Default keeps the full-color white fill.
+    local fabAdaptive = fabOpts.Adaptive == true
+    local fabImg
     -- Fill the FAB with the configured logo edge-to-edge (no background frame showing around it), once
     -- the asset resolves (URLs fetch off-thread so the FAB never blocks). Reset the glyph's sprite crop
     -- and tint so a full image renders clean. The write is marshalled to a capability-bearing context.
@@ -618,7 +629,7 @@ function Window.new(config)
           img.Image = id
           img.ImageRectOffset = Vector2.new(0, 0)
           img.ImageRectSize = Vector2.new(0, 0)
-          img.ImageColor3 = Color3.fromRGB(255, 255, 255)
+          img.ImageColor3 = fabAdaptive and theme.Colors.foreground or Color3.fromRGB(255, 255, 255)
         end)
       end)
     end
@@ -642,11 +653,11 @@ function Window.new(config)
     if kind == "square" then
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
-      applyFabImage(makeFabImg(theme.Radius.lg))
+      fabImg = makeFabImg(theme.Radius.lg); applyFabImage(fabImg)
     elseif kind == "circle" then
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
-      applyFabImage(makeFabImg(22))
+      fabImg = makeFabImg(22); applyFabImage(fabImg)
     else -- simple: 50x50 chevron square, neutral surface (follows the mode)
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
@@ -733,6 +744,7 @@ function Window.new(config)
         local st = fab:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
         if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
       end
+      if fabImg and fabAdaptive and hasImage then fabImg.ImageColor3 = theme.Colors.foreground end
     end))
     local fabHover = false
     fabMaid:Give(fab.MouseEnter:Connect(function() fabHover = true; Animate.to(fabScale, "fast", { Scale = 1.06 }) end))

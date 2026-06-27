@@ -672,6 +672,34 @@ h.describe("window", function()
     h.mock.stepHeartbeat(0)                    -- reskin flushes without error
     R.Safe._setCapabilityCheck(nil)
   end)
+  h.it("ImageAdaptive tints the title logo to the foreground token and flips on SetMode", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "Hub", Image = "rbxassetid://42", ImageAdaptive = true, Parent = screen })
+    local img = w.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.dark.foreground.R8)   -- 250 in dark
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.light.foreground.R8)  -- 24 in light
+  end)
+  h.it("FloatingToggle Adaptive tints the logo to foreground and flips on SetMode", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7", Adaptive = true } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.dark.foreground.R8)
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.light.foreground.R8)
+  end)
+  h.it("a non-adaptive FAB logo stays full-color white across mode changes", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7" } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.ImageColor3.R8).toBe(255)   -- white: tints nothing, renders the full-color logo as-is
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(255)   -- still white (not re-tinted to a theme token)
+  end)
   h.it("manually-resized window never shrinks below MIN_W/MIN_H on a tiny viewport", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false

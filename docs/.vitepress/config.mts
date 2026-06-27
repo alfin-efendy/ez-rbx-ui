@@ -10,6 +10,7 @@ export default defineConfig({
   lastUpdated: true,
   srcExclude: ['superpowers/**'],
   themeConfig: {
+    logo: '/brand/ezui-blade-zu-nav-icon.svg',
     search: { provider: 'local' },
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },

@@ -4,6 +4,9 @@ hero:
   name: EzUI
   text: A modern UI library for Roblox
   tagline: shadcn-inspired design, Fluent acrylic, Lucide icons, engine-driven flex layout, and flag-based config with auto-save.
+  image:
+    src: /brand/ezui-hero-mark.svg
+    alt: EzUI Blade Zu mark
   actions:
     - theme: brand
       text: Get Started
