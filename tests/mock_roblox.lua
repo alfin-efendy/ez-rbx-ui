@@ -201,7 +201,8 @@ function M.installInto(env, mock, strict)
   local GuiService = { IsTenFootInterface = function(_) return mock.tenFoot == true end }
   local Camera = newInstance("Camera")
   Camera.ViewportSize = env.Vector2.new(1280, 720)
-  env.workspace = { CurrentCamera = Camera }
+  env.workspace = env.workspace or {}
+  env.workspace.CurrentCamera = Camera
   mock.camera = Camera
   local playerList = { { Name = "Tester", UserId = 1 } }
   local PlayerGui = newInstance("PlayerGui"); PlayerGui.Name = "PlayerGui"

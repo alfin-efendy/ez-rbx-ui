@@ -14,6 +14,9 @@ h.describe("mock device surface", function()
     h.expect(type(uis.GetLastInputType)).toBe("function")
     h.expect(type(uis.GetPropertyChangedSignal)).toBe("function")
     h.expect(uis.LastInputTypeChanged ~= nil).toBeTruthy()
+    h.expect(uis:GetLastInputType()).toBe(h.roblox.Enum.UserInputType.Keyboard)
+    local sig = uis:GetPropertyChangedSignal("TouchEnabled")
+    h.expect(sig ~= nil).toBeTruthy()
 
     local cam = h.roblox.workspace.CurrentCamera
     h.expect(cam.ViewportSize.X).toBe(1280)
