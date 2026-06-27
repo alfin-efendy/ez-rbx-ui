@@ -9,11 +9,12 @@ local function uis() return h.roblox.game:GetService("UserInputService") end
 h.describe("drag helper", function()
   h.it("mouse: MouseButton1 begin + MouseMovement reports the delta", function()
     local b, maid = btn(), R.Maid.new()
-    local dx, dy
-    Drag.bind(b, { onChange = function(a, c) dx, dy = a, c end }, maid)
+    local dx, dy, pos
+    Drag.bind(b, { onChange = function(a, c, p) dx, dy, pos = a, c, p end }, maid)
     b.InputBegan:Fire({ UserInputType = UIT.MouseButton1, Position = h.roblox.Vector2.new(100, 100) })
     uis().InputChanged:Fire({ UserInputType = UIT.MouseMovement, Position = h.roblox.Vector2.new(140, 120) })
     h.expect(dx).toBe(40); h.expect(dy).toBe(20)
+    h.expect(pos.X).toBe(140); h.expect(pos.Y).toBe(120)
     maid:DoCleanup()
   end)
   h.it("touch: only the originating finger drives the drag", function()
@@ -39,6 +40,22 @@ h.describe("drag helper", function()
     h.expect(ended).toBe(true)
     uis().InputChanged:Fire({ UserInputType = UIT.MouseMovement, Position = h.roblox.Vector2.new(50, 50) })
     h.expect(changes).toBe(0)
+    maid:DoCleanup()
+  end)
+  h.it("touch: a different finger's InputEnded does not end the active drag", function()
+    local b, maid = btn(), R.Maid.new()
+    local changes, ended = 0, false
+    Drag.bind(b, { onChange = function() changes = changes + 1 end, onEnd = function() ended = true end }, maid)
+    local touch = { UserInputType = UIT.Touch, Position = h.roblox.Vector2.new(0, 0) }
+    local other = { UserInputType = UIT.Touch, Position = h.roblox.Vector2.new(5, 5) }
+    b.InputBegan:Fire(touch)
+    uis().InputEnded:Fire(other)                 -- a different finger lifts -> must NOT end our drag
+    h.expect(ended).toBe(false)
+    touch.Position = h.roblox.Vector2.new(20, 0)
+    uis().InputChanged:Fire(touch)               -- originating finger still drives the drag
+    h.expect(changes).toBe(1)
+    uis().InputEnded:Fire(touch)                 -- originating finger lifts -> ends
+    h.expect(ended).toBe(true)
     maid:DoCleanup()
   end)
 end)

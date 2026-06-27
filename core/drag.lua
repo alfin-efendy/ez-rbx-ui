@@ -44,7 +44,7 @@ function Drag.bind(target, opts, maid)
   local function finish(input)
     local t = input.UserInputType
     local relevant = (mouseDown and t == Enum.UserInputType.MouseButton1)
-      or (activeTouch ~= nil and (input == activeTouch or t == Enum.UserInputType.Touch))
+      or (activeTouch ~= nil and input == activeTouch)
     if not relevant then return end
     mouseDown = false; activeTouch = nil; startPos = nil
     if opts.onEnd then opts.onEnd() end
