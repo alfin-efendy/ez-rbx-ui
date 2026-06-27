@@ -1,16 +1,29 @@
 import { defineConfig } from 'vitepress'
 
+const base = '/ez-rbx-ui/'
+
 export default defineConfig({
-  base: '/ez-rbx-ui/',
+  base,
   lang: 'en-US',
   title: 'EzUI',
   description:
     'A modern, modular UI library for Roblox scripts — shadcn-inspired, Fluent acrylic, Lucide icons, engine-driven flex layout, and flag-based config.',
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: `${base}favicon-32x32.png` }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: `${base}apple-touch-icon.png` }],
+    ['meta', { name: 'theme-color', content: '#0a0c10' }]
+  ],
   cleanUrls: true,
   lastUpdated: true,
   srcExclude: ['superpowers/**'],
   themeConfig: {
-    logo: '/brand/ezui-blade-zu-nav-icon.svg',
+    logo: {
+      light: '/brand/ezui-wordmark-light.svg',
+      dark: '/brand/ezui-wordmark-dark.svg',
+      alt: 'EZUI'
+    },
+    siteTitle: false,
     search: { provider: 'local' },
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
