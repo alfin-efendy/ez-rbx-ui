@@ -822,7 +822,8 @@ function Window.new(config)
   })
   maid:Give(resizeHit.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
   maid:Give(resizeHit.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
-  local resizing, rSize
+  local resizing = false
+  local rSize
   Drag.bind(resizeHit, {
     onBegin = function() resizing = true; rSize = { X = width, Y = height }; Overlay.closeAll() end,
     onChange = function(dx, dy)
@@ -859,8 +860,8 @@ function Window.new(config)
     local vp = viewportSize()
     if userResized then
       -- honor the user's manual size; only shrink to fit a smaller viewport
-      width = math.min(width, math.floor(vp.X * VP_MARGIN))
-      height = math.min(height, math.floor(vp.Y * VP_MARGIN))
+      width = math.max(MIN_W, math.min(width, math.floor(vp.X * VP_MARGIN)))
+      height = math.max(MIN_H, math.min(height, math.floor(vp.Y * VP_MARGIN)))
     else
       width, height = computeSize()
     end

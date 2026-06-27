@@ -641,6 +641,24 @@ h.describe("window", function()
     h.mock.stepHeartbeat(0)                    -- reskin flushes without error
     R.Safe._setCapabilityCheck(nil)
   end)
+  h.it("manually-resized window never shrinks below MIN_W/MIN_H on a tiny viewport", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local cam = h.roblox.workspace.CurrentCamera
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(700, 500) }
+    hit.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(600, 400)   -- shrink to ~476x332 (userResized)
+    uis.InputChanged:Fire(touch)
+    uis.InputEnded:Fire(touch)
+    cam.ViewportSize = h.roblox.Vector2.new(300, 320)  -- tiny viewport, below MIN
+    w:AdaptToViewport()
+    h.expect(w.Main.Size.X.Offset >= 380).toBeTruthy()  -- MIN_W
+    h.expect(w.Main.Size.Y.Offset >= 260).toBeTruthy()  -- MIN_H
+    cam.ViewportSize = h.roblox.Vector2.new(1280, 720)   -- restore shared mock state
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
 end)
 
 h.run()
