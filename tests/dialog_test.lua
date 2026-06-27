@@ -1,5 +1,11 @@
 local h = require("tests.helper")
 local R = h.loadLib()
+-- Returns (card, dim) for the most-recently-opened Dialog in the overlay, or (nil, nil).
+local function dialogCard(R, gui)
+  local root = R.Overlay.get(gui); local dim
+  for _, c in ipairs(root:GetChildren()) do if c.Name == "Dialog" then dim = c end end
+  return dim and dim:FindFirstChild("Card") or nil, dim
+end
 h.describe("dialog", function()
   h.it("opens into overlay and a button closes + fires callback", function()
     local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
@@ -26,6 +32,18 @@ h.describe("dialog", function()
     local w = R.Window.new({ Title = "W", Parent = gui })
     local handle = w:Dialog({ Title = "Hi", Buttons = { { Text = "OK" } } })
     h.expect(type(handle.Close)).toBe("function")
+  end)
+  h.it("uses opts.Width for the card width", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    R.Dialog.open({ Title = "W", Width = 480, Buttons = { { Text = "OK" } } })
+    local card = dialogCard(R, gui)
+    h.expect(card.Size.X.Offset).toBe(480)
+  end)
+  h.it("clamps the card width to the viewport when wider than available", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    R.Dialog.open({ Title = "W", Width = 5000, Buttons = { { Text = "OK" } } })
+    local card = dialogCard(R, gui)
+    h.expect(card.Size.X.Offset).toBe(1872)  -- viewport fallback 1920 - 2*24 margin
   end)
 end)
 h.run()
