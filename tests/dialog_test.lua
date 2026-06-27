@@ -65,5 +65,31 @@ h.describe("dialog", function()
     h.expect(header:FindFirstChild("Title").TextXAlignment.Name).toBe("Center")
     h.expect(card:FindFirstChild("Message").TextXAlignment.Name).toBe("Center")
   end)
+  h.it("right-aligns the footer with content-sized buttons on non-touch", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    R.Dialog.open({ Title = "T", Buttons = { { Text = "Cancel" }, { Text = "Delete", Variant = "destructive" } } })
+    local card = dialogCard(R, gui)
+    local row = card:FindFirstChild("Buttons")
+    local layout = row:FindFirstChildOfClass("UIListLayout")
+    h.expect(layout.FillDirection.Name).toBe("Horizontal")
+    h.expect(layout.HorizontalAlignment.Name).toBe("Right")
+    local firstBtn
+    for _, c in ipairs(row:GetChildren()) do if c.ClassName == "TextButton" then firstBtn = c; break end end
+    h.expect(firstBtn.AutomaticSize.Name).toBe("X")
+  end)
+  h.it("stacks the footer full-width and reversed on touch", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true
+    R.Dialog.open({ Title = "T", Buttons = { { Text = "Cancel" }, { Text = "Delete", Variant = "destructive" } } })
+    uis.TouchEnabled = false
+    local card = dialogCard(R, gui)
+    local row = card:FindFirstChild("Buttons")
+    local layout = row:FindFirstChildOfClass("UIListLayout")
+    h.expect(layout.FillDirection.Name).toBe("Vertical")
+    h.expect(layout.HorizontalAlignment.Name).toBe("Center")
+    local firstBtn  -- authored-first (Cancel) gets the LARGER LayoutOrder so Delete sits on top
+    for _, c in ipairs(row:GetChildren()) do if c.ClassName == "TextButton" then firstBtn = c; break end end
+    h.expect(firstBtn.LayoutOrder).toBe(2)
+  end)
 end)
 h.run()

@@ -66,16 +66,23 @@ local function buildHeader(card, theme, opts)
   end
 end
 
--- Footer: a horizontal row of buttons. Each button fires its descriptor callback then closes.
--- (Device-aware layout added in Task 4; `touch` is accepted now so the signature is stable.)
+-- Footer: non-touch -> right-aligned, content-width buttons (Action rightmost). Touch -> full-width
+-- buttons stacked vertically and reversed, so the primary Action sits on top (shadcn flex-col-reverse).
 local function buildFooter(card, theme, buttons, touch, handle, maid)
-  local row = Create("Frame", { Name = "Buttons", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 34),
-    LayoutOrder = 3, ZIndex = 1502, Parent = card,
-    Create.listLayout({ Padding = theme.Spacing.gap, FillDirection = Enum.FillDirection.Horizontal }) })
+  local n = #buttons
+  local row = Create("Frame", { Name = "Buttons", BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, touch and 0 or 34),
+    AutomaticSize = touch and Enum.AutomaticSize.Y or Enum.AutomaticSize.None,
+    LayoutOrder = 3, ZIndex = 1502, Parent = card })
+  Create("UIListLayout", {
+    FillDirection = touch and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
+    HorizontalAlignment = touch and Enum.HorizontalAlignment.Center or Enum.HorizontalAlignment.Right,
+    SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, theme.Spacing.gap), Parent = row })
   for i, b in ipairs(buttons) do
-    local btn = Button.new({ Parent = row, LayoutOrder = i, Theme = theme, Text = b.Text or "OK", Variant = b.Variant,
+    local order = touch and (n - i + 1) or i
+    local btn = Button.new({ Parent = row, LayoutOrder = order, Theme = theme, Text = b.Text or "OK",
+      Variant = b.Variant, Icon = b.Icon, AutoWidth = not touch,
       Callback = function() if b.Callback then b.Callback() end; handle.Close() end })
-    btn.Frame.Size = UDim2.new(0, 96, 1, 0)
     maid:Give(btn)
   end
 end
