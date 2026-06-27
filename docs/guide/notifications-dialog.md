@@ -121,6 +121,12 @@ window:Dialog({
 | `Message` | `string` | `nil` | Optional body text |
 | `Buttons` | `array` | required | One or more button descriptors |
 | `Modal` | `bool` | `true` | Dim the background while the dialog is open |
+| `Icon` | `string` | `nil` | Optional Lucide icon in the header |
+| `IconColor` | `Color3` | title color | Override the header-icon tint |
+| `IconBadge` | `bool` | `false` | `true` renders the icon in a tinted badge above a centered header; `false` shows it inline before the title |
+| `Width` | `number` | `320` | Card width in px, clamped to the viewport/window minus margins |
+
+The footer right-aligns its buttons on desktop and stacks them full-width (primary action on top) on touch devices.
 
 ### Button Descriptor
 
@@ -128,6 +134,7 @@ window:Dialog({
 |---|---|---|
 | `Text` | `string` | Button label |
 | `Variant` | `string` | `"default"`, `"secondary"`, `"outline"`, `"ghost"`, `"destructive"` |
+| `Icon` | `string` | Optional Lucide icon shown on the button |
 | `Callback` | `function` | Called when the button is clicked; the dialog closes automatically |
 
 ### Demo from the Example
