@@ -56,4 +56,33 @@ h.describe("device input modality", function()
   end)
 end)
 
+h.describe("device reactivity", function()
+  h.it("fires Changed when the form-factor flips", function()
+    local R = h.loadLib()
+    local uis = h.roblox.game:GetService("UserInputService")
+    local cam = h.roblox.workspace.CurrentCamera
+    uis.TouchEnabled = false; uis.MouseEnabled = true; h.mock.tenFoot = false
+    cam.ViewportSize = h.roblox.Vector2.new(1280, 720)
+    R.Device.Configure({})              -- recompute baseline (Desktop) before we listen
+    local got
+    R.Device.Changed:Connect(function(info) got = info end)
+    uis.TouchEnabled = true; uis.MouseEnabled = false
+    cam.ViewportSize = h.roblox.Vector2.new(320, 640)
+    uis:GetPropertyChangedSignal("TouchEnabled"):Fire()
+    h.expect(got ~= nil).toBeTruthy()
+    h.expect(got.Type).toBe("Mobile")
+  end)
+  h.it("Configure retunes the phone/tablet threshold", function()
+    local R = h.loadLib()
+    local uis = h.roblox.game:GetService("UserInputService")
+    local cam = h.roblox.workspace.CurrentCamera
+    uis.TouchEnabled = true; uis.MouseEnabled = false; h.mock.tenFoot = false
+    cam.ViewportSize = h.roblox.Vector2.new(320, 640)  -- aspect 2.0
+    R.Device.Configure({ TabletMaxAspect = 1.55 })
+    h.expect(R.Device.GetType()).toBe("Mobile")
+    R.Device.Configure({ TabletMaxAspect = 2.5 })      -- 2.0 <= 2.5 now -> Tablet
+    h.expect(R.Device.GetType()).toBe("Tablet")
+  end)
+end)
+
 h.run()

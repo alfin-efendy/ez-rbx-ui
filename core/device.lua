@@ -48,10 +48,41 @@ function Device.GetInput()
   return "KeyboardMouse"
 end
 
+local lastType, lastInput
+function Device._recompute()
+  local t, i = Device.GetType(), Device.GetInput()
+  if t ~= lastType or i ~= lastInput then
+    lastType, lastInput = t, i
+    if Device.Changed then Device.Changed:Fire({ Type = t, Input = i, Viewport = viewport() }) end
+  end
+end
+
+function Device.Configure(opts)
+  if type(opts) == "table" then
+    if tonumber(opts.TabletMaxAspect) then cfg.TabletMaxAspect = tonumber(opts.TabletMaxAspect) end
+    if tonumber(opts.TabletMinDiagonal) then cfg.TabletMinDiagonal = tonumber(opts.TabletMinDiagonal) end
+  end
+  Device._recompute()
+end
+
+local connected = false
 function Device.Init(R)
   Signal = R.Signal
   cfg.TabletMaxAspect = DEFAULTS.TabletMaxAspect
   cfg.TabletMinDiagonal = DEFAULTS.TabletMinDiagonal
+  if not Device.Changed then Device.Changed = Signal.new() end
+  lastType, lastInput = Device.GetType(), Device.GetInput()
+  if connected then return end
+  connected = true
+  local function hook(sig) if sig and sig.Connect then sig:Connect(function() Device._recompute() end) end end
+  hook(UserInputService.LastInputTypeChanged)
+  if UserInputService.GetPropertyChangedSignal then
+    hook(UserInputService:GetPropertyChangedSignal("TouchEnabled"))
+    hook(UserInputService:GetPropertyChangedSignal("MouseEnabled"))
+    hook(UserInputService:GetPropertyChangedSignal("KeyboardEnabled"))
+  end
+  local cam = workspace and workspace.CurrentCamera
+  if cam and cam.GetPropertyChangedSignal then hook(cam:GetPropertyChangedSignal("ViewportSize")) end
 end
 
 return Device
