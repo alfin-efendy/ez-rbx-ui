@@ -34,6 +34,14 @@ return function(window)
   -- and just make the window blink (hide+show) instead of toggling.
   tab:AddKeybind({ Text = "Toggle UI key", Default = Enum.KeyCode.RightControl,
     OnChanged = function(key) window:SetToggleKey(key) end })
+  tab:AddSelectBox({ Text = "Notification position",
+    Options = { "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right" },
+    Default = "Bottom Right",
+    Callback = function(p) window:SetNotificationPosition(p) end })
+  tab:AddButton({ Text = "Test promise toast", Icon = "loader", Callback = function()
+    window:Promise(function() task.wait(1.5); return true end,
+      { Loading = "Saving…", Success = "Saved!", Error = "Failed to save" })
+  end })
 
   local cfg = tab:AddAccordion({ Title = "Configuration", Icon = "settings-2" })
   cfg:AddSelectBox({ Text = "Profile", Options = window:ConfigProfiles(), Default = "Default",
