@@ -110,5 +110,61 @@ h.describe("notification", function()
     h.mock.stepHeartbeat(1.2)                                          -- countdown expires
     h.expect(findToast()).toBeNil()
   end)
+
+  h.it("promise resolves: loading -> success, message fn gets result, finally runs", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local function findToast()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+        for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then return t end end end end
+    end
+    local finallyRan = false
+    w:Promise(function() return 7 end, {
+      Loading = "Working", Success = function(n) return "Got " .. n end,
+      Error = "nope", Finally = function() finallyRan = true end, Duration = 1000 })
+    h.expect(findToast():FindFirstChild("Progress")).toBeNil()    -- loading state: no bar yet
+    h.mock.stepHeartbeat(0)                                       -- fire the Heartbeat:Once runner
+    local toast = findToast()
+    h.expect(toast:FindFirstChild("TitleRow"):FindFirstChild("Title").Text).toBe("Got 7")
+    h.expect(toast:FindFirstChild("Progress") ~= nil).toBeTruthy()
+    h.expect(finallyRan).toBe(true)
+  end)
+
+  h.it("promise rejects: morphs to error, err passed to Error fn", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local function findToast()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+        for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then return t end end end end
+    end
+    w:Promise(function() error("boom") end, {
+      Loading = "Working", Success = "ok", Error = function(e) return "Failed: " .. tostring(e) end })
+    h.mock.stepHeartbeat(0)
+    local toast = findToast()
+    h.expect(toast:FindFirstChild("TitleRow"):FindFirstChild("Title").Text:find("Failed:") ~= nil).toBeTruthy()
+    h.expect(toast:FindFirstChild("Progress").BackgroundColor3.G8).toBe(R.Theme.Colors.destructive.G8)
+  end)
+
+  h.it("promise without capability: build + morph deferred, ends in success (pendingUpdate branch)", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    R.Notification.clearAll()
+    R.Safe._setCapabilityCheck(function() return false end)   -- force deferral, like notification_test.lua:58
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    local function findToast()
+      for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then
+        for _, t in ipairs(c:GetChildren()) do if t.Name == "Toast" then return t end end end end
+    end
+    w:Promise(function() return 1 end, { Loading = "Working", Success = "Done", Error = "nope", Duration = 1000 })
+    h.expect(findToast()).toBeNil()              -- nothing built yet: show's build + runner are both deferred
+    h.mock.stepHeartbeat(0)                      -- flush Safe queue AND fire the runner's Heartbeat:Once
+    local toast = findToast()
+    h.expect(toast ~= nil).toBeTruthy()
+    h.expect(toast:FindFirstChild("TitleRow"):FindFirstChild("Title").Text).toBe("Done")  -- pendingUpdate applied
+    h.expect(toast:FindFirstChild("Progress") ~= nil).toBeTruthy()
+    R.Safe._setCapabilityCheck(nil)
+    R.Notification.clearAll()
+  end)
 end)
 h.run()

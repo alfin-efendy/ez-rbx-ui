@@ -109,6 +109,12 @@ local function createMsgLabel(text, theme, parent)
     Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = parent })
 end
 
+local function msgText(v, arg)
+  if type(v) == "function" then local ok, r = pcall(v, arg); return ok and r or nil end
+  if type(v) == "string" then return v end
+  return nil
+end
+
 local applyUpdate  -- forward declaration; applyUpdate is assigned after Notification.loading, show's pendingUpdate hook closes over it
 
 function Notification.show(opts)
@@ -221,6 +227,31 @@ function Notification.update(id, opts)
     if not entry.frame then entry.pendingUpdate = opts; return end
     applyUpdate(entry, opts)
   end)
+end
+
+function Notification.promise(runner, opts)
+  opts = opts or {}
+  -- Register the runner Heartbeat:Once BEFORE calling loading() so that, when capability is absent,
+  -- this handler is snapshotted first and fires before Safe's flush handler. The runner's
+  -- Notification.update call then lands in the same Safe queue as the loading build, so the flush
+  -- drains both in FIFO order: build frame first, then applyUpdate -- no extra Heartbeat needed.
+  -- `pendingId` is set synchronously (before any Heartbeat fires) so the closure sees the real id.
+  local pendingId
+  RunService.Heartbeat:Once(function()
+    local id = pendingId
+    local ok, res = pcall(runner)
+    local dur = opts.Duration or 4000
+    if ok then
+      Notification.update(id, { Type = "success", Title = msgText(opts.Success, res) or "Success", Duration = dur })
+    else
+      Notification.update(id, { Type = "error", Title = msgText(opts.Error, res) or "Error", Duration = dur })
+    end
+    if opts.Finally then pcall(opts.Finally) end
+  end)
+  local id = Notification.loading({
+    Title = msgText(opts.Loading) or "Loading…", Message = opts.Message, Theme = opts.Theme })
+  pendingId = id
+  return id
 end
 
 function Notification.dismiss(id)
