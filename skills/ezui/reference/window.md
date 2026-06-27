@@ -66,7 +66,7 @@ local Window = EzUI:CreateWindow({
 | `SetFloatingToggleVisible(b)` | Show (`true`) or hide (`false`) the floating toggle button |
 | `Destroy()` | Tear down the window and all its children |
 
-**Notification methods:** `Notify(opts)`, `ShowSuccess(opts)`, `ShowWarning(opts)`, `ShowError(opts)`, `ShowInfo(opts)`, `DismissNotification(id)`, `ClearNotifications()` — see [Notifications](#notifications).
+**Notification methods:** `Notify(opts)`, `ShowSuccess(opts)`, `ShowWarning(opts)`, `ShowError(opts)`, `ShowInfo(opts)`, `ShowLoading(opts)`, `Promise(fn, opts)`, `DismissNotification(id)`, `ClearNotifications()`, `SetNotificationPosition(pos)` — see [Notifications](#notifications).
 
 **Dialog method:** `Dialog(opts)` — see [Dialog](#dialog).
 
@@ -197,6 +197,27 @@ Window:ClearNotifications()
 | `OnDismiss` | `function` | `nil` | Called when the toast is dismissed |
 
 `ShowSuccess/ShowWarning/ShowError/ShowInfo(opts)` are shorthands for `Notify` with the corresponding `Type` pre-set; they accept the same opts table.
+
+**`ShowLoading(opts)`** shows a persistent toast with a spinner (no countdown). Returns an id you dismiss with `DismissNotification(id)`.
+
+**`Promise(fn, opts)`** runs `fn` (which may yield — HTTP, datastore, `task.wait`) and morphs a loading toast into success or error when it settles. `Success`/`Error` may be a string or a function of the result/error.
+
+```lua
+Window:Promise(function()
+    local res = game:HttpGet(url)               -- yields
+    return game:GetService("HttpService"):JSONDecode(res)
+end, {
+    Loading = "Loading data…",
+    Success = function(data) return "Loaded " .. #data .. " items" end,
+    Error   = function(err) return "Failed: " .. tostring(err) end,
+    Finally = function() print("done") end,     -- optional
+})
+```
+
+**`SetNotificationPosition(pos)`** sets where toasts appear (global). `pos` is one of
+`"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`
+(case/space-insensitive, e.g. `"Top Right"`). Default is `"bottom-right"`. Also settable at
+window creation via `CreateWindow({ NotificationPosition = "top-right" })`.
 
 Toasts have a countdown indicator that pauses while the cursor hovers over them.
 
