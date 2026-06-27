@@ -132,7 +132,7 @@ function M.installInto(env, mock, strict)
     HorizontalAlignment = enumNs({ "Left", "Center", "Right" }),
     FillDirection = enumNs({ "Horizontal", "Vertical" }),
     KeyCode = enumNs({ "RightControl", "LeftAlt", "E", "P", "Insert", "Unknown" }),
-    UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard", "MouseWheel" }),
+    UserInputType = enumNs({ "MouseButton1", "MouseMovement", "Touch", "Keyboard", "MouseWheel", "Gamepad1" }),
     ZIndexBehavior = enumNs({ "Sibling", "Global" }),
     ScaleType = enumNs({ "Stretch", "Fit", "Crop", "Tile", "Slice" }),
     UIFlexMode = enumNs({ "None", "Grow", "Shrink", "Fill" }),
@@ -187,7 +187,22 @@ function M.installInto(env, mock, strict)
       return tw
     end,
   }
-  local UserInputService = { InputBegan = makeSignal(), InputChanged = makeSignal(), InputEnded = makeSignal(), TouchEnabled = false }
+  local uisPropSignals = {}
+  local UserInputService = {
+    InputBegan = makeSignal(), InputChanged = makeSignal(), InputEnded = makeSignal(),
+    LastInputTypeChanged = makeSignal(),
+    TouchEnabled = false, MouseEnabled = true, KeyboardEnabled = true, GamepadEnabled = false,
+  }
+  function UserInputService:GetLastInputType() return mock.lastInputType or env.Enum.UserInputType.Keyboard end
+  function UserInputService:GetPropertyChangedSignal(p)
+    uisPropSignals[p] = uisPropSignals[p] or makeSignal()
+    return uisPropSignals[p]
+  end
+  local GuiService = { IsTenFootInterface = function(_) return mock.tenFoot == true end }
+  local Camera = newInstance("Camera")
+  Camera.ViewportSize = env.Vector2.new(1280, 720)
+  env.workspace = { CurrentCamera = Camera }
+  mock.camera = Camera
   local playerList = { { Name = "Tester", UserId = 1 } }
   local PlayerGui = newInstance("PlayerGui"); PlayerGui.Name = "PlayerGui"
   local LocalPlayer = { Name = "Tester", UserId = 1 }
@@ -207,7 +222,7 @@ function M.installInto(env, mock, strict)
   mock.coreGui = CoreGui
   mock.playerGui = PlayerGui
   local services = { HttpService = HttpService, TweenService = TweenService, UserInputService = UserInputService,
-    Players = Players, RunService = RunService, CoreGui = CoreGui }
+    Players = Players, RunService = RunService, CoreGui = CoreGui, GuiService = GuiService }
   env.game = { GetService = function(_, name)
     if mock.hidden and mock.hidden[name] then return nil end
     return services[name]
