@@ -27,13 +27,43 @@ local function resolveWidth(opts)
   return want
 end
 
--- Header: a left-aligned Title. (Icon shapes added in Task 3.) Returns whether the header is
--- centred so the message can match its alignment.
+-- Header: one of three shapes -- badge (icon square above a centred title), inline (small icon left
+-- of the title), or a plain left-aligned title. Returns whether the header is centred so the
+-- message can match its alignment.
 local function buildHeader(card, theme, opts)
-  Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "Dialog",
-    TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.title.Size,
-    Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 1, ZIndex = 1502, Parent = card })
-  return false
+  local iconColor = opts.IconColor or theme.Colors.foreground
+  if opts.Icon and opts.IconBadge then
+    local header = Create("Frame", { Name = "Header", BackgroundTransparency = 1,
+      Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 1, ZIndex = 1502, Parent = card })
+    Create("UIListLayout", { FillDirection = Enum.FillDirection.Vertical, Padding = UDim.new(0, theme.Spacing.gap),
+      HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = header })
+    local badge = Create("Frame", { Name = "IconBadge", BackgroundColor3 = theme.Colors.surface,
+      Size = UDim2.new(0, 40, 0, 40), LayoutOrder = 1, ZIndex = 1502, Parent = header, Create.corner(theme.Radius.md) })
+    local img = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+      Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 20, 0, 20), ZIndex = 1503, Parent = badge })
+    Icons.apply(img, opts.Icon, iconColor)
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "Dialog",
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Center, TextSize = theme.Font.title.Size,
+      Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 2, ZIndex = 1502, Parent = header })
+    return true
+  elseif opts.Icon then
+    local gap = theme.Spacing.icon
+    local header = Create("Frame", { Name = "Header", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22),
+      LayoutOrder = 1, ZIndex = 1502, Parent = card })
+    local img = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5),
+      Position = UDim2.new(0, 0, 0.5, 0), Size = UDim2.new(0, 16, 0, 16), ZIndex = 1502, Parent = header })
+    Icons.apply(img, opts.Icon, iconColor)
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "Dialog",
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.title.Size,
+      Font = Enum.Font.BuilderSans, Position = UDim2.new(0, 16 + gap, 0, 0), Size = UDim2.new(1, -(16 + gap), 1, 0),
+      ZIndex = 1502, Parent = header })
+    return false
+  else
+    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "Dialog",
+      TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.title.Size,
+      Font = Enum.Font.BuilderSans, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 1, ZIndex = 1502, Parent = card })
+    return false
+  end
 end
 
 -- Footer: a horizontal row of buttons. Each button fires its descriptor callback then closes.
