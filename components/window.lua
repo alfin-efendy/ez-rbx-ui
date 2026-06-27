@@ -2,13 +2,13 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount, Safe
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount, Safe, Drag, Device
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
   Notif = R.Notification; Asset = R.Asset; Themer = R.Themer
-  Mount = R.Mount; Safe = R.Safe
+  Mount = R.Mount; Safe = R.Safe; Drag = R.Drag; Device = R.Device
 end
 
 local TITLE_H = 40
@@ -94,6 +94,7 @@ function Window.new(config)
   local closed = false
   local startHidden = config.StartHidden == true  -- start collapsed to just the FAB; open via the FAB/toggle key
   local userMoved = false  -- set when the user drags/resizes; viewport changes then clamp instead of re-centering
+  local userResized = false  -- set when the user drags the grip; AdaptToViewport then preserves the manual size
   local closeCallback
   local themer = Themer.new()
   local lockables = {}
@@ -805,36 +806,38 @@ function Window.new(config)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
   end))
 
-  -- resize via bottom-right grip
+  -- resize via bottom-right grip. The small icon stays put; a transparent hit target sits
+  -- on top of it, finger-sized on touch, so the corner is actually grabbable on mobile.
   local grip = Create("ImageButton", {
     Name = "ResizeGrip", AutoButtonColor = false, BackgroundTransparency = 1,
     AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -2, 1, -2),
     ZIndex = 50, Parent = main,
   })
   Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground)
-  maid:Give(grip.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
-  maid:Give(grip.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
-  local resizing, rStart, rSize
-  maid:Give(grip.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      resizing = true; rStart = input.Position; rSize = { X = width, Y = height }; Overlay.closeAll()
-    end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-      width = math.max(MIN_W, rSize.X + (input.Position.X - rStart.X))
-      height = math.max(MIN_H, rSize.Y + (input.Position.Y - rStart.Y))
+  local gripHitPx = Device.IsTouch() and 44 or 22
+  local resizeHit = Create("ImageButton", {
+    Name = "ResizeHit", AutoButtonColor = false, BackgroundTransparency = 1,
+    AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, gripHitPx, 0, gripHitPx), Position = UDim2.new(1, 0, 1, 0),
+    ZIndex = 51, Parent = main,
+  })
+  maid:Give(resizeHit.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
+  maid:Give(resizeHit.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
+  local resizing, rSize
+  Drag.bind(resizeHit, {
+    onBegin = function() resizing = true; rSize = { X = width, Y = height }; Overlay.closeAll() end,
+    onChange = function(dx, dy)
+      width = math.max(MIN_W, rSize.X + dx)
+      height = math.max(MIN_H, rSize.Y + dy)
       local vp = viewportSize()
       width = math.min(width, vp.X); height = math.min(height, vp.Y)
       main.Size = UDim2.new(0, width, 0, height)
-      widthFrac = width / vp.X      -- grip rewrites the size fractions, so later
-      heightFrac = height / vp.Y    -- viewport changes preserve the dragged proportions
+      widthFrac = width / vp.X      -- keep proportions current; only used when not userResized
+      heightFrac = height / vp.Y
       userMoved = true
-    end
-  end))
-  maid:Give(grip.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then resizing = false end
-  end))
+      userResized = true
+    end,
+    onEnd = function() resizing = false end,
+  }, maid)
 
   -- toggle key
   maid:Give(UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -852,11 +855,18 @@ function Window.new(config)
 
   -- responsive: always re-fit to the viewport, preserving the configured Ratio
   function api:AdaptToViewport()
-    width, height = computeSize()
+    if dragging or resizing or sbDrag then return end  -- don't fight an active drag/resize
+    local vp = viewportSize()
+    if userResized then
+      -- honor the user's manual size; only shrink to fit a smaller viewport
+      width = math.min(width, math.floor(vp.X * VP_MARGIN))
+      height = math.min(height, math.floor(vp.Y * VP_MARGIN))
+    else
+      width, height = computeSize()
+    end
     main.Size = UDim2.new(0, width, 0, height)
     if userMoved then
       -- honor the user's placement; just keep it on-screen in the new viewport
-      local vp = viewportSize()
       local absX = main.Position.X.Scale * vp.X + main.Position.X.Offset
       local absY = main.Position.Y.Scale * vp.Y + main.Position.Y.Offset
       absX = math.max(0, math.min(absX, vp.X - width))

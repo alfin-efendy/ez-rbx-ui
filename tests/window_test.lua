@@ -325,6 +325,35 @@ h.describe("window", function()
     local grip = w.Main:FindFirstChild("ResizeGrip")
     h.expect(tostring(grip.Image):sub(1, 13)).toBe("rbxassetid://")
   end)
+  h.it("touch resize grip shrinks the window (and the size persists)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local w0, h0 = w.Main.Size.X.Offset, w.Main.Size.Y.Offset   -- 576 x 432 at 1280x720
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    h.expect(hit ~= nil).toBeTruthy()
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(700, 500) }
+    hit.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(600, 400)             -- drag up-left to shrink
+    uis.InputChanged:Fire(touch)
+    h.expect(w.Main.Size.X.Offset < w0).toBeTruthy()
+    h.expect(w.Main.Size.Y.Offset < h0).toBeTruthy()
+    local shrunkW = w.Main.Size.X.Offset
+    w:AdaptToViewport()                                          -- mid-state refit must NOT re-inflate
+    h.expect(w.Main.Size.X.Offset).toBe(shrunkW)
+    uis.InputEnded:Fire(touch)
+    w:AdaptToViewport()                                          -- after release: manual size preserved
+    h.expect(w.Main.Size.X.Offset).toBe(shrunkW)
+    uis.TouchEnabled = false; uis.MouseEnabled = true            -- restore baseline for later tests
+  end)
+  h.it("resize hit target is finger-sized on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    h.expect(hit.Size.X.Offset >= 44).toBeTruthy()
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("ToggleKey input toggles visibility", function()
     local w = newWin()
     local uis = h.roblox.game:GetService("UserInputService")
