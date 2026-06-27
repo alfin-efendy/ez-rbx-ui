@@ -137,6 +137,23 @@ h.describe("window", function()
     uis.InputChanged:Fire({ UserInputType = h.roblox.Enum.UserInputType.MouseMovement, Position = h.roblox.Vector2.new(w0 + 40, 50) })
     h.expect(sidebar.Size.X.Offset > w0).toBeTruthy()
   end)
+  h.it("sidebar handle resizes via touch and is finger-sized on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local body = w.Main:FindFirstChild("Body")
+    local handle = body:FindFirstChild("SidebarHandle")
+    local sidebar = body:FindFirstChild("Sidebar")
+    h.expect(handle.Size.X.Offset >= 44).toBeTruthy()
+    local w0 = sidebar.Size.X.Offset
+    body.AbsolutePosition = h.roblox.Vector2.new(0, 0)
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(w0, 50) }
+    handle.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(w0 + 40, 50)
+    uis.InputChanged:Fire(touch)
+    h.expect(sidebar.Size.X.Offset > w0).toBeTruthy()
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("settings APIs: notifications gate, UI scale, acrylic transparency, toggle key", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
@@ -325,6 +342,35 @@ h.describe("window", function()
     local grip = w.Main:FindFirstChild("ResizeGrip")
     h.expect(tostring(grip.Image):sub(1, 13)).toBe("rbxassetid://")
   end)
+  h.it("touch resize grip shrinks the window (and the size persists)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local w0, h0 = w.Main.Size.X.Offset, w.Main.Size.Y.Offset   -- 576 x 432 at 1280x720
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    h.expect(hit ~= nil).toBeTruthy()
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(700, 500) }
+    hit.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(600, 400)             -- drag up-left to shrink
+    uis.InputChanged:Fire(touch)
+    h.expect(w.Main.Size.X.Offset < w0).toBeTruthy()
+    h.expect(w.Main.Size.Y.Offset < h0).toBeTruthy()
+    local shrunkW = w.Main.Size.X.Offset
+    w:AdaptToViewport()                                          -- mid-state refit must NOT re-inflate
+    h.expect(w.Main.Size.X.Offset).toBe(shrunkW)
+    uis.InputEnded:Fire(touch)
+    w:AdaptToViewport()                                          -- after release: manual size preserved
+    h.expect(w.Main.Size.X.Offset).toBe(shrunkW)
+    uis.TouchEnabled = false; uis.MouseEnabled = true            -- restore baseline for later tests
+  end)
+  h.it("resize hit target is finger-sized on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    h.expect(hit.Size.X.Offset >= 44).toBeTruthy()
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("ToggleKey input toggles visibility", function()
     local w = newWin()
     local uis = h.roblox.game:GetService("UserInputService")
@@ -490,6 +536,20 @@ h.describe("window", function()
     w2:AdaptToViewport()
     h.expect(w2.Main.Position.X.Scale).toBe(0.5) -- untouched window still re-centers
   end)
+  h.it("title bar drags the window on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local bar = w.Main:FindFirstChild("TitleBar")
+    local x0 = w.Main.Position.X.Offset
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(100, 10) }
+    bar.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(160, 10)   -- drag right by 60
+    uis.InputChanged:Fire(touch)
+    h.expect(w.Main.Position.X.Offset).toBe(x0 + 60)
+    uis.InputEnded:Fire(touch)
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("SetImage updates the title-bar image", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "Hub", Image = "rbxassetid://42", Parent = screen })
@@ -611,6 +671,52 @@ h.describe("window", function()
     h.expect(w:GetMode()).toBe("light")        -- Lua state is synchronous, not deferred
     h.mock.stepHeartbeat(0)                    -- reskin flushes without error
     R.Safe._setCapabilityCheck(nil)
+  end)
+  h.it("ImageAdaptive tints the title logo to the foreground token and flips on SetMode", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "Hub", Image = "rbxassetid://42", ImageAdaptive = true, Parent = screen })
+    local img = w.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.dark.foreground.R8)   -- 250 in dark
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.light.foreground.R8)  -- 24 in light
+  end)
+  h.it("FloatingToggle Adaptive tints the logo to foreground and flips on SetMode", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7", Adaptive = true } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.dark.foreground.R8)
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.light.foreground.R8)
+  end)
+  h.it("a non-adaptive FAB logo stays full-color white across mode changes", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7" } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.ImageColor3.R8).toBe(255)   -- white: tints nothing, renders the full-color logo as-is
+    w:SetMode("light")
+    h.expect(img.ImageColor3.R8).toBe(255)   -- still white (not re-tinted to a theme token)
+  end)
+  h.it("manually-resized window never shrinks below MIN_W/MIN_H on a tiny viewport", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local cam = h.roblox.workspace.CurrentCamera
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local hit = w.Main:FindFirstChild("ResizeHit")
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(700, 500) }
+    hit.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(600, 400)   -- shrink to ~476x332 (userResized)
+    uis.InputChanged:Fire(touch)
+    uis.InputEnded:Fire(touch)
+    cam.ViewportSize = h.roblox.Vector2.new(300, 320)  -- tiny viewport, below MIN
+    w:AdaptToViewport()
+    h.expect(w.Main.Size.X.Offset >= 380).toBeTruthy()  -- MIN_W
+    h.expect(w.Main.Size.Y.Offset >= 260).toBeTruthy()  -- MIN_H
+    cam.ViewportSize = h.roblox.Vector2.new(1280, 720)   -- restore shared mock state
+    uis.TouchEnabled = false; uis.MouseEnabled = true
   end)
 end)
 

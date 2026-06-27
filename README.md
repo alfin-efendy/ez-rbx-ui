@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/public/brand/ezui-banner.svg" alt="EzUI — Roblox UI Library" />
+</p>
+
 # EzUI — Roblox UI Library
 
 A modern, modular UI library for Roblox scripts. shadcn-inspired design, Fluent-style acrylic panel, Lucide icons, CSS-flex-like layout (engine-driven, no manual positioning), smooth tab/accordion transitions, and a flag-based config system with auto-save/load and reset.

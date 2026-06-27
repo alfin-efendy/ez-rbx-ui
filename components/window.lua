@@ -2,13 +2,13 @@
 local UserInputService = game:GetService("UserInputService")
 
 local Window = {}
-local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount, Safe
+local Create, DefaultTheme, Animate, Maid, Icons, Overlay, Acrylic, Tab, ConfigMod, DialogMod, Notif, Asset, Themer, Mount, Safe, Drag, Device
 
 function Window.Init(R)
   Create = R.Create; DefaultTheme = R.Theme; Animate = R.Animate; Maid = R.Maid
   Icons = R.Icons; Overlay = R.Overlay; Acrylic = R.Acrylic; Tab = R.Tab; ConfigMod = R.Config; DialogMod = R.Dialog
   Notif = R.Notification; Asset = R.Asset; Themer = R.Themer
-  Mount = R.Mount; Safe = R.Safe
+  Mount = R.Mount; Safe = R.Safe; Drag = R.Drag; Device = R.Device
 end
 
 local TITLE_H = 40
@@ -94,6 +94,7 @@ function Window.new(config)
   local closed = false
   local startHidden = config.StartHidden == true  -- start collapsed to just the FAB; open via the FAB/toggle key
   local userMoved = false  -- set when the user drags/resizes; viewport changes then clamp instead of re-centering
+  local userResized = false  -- set when the user drags the grip; AdaptToViewport then preserves the manual size
   local closeCallback
   local themer = Themer.new()
   local lockables = {}
@@ -145,14 +146,20 @@ function Window.new(config)
     Create.padding({ left = theme.Spacing.pad, right = theme.Spacing.pad }),
   })
   local titleTextX = 0
+  local titleImg
+  -- An adaptive logo is a monochrome glyph (the brand SVG uses fill="currentColor"): tint it to the
+  -- foreground token so it follows dark/light and re-tints on SetMode. A non-adaptive logo is a
+  -- full-color image, so it is left untinted (white) -- see the window-shell reskin closure below.
+  local imageAdaptive = config.ImageAdaptive == true
   if hasTitleImg then
     local imgSize = 36
-    local titleImg = Create("ImageLabel", {
+    titleImg = Create("ImageLabel", {
       Name = "TitleImage", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
       AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
       Size = UDim2.new(0, imgSize, 0, imgSize), Image = "", Parent = titleBar,
       Create.corner(theme.Radius.md),
     })
+    if imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
     -- Fill it as soon as the asset resolves. URLs download off the construction thread, so the
     -- window never blocks on game:HttpGet; the write is marshalled to a capability-bearing context.
     Asset.imageAsync(config.Image, function(id)
@@ -276,18 +283,15 @@ function Window.new(config)
     sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
   end
   local sbDrag
-  maid:Give(sidebarHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = true; Overlay.closeAll() end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if sbDrag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+  if Device.IsTouch() then sidebarHandle.Size = UDim2.new(0, 44, 1, 0) end
+  Drag.bind(sidebarHandle, {
+    onBegin = function() sbDrag = true; Overlay.closeAll() end,
+    onChange = function(_, _, pos)
       local bp = body.AbsolutePosition
-      applySidebarWidth(input.Position.X - (bp and bp.X or 0))
-    end
-  end))
-  maid:Give(sidebarHandle.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = false end
-  end))
+      applySidebarWidth(pos.X - (bp and bp.X or 0))
+    end,
+    onEnd = function() sbDrag = false end,
+  }, maid)
 
   -- single active-tab indicator that slides between sidebar buttons (lives in Body so the
   -- sidebar's UIListLayout does not lay it out; Body positions its children manually).
@@ -578,6 +582,7 @@ function Window.new(config)
   themer.register(function()
     main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
+    if titleImg and imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
     local sub = titleBar:FindFirstChild("Subtitle")
     if sub then sub.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
@@ -609,6 +614,10 @@ function Window.new(config)
     fabMaid = Maid.new(); maid:Give(fabMaid)
     local kind = fabOpts.Type or "simple"
     local hasImage = type(fabOpts.Image) == "string" and fabOpts.Image ~= ""
+    -- Adaptive: treat the logo as a monochrome glyph and tint it to the foreground token (follows the
+    -- mode + re-tints on SetMode via the FAB reskin closure). Default keeps the full-color white fill.
+    local fabAdaptive = fabOpts.Adaptive == true
+    local fabImg
     -- Fill the FAB with the configured logo edge-to-edge (no background frame showing around it), once
     -- the asset resolves (URLs fetch off-thread so the FAB never blocks). Reset the glyph's sprite crop
     -- and tint so a full image renders clean. The write is marshalled to a capability-bearing context.
@@ -620,7 +629,7 @@ function Window.new(config)
           img.Image = id
           img.ImageRectOffset = Vector2.new(0, 0)
           img.ImageRectSize = Vector2.new(0, 0)
-          img.ImageColor3 = Color3.fromRGB(255, 255, 255)
+          img.ImageColor3 = fabAdaptive and theme.Colors.foreground or Color3.fromRGB(255, 255, 255)
         end)
       end)
     end
@@ -644,11 +653,11 @@ function Window.new(config)
     if kind == "square" then
       fab.BackgroundColor3 = theme.Colors.surface
       Create("UICorner", { CornerRadius = UDim.new(0, theme.Radius.lg), Parent = fab })
-      applyFabImage(makeFabImg(theme.Radius.lg))
+      fabImg = makeFabImg(theme.Radius.lg); applyFabImage(fabImg)
     elseif kind == "circle" then
       fab.BackgroundColor3 = theme.Colors.primary
       Create("UICorner", { CornerRadius = UDim.new(0, 22), Parent = fab })
-      applyFabImage(makeFabImg(22))
+      fabImg = makeFabImg(22); applyFabImage(fabImg)
     else -- simple: 50x50 chevron square, neutral surface (follows the mode)
       fab.Size = UDim2.new(0, 50, 0, 50)
       fab.Position = UDim2.new(0, -15, 0.5, -25) -- dock at the left edge, peeking ~15px (magnet)
@@ -735,6 +744,7 @@ function Window.new(config)
         local st = fab:FindFirstChildOfClass("UIStroke"); if st then st.Color = theme.Colors.border end
         if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
       end
+      if fabImg and fabAdaptive and hasImage then fabImg.ImageColor3 = theme.Colors.foreground end
     end))
     local fabHover = false
     fabMaid:Give(fab.MouseEnter:Connect(function() fabHover = true; Animate.to(fabScale, "fast", { Scale = 1.06 }) end))
@@ -788,53 +798,49 @@ function Window.new(config)
   maid:Give(minBtn.MouseButton1Click:Connect(function() api:Minimize() end))
 
   -- drag by title bar
-  local dragging, dragStart, startPos
-  maid:Give(titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      dragging = true; dragStart = input.Position; startPos = main.Position; Overlay.closeAll()
-    end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-      local delta = { X = input.Position.X - dragStart.X, Y = input.Position.Y - dragStart.Y }
-      main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+  local dragging, dragStartPos
+  Drag.bind(titleBar, {
+    onBegin = function() dragging = true; dragStartPos = main.Position; Overlay.closeAll() end,
+    onChange = function(dx, dy)
+      main.Position = UDim2.new(dragStartPos.X.Scale, dragStartPos.X.Offset + dx, dragStartPos.Y.Scale, dragStartPos.Y.Offset + dy)
       userMoved = true
-    end
-  end))
-  maid:Give(titleBar.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-  end))
+    end,
+    onEnd = function() dragging = false end,
+  }, maid)
 
-  -- resize via bottom-right grip
+  -- resize via bottom-right grip. The small icon stays put; a transparent hit target sits
+  -- on top of it, finger-sized on touch, so the corner is actually grabbable on mobile.
   local grip = Create("ImageButton", {
     Name = "ResizeGrip", AutoButtonColor = false, BackgroundTransparency = 1,
     AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -2, 1, -2),
     ZIndex = 50, Parent = main,
   })
   Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground)
-  maid:Give(grip.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
-  maid:Give(grip.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
-  local resizing, rStart, rSize
-  maid:Give(grip.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      resizing = true; rStart = input.Position; rSize = { X = width, Y = height }; Overlay.closeAll()
-    end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-      width = math.max(MIN_W, rSize.X + (input.Position.X - rStart.X))
-      height = math.max(MIN_H, rSize.Y + (input.Position.Y - rStart.Y))
+  local gripHitPx = Device.IsTouch() and 44 or 22
+  local resizeHit = Create("ImageButton", {
+    Name = "ResizeHit", AutoButtonColor = false, BackgroundTransparency = 1,
+    AnchorPoint = Vector2.new(1, 1), Size = UDim2.new(0, gripHitPx, 0, gripHitPx), Position = UDim2.new(1, 0, 1, 0),
+    ZIndex = 51, Parent = main,
+  })
+  maid:Give(resizeHit.MouseEnter:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.foreground) end))
+  maid:Give(resizeHit.MouseLeave:Connect(function() Icons.apply(grip, "move-diagonal-2", theme.Colors.mutedForeground) end))
+  local resizing = false
+  local rSize
+  Drag.bind(resizeHit, {
+    onBegin = function() resizing = true; rSize = { X = width, Y = height }; Overlay.closeAll() end,
+    onChange = function(dx, dy)
+      width = math.max(MIN_W, rSize.X + dx)
+      height = math.max(MIN_H, rSize.Y + dy)
       local vp = viewportSize()
       width = math.min(width, vp.X); height = math.min(height, vp.Y)
       main.Size = UDim2.new(0, width, 0, height)
-      widthFrac = width / vp.X      -- grip rewrites the size fractions, so later
-      heightFrac = height / vp.Y    -- viewport changes preserve the dragged proportions
+      widthFrac = width / vp.X      -- keep proportions current; only used when not userResized
+      heightFrac = height / vp.Y
       userMoved = true
-    end
-  end))
-  maid:Give(grip.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then resizing = false end
-  end))
+      userResized = true
+    end,
+    onEnd = function() resizing = false end,
+  }, maid)
 
   -- toggle key
   maid:Give(UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -852,11 +858,18 @@ function Window.new(config)
 
   -- responsive: always re-fit to the viewport, preserving the configured Ratio
   function api:AdaptToViewport()
-    width, height = computeSize()
+    if dragging or resizing or sbDrag then return end  -- don't fight an active drag/resize
+    local vp = viewportSize()
+    if userResized then
+      -- honor the user's manual size; only shrink to fit a smaller viewport
+      width = math.max(MIN_W, math.min(width, math.floor(vp.X * VP_MARGIN)))
+      height = math.max(MIN_H, math.min(height, math.floor(vp.Y * VP_MARGIN)))
+    else
+      width, height = computeSize()
+    end
     main.Size = UDim2.new(0, width, 0, height)
     if userMoved then
       -- honor the user's placement; just keep it on-screen in the new viewport
-      local vp = viewportSize()
       local absX = main.Position.X.Scale * vp.X + main.Position.X.Offset
       local absY = main.Position.Y.Scale * vp.Y + main.Position.Y.Offset
       absX = math.max(0, math.min(absX, vp.X - width))

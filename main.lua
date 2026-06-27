@@ -20,6 +20,8 @@ R.Acrylic = require("core/acrylic")
 R.Asset = require("core/asset")
 R.Numfmt = require("core/numfmt")
 R.Themer = require("core/themer")
+R.Device = require("core/device")
+R.Drag = require("core/drag")
 R.Separator = require("components/separator")
 R.Label = require("components/label")
 R.Button = require("components/button")
@@ -49,6 +51,7 @@ end
 
 EzUI.Theme = R.Theme
 EzUI.Icons = R.Icons
+EzUI.Device = R.Device
 EzUI._internal = R
 
 function EzUI:NewConfig(opts) return R.Config.new(opts) end

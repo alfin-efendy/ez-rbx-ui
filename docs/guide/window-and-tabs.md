@@ -134,3 +134,7 @@ Window:SearchTabs("walk speed")
 ```
 
 This narrows the sidebar to only tabs that contain controls matching the query.
+
+## Resizing
+
+The window edge and the sidebar divider are both draggable. On touch devices the resize grip and the sidebar divider use finger-sized hit targets and track the originating touch, so dragging to shrink shrinks reliably. A manually-resized window keeps its size across viewport changes (rotation, on-screen UI).

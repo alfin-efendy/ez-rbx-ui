@@ -1,0 +1,75 @@
+<svg role="img" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <title>EzUI — Roblox UI Library</title>
+  <desc>Brand banner for EzUI using the original Blade Zu logo mark.</desc>
+  <defs>
+    <linearGradient id="surface" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#18181b"/>
+      <stop offset="1" stop-color="#0b0b0d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#a3e635"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#000000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="#09090b"/>
+  <rect x="48" y="48" width="1184" height="544" rx="34" fill="url(#surface)" stroke="#3f3f46" stroke-width="2"/>
+  <path d="M48 188h1184" stroke="#27272a" stroke-width="2"/>
+  <path d="M112 520h360" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/>
+
+  <g transform="translate(112 170)" color="#fafafa">
+    <rect x="0" y="0" width="154" height="154" rx="30" fill="#fafafa"/>
+    <svg x="35" y="35" width="84" height="84" viewBox="0 0 64 64" color="#09090b" aria-hidden="true">
+      <path fill="currentColor" d="M11.6 10.6c12.3-1.8 24-.9 35.2 2.6 3.5 1.1 3.7 5.9.3 7-6.9 2.3-13.2 7.4-18.9 15.3 5.8 2 11.3 6.5 16.5 13.4 1.9 2.6-.9 6.4-4.4 5.7-5.2-7.1-10.6-11.2-16.1-12.4-2.1 3.8-4.1 7.8-6 12.2-3.6.4-6.2-1.2-7.8-4.8 5.9-12.8 14-22.7 24.2-29.8-7.2-.8-14.8-.7-22.8.3-3.3.4-3.6-8.5-.2-9.5Z"/>
+      <path fill="currentColor" d="M53.4 8.1c1.2.1 2.3.4 3.2.9-.5 3.4-1.6 6.6-3.4 9.5-1.1.1-2.1-.1-3.1-.5 1.6-2.8 2.7-6.1 3.3-9.9Z"/>
+      <path fill="currentColor" d="M59 8.1c1.2.1 2.3.4 3.2.9-.5 3.4-1.6 6.6-3.4 9.5-1.1.1-2.1-.1-3.1-.5 1.6-2.8 2.7-6.1 3.3-9.9Z"/>
+    </svg>
+  </g>
+
+  <g fill="#fafafa" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+    <text x="308" y="236" font-size="112" font-weight="780" letter-spacing="0">EzUI</text>
+    <text x="316" y="292" font-size="34" font-weight="560" fill="#a1a1aa" letter-spacing="0">Roblox UI Library</text>
+    <text x="112" y="404" font-size="29" font-weight="520" fill="#d4d4d8" letter-spacing="0">Modern, modular UI primitives for Roblox scripts.</text>
+  </g>
+
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="650">
+    <g transform="translate(112 448)">
+      <rect width="188" height="50" rx="14" fill="#27272a" stroke="#3f3f46"/>
+      <text x="24" y="33" fill="#fafafa">shadcn style</text>
+    </g>
+    <g transform="translate(320 448)">
+      <rect width="204" height="50" rx="14" fill="#27272a" stroke="#3f3f46"/>
+      <text x="24" y="33" fill="#fafafa">Fluent acrylic</text>
+    </g>
+    <g transform="translate(544 448)">
+      <rect width="172" height="50" rx="14" fill="#27272a" stroke="#3f3f46"/>
+      <text x="24" y="33" fill="#fafafa">Lucide icons</text>
+    </g>
+  </g>
+
+  <g transform="translate(782 138)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="362" height="364" rx="24" fill="#18181b" stroke="#3f3f46" stroke-width="2"/>
+    <rect x="20" y="20" width="322" height="64" rx="16" fill="#27272a" stroke="#3f3f46"/>
+    <svg x="39" y="34" width="34" height="34" viewBox="0 0 64 64" color="#fafafa" aria-hidden="true">
+      <path fill="currentColor" d="M11.6 10.6c12.3-1.8 24-.9 35.2 2.6 3.5 1.1 3.7 5.9.3 7-6.9 2.3-13.2 7.4-18.9 15.3 5.8 2 11.3 6.5 16.5 13.4 1.9 2.6-.9 6.4-4.4 5.7-5.2-7.1-10.6-11.2-16.1-12.4-2.1 3.8-4.1 7.8-6 12.2-3.6.4-6.2-1.2-7.8-4.8 5.9-12.8 14-22.7 24.2-29.8-7.2-.8-14.8-.7-22.8.3-3.3.4-3.6-8.5-.2-9.5Z"/>
+      <path fill="currentColor" d="M53.4 8.1c1.2.1 2.3.4 3.2.9-.5 3.4-1.6 6.6-3.4 9.5-1.1.1-2.1-.1-3.1-.5 1.6-2.8 2.7-6.1 3.3-9.9Z"/>
+      <path fill="currentColor" d="M59 8.1c1.2.1 2.3.4 3.2.9-.5 3.4-1.6 6.6-3.4 9.5-1.1.1-2.1-.1-3.1-.5 1.6-2.8 2.7-6.1 3.3-9.9Z"/>
+    </svg>
+    <text x="86" y="48" fill="#fafafa" font-family="Inter, ui-sans-serif, system-ui" font-size="22" font-weight="700">EzUI Demo</text>
+    <text x="86" y="68" fill="#a1a1aa" font-family="Inter, ui-sans-serif, system-ui" font-size="14" font-weight="500">v3.0</text>
+    <rect x="20" y="108" width="322" height="54" rx="14" fill="#202024" stroke="#3f3f46"/>
+    <rect x="40" y="128" width="150" height="14" rx="7" fill="#fafafa"/>
+    <rect x="274" y="126" width="44" height="18" rx="9" fill="#38bdf8"/>
+    <rect x="20" y="182" width="322" height="54" rx="14" fill="#202024" stroke="#3f3f46"/>
+    <rect x="40" y="202" width="120" height="14" rx="7" fill="#fafafa"/>
+    <rect x="210" y="205" width="108" height="8" rx="4" fill="#3f3f46"/>
+    <rect x="210" y="205" width="62" height="8" rx="4" fill="#a3e635"/>
+    <rect x="20" y="256" width="146" height="54" rx="14" fill="#fafafa"/>
+    <text x="54" y="291" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui" font-size="18" font-weight="750">Execute</text>
+    <rect x="186" y="256" width="156" height="54" rx="14" fill="#202024" stroke="#3f3f46"/>
+    <text x="226" y="291" fill="#fafafa" font-family="Inter, ui-sans-serif, system-ui" font-size="18" font-weight="700">Settings</text>
+  </g>
+</svg>

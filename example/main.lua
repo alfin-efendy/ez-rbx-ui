@@ -6,19 +6,24 @@
 ]]
 local EzUI = require("../output/bundle")
 
--- A remote PNG (downloaded once via the executor's writefile + getcustomasset). Requires an executor
--- that exposes those globals + HttpGet; under Studio/headless it is a graceful no-op (no logo).
-local LOGO = "https://upload.wikimedia.org/wikipedia/commons/1/1e/Roblox_Logo_2025.png"
+-- The EzUI brand mark, rendered as a WHITE-on-transparent PNG and hosted on the docs site. It is a
+-- single-color glyph, so `*Adaptive` tints it to the theme foreground (near-white in dark, near-black
+-- in light) and re-tints automatically on SetMode -- one asset that reads cleanly in both modes.
+-- The PNG is downloaded once via the executor's writefile + getcustomasset (needs HttpGet too); under
+-- Studio/headless it is a graceful no-op (no logo). Source: docs/public/brand/ezui-blade-zu-icon.svg.
+local LOGO = "https://alfin-efendy.github.io/ez-rbx-ui/brand/ezui-blade-zu-icon.png"
 
 local window = EzUI:CreateWindow({
   Title = "EzUI Demo",
   Ratio = { Width = 0.4, Height = 0.55 },   -- 40% of the screen wide, 55% tall
   Subtitle = "Component playground",
   Image = LOGO,                             -- title-bar logo
+  ImageAdaptive = true,                     -- tint the mono glyph to the theme foreground (dark/light)
   Transparency = 0.12,
   ToggleKey = Enum.KeyCode.RightControl,
   StartHidden = false,
-  FloatingToggle = { Type = "square", Image = LOGO, AutoHide = true }, -- square FAB shows the logo (no magnet)
+  -- square FAB shows the logo (no magnet); Adaptive tints it to match the active mode
+  FloatingToggle = { Type = "square", Image = LOGO, Adaptive = true, AutoHide = true },
   Config = { Enabled = true, FileName = "EzUIDemo", AutoSave = true, AutoLoad = true },
   OnClose = function() print("EzUI closed — settings saved.") end,
 })
