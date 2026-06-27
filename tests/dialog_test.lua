@@ -91,5 +91,17 @@ h.describe("dialog", function()
     for _, c in ipairs(row:GetChildren()) do if c.ClassName == "TextButton" then firstBtn = c; break end end
     h.expect(firstBtn.LayoutOrder).toBe(2)
   end)
+  h.it("fades the backdrop in on open, zooms the card out on close, and is idempotent", function()
+    local R = h.loadLib(); local gui = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(gui)
+    local handle = R.Dialog.open({ Title = "X", Buttons = { { Text = "OK" } } })
+    local card, dim = dialogCard(R, gui)
+    h.expect(dim.BackgroundTransparency).toBe(0.5)  -- backdrop faded to its modal target (mock runs tweens synchronously)
+    local us = card:FindFirstChildOfClass("UIScale")
+    handle.Close()
+    h.expect(us.Scale).toBe(0.92)                   -- card zoomed out on close
+    local _, gone = dialogCard(R, gui)
+    h.expect(gone).toBeNil()                        -- removed after the close tween completes
+    handle.Close()                                  -- second close is a no-op via the guard (must not error)
+  end)
 end)
 h.run()

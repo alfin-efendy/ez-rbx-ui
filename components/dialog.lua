@@ -97,7 +97,7 @@ function Dialog.open(opts)
   local width = resolveWidth(opts)
 
   local dim = Create("TextButton", { Name = "Dialog", AutoButtonColor = false, Text = "",
-    BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = (opts.Modal == false) and 1 or 0.5,
+    BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 1, 0), ZIndex = 1500, Modal = opts.Modal ~= false })
   local card = Create("Frame", { Name = "Card", Size = UDim2.new(0, width, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
     AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), ZIndex = 1501, Parent = dim,
@@ -114,7 +114,16 @@ function Dialog.open(opts)
       Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, ZIndex = 1502, Parent = card })
   end
 
-  function handle.Close() maid:DoCleanup(); dim:Destroy() end
+  local closing = false
+  function handle.Close()
+    if closing then return end
+    closing = true
+    dim.Modal = false
+    dim.Active = false
+    local us = card:FindFirstChildOfClass("UIScale")
+    if us then Animate.to(us, "fast", { Scale = 0.92 }) end
+    Animate.toThen(dim, "fast", { BackgroundTransparency = 1 }, function() maid:DoCleanup(); dim:Destroy() end)
+  end
   buildFooter(card, theme, buttons, touch, handle, maid)
 
   maid:Give(dim)
@@ -128,6 +137,7 @@ function Dialog.open(opts)
   else
     Overlay.mount(dim)
   end
+  Animate.to(dim, "base", { BackgroundTransparency = (opts.Modal == false) and 1 or 0.5 }) -- fade the scrim in
   Animate.pop(card, "base") -- pop the card in
   return handle
 end
