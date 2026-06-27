@@ -40,6 +40,14 @@ function Device.IsDesktop() return Device.GetType() == "Desktop" end
 function Device.IsConsole() return Device.GetType() == "Console" end
 function Device.IsTouch() return UserInputService.TouchEnabled == true end
 
+function Device.GetInput()
+  local t = UserInputService.GetLastInputType and UserInputService:GetLastInputType()
+  local name = (t and t.Name) or ""
+  if name == "Touch" then return "Touch" end
+  if name:find("Gamepad") then return "Gamepad" end
+  return "KeyboardMouse"
+end
+
 function Device.Init(R)
   Signal = R.Signal
   cfg.TabletMaxAspect = DEFAULTS.TabletMaxAspect

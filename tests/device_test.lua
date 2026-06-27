@@ -41,4 +41,19 @@ h.describe("device type", function()
   end)
 end)
 
+h.describe("device input modality", function()
+  h.it("defaults to KeyboardMouse", function()
+    local R = h.loadLib(); h.mock.lastInputType = nil
+    h.expect(R.Device.GetInput()).toBe("KeyboardMouse")
+  end)
+  h.it("reports Touch", function()
+    local R = h.loadLib(); h.mock.lastInputType = h.roblox.Enum.UserInputType.Touch
+    h.expect(R.Device.GetInput()).toBe("Touch")
+  end)
+  h.it("reports Gamepad", function()
+    local R = h.loadLib(); h.mock.lastInputType = h.roblox.Enum.UserInputType.Gamepad1
+    h.expect(R.Device.GetInput()).toBe("Gamepad")
+  end)
+end)
+
 h.run()
