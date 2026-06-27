@@ -102,7 +102,14 @@ local function startCountdown(entry, total, accent, theme)
   entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
 end
 
-local applyUpdate  -- forward declaration; defined after Notification.relayout is set
+local function createMsgLabel(text, theme, parent)
+  return Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = text,
+    TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+    Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = parent })
+end
+
+local applyUpdate  -- forward declaration; applyUpdate is assigned after Notification.loading, show's pendingUpdate hook closes over it
 
 function Notification.show(opts)
   if not enabled then return nil end
@@ -143,10 +150,7 @@ function Notification.show(opts)
     closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
     local msgLabel
     if opts.Message then
-      msgLabel = Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
-        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
-        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
+      msgLabel = createMsgLabel(opts.Message, theme, toast)
     end
     if opts.Action then
       local act = opts.Action
@@ -196,15 +200,15 @@ applyUpdate = function(entry, opts)
     if entry.msgLabel then
       entry.msgLabel.Text = opts.Message
     else
-      entry.msgLabel = Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
-        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
-        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = entry.frame })
+      entry.msgLabel = createMsgLabel(opts.Message, theme, entry.frame)
     end
   end
   if opts.Duration and opts.Duration > 0 then
     if entry.bar then entry.bar:Destroy(); entry.bar = nil end
     startCountdown(entry, opts.Duration / 1000, accent, theme)
+  elseif opts.Duration == 0 then
+    if entry.bar then entry.bar:Destroy(); entry.bar = nil end
+    entry.total = nil; entry.remaining = nil; entry.bar = nil
   end
   Notification.relayout()
 end
