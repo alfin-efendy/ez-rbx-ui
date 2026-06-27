@@ -170,5 +170,27 @@ h.describe("notification", function()
     R.Safe._setCapabilityCheck(nil)
     R.Notification.clearAll()
   end)
+
+  h.it("default position bottom-right; setPosition re-anchors live container (normalizes)", function()
+    R.Notification.clearAll(); R.Notification.setPosition("bottom-right")
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui })
+    w:Notify({ Title = "x", Duration = 0 })
+    local function cont() for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then return c end end end
+    h.expect(cont().AnchorPoint.X).toBe(1); h.expect(cont().AnchorPoint.Y).toBe(1)
+    w:SetNotificationPosition("Top Left")
+    h.expect(cont().AnchorPoint.X).toBe(0); h.expect(cont().AnchorPoint.Y).toBe(0)
+    R.Notification.setPosition("bottom-right")   -- restore process-wide state
+  end)
+
+  h.it("CreateWindow NotificationPosition sets initial position", function()
+    R.Notification.clearAll()
+    local gui = h.roblox.Instance.new("ScreenGui"); local root = R.Overlay.get(gui)
+    local w = R.Window.new({ Title = "W", Parent = gui, NotificationPosition = "top-center" })
+    w:Notify({ Title = "x", Duration = 0 })
+    local cont; for _, c in ipairs(root:GetChildren()) do if c.Name == "ToastContainer" then cont = c end end
+    h.expect(cont.AnchorPoint.X).toBe(0.5); h.expect(cont.AnchorPoint.Y).toBe(0)
+    R.Notification.setPosition("bottom-right")   -- restore process-wide state
+  end)
 end)
 h.run()

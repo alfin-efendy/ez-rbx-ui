@@ -24,11 +24,27 @@ local TYPE_COLOR = { info = "info", success = "success", warning = "warning", er
 local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert", loading = "loader" }
 local GAP, PEEK = 8, 10
 
+local position = "bottom-right"
+local POS = {
+  ["top-left"]      = { ax = 0,   ay = 0 },
+  ["top-center"]    = { ax = 0.5, ay = 0 },
+  ["top-right"]     = { ax = 1,   ay = 0 },
+  ["bottom-left"]   = { ax = 0,   ay = 1 },
+  ["bottom-center"] = { ax = 0.5, ay = 1 },
+  ["bottom-right"]  = { ax = 1,   ay = 1 },
+}
+local function containerPosition(cfg)
+  local cx = (cfg.ax == 0 and UDim.new(0, 16)) or (cfg.ax == 1 and UDim.new(1, -16)) or UDim.new(0.5, 0)
+  local cy = (cfg.ay == 0) and UDim.new(0, 16) or UDim.new(1, -16)
+  return UDim2.new(cx.Scale, cx.Offset, cy.Scale, cy.Offset)
+end
+
 local function ensureContainer()
   if container and container.Parent ~= nil then return container end
+  local cfg = POS[position] or POS["bottom-right"]
   container = Create("Frame", {
     Name = "ToastContainer", BackgroundTransparency = 1, ZIndex = 1800,
-    AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -16), Size = UDim2.new(0, 300, 1, -32),
+    AnchorPoint = Vector2.new(cfg.ax, cfg.ay), Position = containerPosition(cfg), Size = UDim2.new(0, 300, 1, -32),
   })
   container.MouseEnter:Connect(function()
     expanded = true
@@ -63,6 +79,8 @@ end
 -- position/scale/fade each toast based on its index from the bottom (newest = 0)
 function Notification.relayout()
   local n = #order
+  local cfg = POS[position] or POS["bottom-right"]
+  local vdir = (cfg.ay == 0) and 1 or -1
   local y = 0
   for idx = n, 1, -1 do
     local e = order[idx]
@@ -88,7 +106,8 @@ function Notification.relayout()
         yoff = i * PEEK
       end
       e.frame.Visible = visible
-      Animate.to(e.frame, "base", { Position = UDim2.new(1, 0, 1, -yoff), GroupTransparency = transp }, Animate.EASING.smooth)
+      e.frame.AnchorPoint = Vector2.new(cfg.ax, cfg.ay)
+      Animate.to(e.frame, "base", { Position = UDim2.new(cfg.ax, 0, cfg.ay, vdir * yoff), GroupTransparency = transp }, Animate.EASING.smooth)
       Animate.to(e.scale, "base", { Scale = scale }, Animate.EASING.smooth)
     end
   end
@@ -128,9 +147,13 @@ function Notification.show(opts)
   Safe.mutate(function()
     local accent = theme.Colors[TYPE_COLOR[opts.Type or "info"]] or theme.Colors.info
     ensureContainer()
+    local pcfg = POS[position] or POS["bottom-right"]
+    local sx = (pcfg.ax == 1 and UDim.new(1, 320)) or (pcfg.ax == 0 and UDim.new(0, -320)) or UDim.new(0.5, 0)
+    -- center toasts slide in vertically from the nearest edge: top-center from above (-60), bottom-center from below (+60)
+    local sy = (pcfg.ax == 0.5) and UDim.new(pcfg.ay, ((pcfg.ay == 0) and -1 or 1) * 60) or UDim.new(pcfg.ay, 0)
     local toast = Create("CanvasGroup", {
       Name = "Toast", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0, GroupTransparency = 1,
-      AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 320, 1, 0),
+      AnchorPoint = Vector2.new(pcfg.ax, pcfg.ay), Position = UDim2.new(sx.Scale, sx.Offset, sy.Scale, sy.Offset),
       Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = container,
       Create.corner(theme.Radius.md), Create.padding({ all = 10 }),
       Create.listLayout({ Padding = 4 }),
@@ -270,5 +293,20 @@ function Notification.clearAll()
 end
 
 function Notification.count() return #order end
+
+function Notification.setPosition(p)
+  local key = tostring(p):lower():gsub("%s+", "-")
+  if not POS[key] then return position end
+  position = key
+  if container and container.Parent ~= nil then
+    Safe.mutate(function()
+      local cfg = POS[position]
+      container.AnchorPoint = Vector2.new(cfg.ax, cfg.ay)
+      container.Position = containerPosition(cfg)
+      Notification.relayout()
+    end)
+  end
+  return position
+end
 
 return Notification

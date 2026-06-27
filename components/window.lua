@@ -47,6 +47,7 @@ function Window.new(config)
   -- reduced-motion toggle. Process-wide by design (single-window norm; last writer wins) —
   -- see api:SetAnimationsEnabled. Don't "fix" into per-window state without revisiting the spec.
   if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
+  if config.NotificationPosition then Notif.setPosition(config.NotificationPosition) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
   -- Ratio = the window size as a fraction of the viewport (per axis):
@@ -519,6 +520,7 @@ function Window.new(config)
   function api:ShowInfo(o) o = o or {}; o.Type = "info"; return api:Notify(o) end
   function api:ShowLoading(o) o = o or {}; o.Theme = theme; return Notif.loading(o) end
   function api:Promise(fn, o) o = o or {}; o.Theme = theme; return Notif.promise(fn, o) end
+  function api:SetNotificationPosition(p) return Notif.setPosition(p) end
   function api:DismissNotification(id) Notif.dismiss(id) end
   function api:ClearNotifications() Notif.clearAll() end
 
