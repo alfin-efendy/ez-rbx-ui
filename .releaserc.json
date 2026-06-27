@@ -6,7 +6,9 @@
     "@semantic-release/release-notes-generator",
     ["@semantic-release/github", {
       "assets": [
-        { "path": "release/ez-rbx-ui.lua", "name": "ez-rbx-ui.lua", "label": "EzUI bundled library (ez-rbx-ui.lua)" }
+        { "path": "release/ez-rbx-ui.lua", "name": "ez-rbx-ui.lua", "label": "EzUI bundled library (ez-rbx-ui.lua)" },
+        { "path": "release/example.lua", "name": "example.lua", "label": "EzUI demo playground (example.lua)" },
+        { "path": "release/stress.lua", "name": "stress.lua", "label": "EzUI stress test (stress.lua)" }
       ]
     }]
   ]

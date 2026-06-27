@@ -3,6 +3,9 @@ INPUT_FILE := ./main.lua
 OUTPUT_FILE := ./output/bundle.lua
 EXAMPLE_INPUT_FILE := ./example/main.lua
 EXAMPLE_OUTPUT_FILE := ./output/example.lua
+RELEASE_DIR := ./release
+EXAMPLE_RELEASE := $(RELEASE_DIR)/example.lua
+STRESS_RELEASE := $(RELEASE_DIR)/stress.lua
 
 
 .PHONY: build
@@ -32,7 +35,7 @@ verify-bundle: build
 	@lua scripts/verify_bundle.lua
 
 .PHONY: check
-check: build test verify-bundle skill-test check-skill
+check: build test verify-bundle skill-test check-skill examples
 	@echo "Check OK."
 
 .PHONY: skill-test
@@ -49,6 +52,14 @@ check-skill:
 stress: build
 	@echo "Serving stress scene on :8081..."
 	@lua-bundler -e ./example/stress.lua -o ./output/stress.lua -s -p 8081;
+
+.PHONY: examples
+examples: build
+	@echo "Building readable example + stress bundles..."
+	@mkdir -p $(RELEASE_DIR)
+	@lua-bundler -e $(EXAMPLE_INPUT_FILE) -o $(EXAMPLE_RELEASE)
+	@lua-bundler -e ./example/stress.lua -o $(STRESS_RELEASE)
+	@lua -e "assert(loadfile('$(EXAMPLE_RELEASE)')); assert(loadfile('$(STRESS_RELEASE)')); print('example bundles ok')"
 
 .PHONY: docs
 docs:

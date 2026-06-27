@@ -47,6 +47,7 @@ function Window.new(config)
   -- reduced-motion toggle. Process-wide by design (single-window norm; last writer wins) —
   -- see api:SetAnimationsEnabled. Don't "fix" into per-window state without revisiting the spec.
   if config.Animations ~= nil then Animate.setEnabled(config.Animations ~= false) end
+  if config.NotificationPosition then Notif.setPosition(config.NotificationPosition) end
   theme.AccentName = "Adaptive"
   local maid = Maid.new()
   -- Ratio = the window size as a fraction of the viewport (per axis):
@@ -134,8 +135,22 @@ function Window.new(config)
   local winScale = Create("UIScale", { Scale = 1, Parent = main })
   local userScale = 1
 
+  -- A logo source is either a string (one image, optionally ImageAdaptive-tinted) or a
+  -- { dark = ..., light = ... } table that swaps per color mode -- for full-color tiles that ship a
+  -- baked-in background per mode. `srcFor` picks the variant for the active mode (or the string itself).
+  local function srcFor(value, mode)
+    if type(value) == "table" then return value[mode] or value.dark or value.light end
+    return value
+  end
+
   -- title bar (grows to fit a subtitle and/or image)
-  local hasTitleImg = Asset.resolvable(config.Image)
+  local titleSrc = config.Image
+  local imageIsModal = type(titleSrc) == "table"
+  -- Adaptive = tint a monochrome glyph (currentColor SVG) to the foreground token so it follows
+  -- dark/light. Modal tiles are full-color, so ImageAdaptive is ignored for them (tinting would wreck
+  -- the baked-in colors). Both are re-applied on SetMode by the window-shell reskin closure below.
+  local imageAdaptive = config.ImageAdaptive == true and not imageIsModal
+  local hasTitleImg = Asset.resolvable(srcFor(titleSrc, theme.Mode))
   local hasSubtitle = type(config.Subtitle) == "string" and config.Subtitle ~= ""
   local titleH = (hasTitleImg or hasSubtitle) and TITLE_H_TALL or TITLE_H
   local titleBar = Create("Frame", {
@@ -147,24 +162,28 @@ function Window.new(config)
   })
   local titleTextX = 0
   local titleImg
-  -- An adaptive logo is a monochrome glyph (the brand SVG uses fill="currentColor"): tint it to the
-  -- foreground token so it follows dark/light and re-tints on SetMode. A non-adaptive logo is a
-  -- full-color image, so it is left untinted (white) -- see the window-shell reskin closure below.
-  local imageAdaptive = config.ImageAdaptive == true
+  local applyTitleImage   -- (re)resolves the current-mode variant and writes it; set when the image exists
   if hasTitleImg then
     local imgSize = 36
     titleImg = Create("ImageLabel", {
-      Name = "TitleImage", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+      -- Glyphs (adaptive) and self-contained tiles (modal) use Fit so the whole mark shows; Crop
+      -- (cover) would scale up and clip a padded/centered mark. Plain full-bleed logos keep Crop.
+      Name = "TitleImage", BackgroundTransparency = 1,
+      ScaleType = (imageAdaptive or imageIsModal) and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
       AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
       Size = UDim2.new(0, imgSize, 0, imgSize), Image = "", Parent = titleBar,
       Create.corner(theme.Radius.md),
     })
-    if imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
-    -- Fill it as soon as the asset resolves. URLs download off the construction thread, so the
-    -- window never blocks on game:HttpGet; the write is marshalled to a capability-bearing context.
-    Asset.imageAsync(config.Image, function(id)
-      Safe.mutate(function() if titleImg.Parent then titleImg.Image = id end end)
-    end)
+    if imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground
+    elseif imageIsModal then titleImg.ImageColor3 = Color3.fromRGB(255, 255, 255) end -- render the tile's own colors
+    -- Fill it (and re-fill on mode change) with the active variant. URLs download off the construction
+    -- thread, so the window never blocks on game:HttpGet; the write is marshalled to a capability ctx.
+    applyTitleImage = function()
+      Asset.imageAsync(srcFor(titleSrc, theme.Mode), function(id)
+        Safe.mutate(function() if titleImg.Parent then titleImg.Image = id end end)
+      end)
+    end
+    applyTitleImage()
     titleTextX = imgSize + 8
   end
   local titleLabel = Create("TextLabel", {
@@ -465,7 +484,19 @@ function Window.new(config)
     end)
   end
   function api:SetImage(v)
-    Asset.imageAsync(v, function(id)
+    -- v is a string or a { dark, light } table; keep the source so SetMode can keep swapping variants.
+    titleSrc = v
+    imageIsModal = type(v) == "table"
+    imageAdaptive = config.ImageAdaptive == true and not imageIsModal
+    Safe.mutate(function()
+      local img = titleImg or titleBar:FindFirstChild("TitleImage")
+      if img then
+        img.ScaleType = (imageAdaptive or imageIsModal) and Enum.ScaleType.Fit or Enum.ScaleType.Crop
+        img.ImageColor3 = imageAdaptive and theme.Colors.foreground or Color3.fromRGB(255, 255, 255)
+      end
+    end)
+    if applyTitleImage then applyTitleImage() return end
+    Asset.imageAsync(srcFor(v, theme.Mode), function(id)
       Safe.mutate(function()
         local img = titleBar:FindFirstChild("TitleImage")
         if img then img.Image = id end
@@ -487,6 +518,9 @@ function Window.new(config)
   function api:ShowWarning(o) o = o or {}; o.Type = "warning"; return api:Notify(o) end
   function api:ShowError(o) o = o or {}; o.Type = "error"; return api:Notify(o) end
   function api:ShowInfo(o) o = o or {}; o.Type = "info"; return api:Notify(o) end
+  function api:ShowLoading(o) o = o or {}; o.Theme = theme; return Notif.loading(o) end
+  function api:Promise(fn, o) o = o or {}; o.Theme = theme; return Notif.promise(fn, o) end
+  function api:SetNotificationPosition(p) return Notif.setPosition(p) end
   function api:DismissNotification(id) Notif.dismiss(id) end
   function api:ClearNotifications() Notif.clearAll() end
 
@@ -583,6 +617,7 @@ function Window.new(config)
     main.BackgroundColor3 = theme.Colors.background
     titleLabel.TextColor3 = theme.Colors.foreground
     if titleImg and imageAdaptive then titleImg.ImageColor3 = theme.Colors.foreground end
+    if applyTitleImage and imageIsModal then applyTitleImage() end   -- swap to the active-mode tile
     local sub = titleBar:FindFirstChild("Subtitle")
     if sub then sub.TextColor3 = theme.Colors.mutedForeground end
     Icons.apply(closeBtn, "x", theme.Colors.mutedForeground)
@@ -613,17 +648,19 @@ function Window.new(config)
     if fabMaid then fabMaid:DoCleanup() end
     fabMaid = Maid.new(); maid:Give(fabMaid)
     local kind = fabOpts.Type or "simple"
-    local hasImage = type(fabOpts.Image) == "string" and fabOpts.Image ~= ""
-    -- Adaptive: treat the logo as a monochrome glyph and tint it to the foreground token (follows the
-    -- mode + re-tints on SetMode via the FAB reskin closure). Default keeps the full-color white fill.
-    local fabAdaptive = fabOpts.Adaptive == true
+    -- The FAB logo source mirrors the title: a string, or a { dark, light } table that swaps per mode.
+    local fabImageModal = type(fabOpts.Image) == "table"
+    local hasImage = fabImageModal or (type(fabOpts.Image) == "string" and fabOpts.Image ~= "")
+    -- Adaptive tints a monochrome glyph to foreground (re-tinted on SetMode). Modal tiles are
+    -- full-color and swap per mode instead, so Adaptive is ignored for them.
+    local fabAdaptive = fabOpts.Adaptive == true and not fabImageModal
     local fabImg
     -- Fill the FAB with the configured logo edge-to-edge (no background frame showing around it), once
     -- the asset resolves (URLs fetch off-thread so the FAB never blocks). Reset the glyph's sprite crop
     -- and tint so a full image renders clean. The write is marshalled to a capability-bearing context.
     -- No-op when no Image is configured (the gamepad placeholder stays).
     local function applyFabImage(img)
-      Asset.imageAsync(fabOpts.Image, function(id)
+      Asset.imageAsync(srcFor(fabOpts.Image, theme.Mode), function(id)
         Safe.mutate(function()
           if not img.Parent then return end
           img.Image = id
@@ -637,7 +674,9 @@ function Window.new(config)
     -- centered glyph. `radius` clips the fill to match the FAB's own corner.
     local function makeFabImg(radius)
       if hasImage then
-        return Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+        return Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1,
+          -- glyph (adaptive) or self-contained tile (modal): Fit (show whole mark); plain logo: Crop (fill)
+          ScaleType = (fabAdaptive or fabImageModal) and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
           Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0), Image = "", Parent = fab, Create.corner(radius) })
       end
       local img = Create("ImageLabel", { Name = "Img", BackgroundTransparency = 1, Size = UDim2.new(0, 24, 0, 24),
@@ -745,6 +784,7 @@ function Window.new(config)
         if chev then Icons.apply(chev, chevDir, theme.Colors.primary) end
       end
       if fabImg and fabAdaptive and hasImage then fabImg.ImageColor3 = theme.Colors.foreground end
+      if fabImg and fabImageModal then applyFabImage(fabImg) end   -- swap to the active-mode tile
     end))
     local fabHover = false
     fabMaid:Give(fab.MouseEnter:Connect(function() fabHover = true; Animate.to(fabScale, "fast", { Scale = 1.06 }) end))

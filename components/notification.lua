@@ -4,6 +4,7 @@
 local Notification = {}
 local Create, DefaultTheme, Maid, Overlay, Animate, Icons, Safe
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local container
 local order = {}   -- array of entries (oldest first, newest last)
 local seq = 0
@@ -19,15 +20,35 @@ end
 local enabled = true
 function Notification.setEnabled(b) enabled = b ~= false end
 
-local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive" }
-local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert" }
+local TYPE_COLOR = { info = "info", success = "success", warning = "warning", error = "destructive", loading = "info" }
+local TYPE_ICON = { info = "info", success = "circle-check", warning = "triangle-alert", error = "circle-alert", loading = "loader" }
 local GAP, PEEK = 8, 10
+
+local position = "bottom-right"
+local POS = {
+  ["top-left"]      = { ax = 0,   ay = 0 },
+  ["top-center"]    = { ax = 0.5, ay = 0 },
+  ["top-right"]     = { ax = 1,   ay = 0 },
+  ["bottom-left"]   = { ax = 0,   ay = 1 },
+  ["bottom-center"] = { ax = 0.5, ay = 1 },
+  ["bottom-right"]  = { ax = 1,   ay = 1 },
+}
+local function containerPosition(cfg)
+  local cx = (cfg.ax == 0 and UDim.new(0, 16)) or (cfg.ax == 1 and UDim.new(1, -16)) or UDim.new(0.5, 0)
+  local cy = (cfg.ay == 0) and UDim.new(0, 16) or UDim.new(1, -16)
+  return UDim2.new(cx.Scale, cx.Offset, cy.Scale, cy.Offset)
+end
 
 local function ensureContainer()
   if container and container.Parent ~= nil then return container end
+  local cfg = POS[position] or POS["bottom-right"]
   container = Create("Frame", {
+    -- Height starts at 0 and is grown by relayout to wrap the actual toast stack. The container
+    -- IS the MouseEnter/Leave hover hit-area, so it must NOT span the full screen height -- a tall
+    -- strip would falsely trigger hover/expand whenever the pointer sits in that column (most
+    -- visible at top-center/bottom-center, where the column runs down the middle of the screen).
     Name = "ToastContainer", BackgroundTransparency = 1, ZIndex = 1800,
-    AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -16), Size = UDim2.new(0, 300, 1, -32),
+    AnchorPoint = Vector2.new(cfg.ax, cfg.ay), Position = containerPosition(cfg), Size = UDim2.new(0, 300, 0, 0),
   })
   container.MouseEnter:Connect(function()
     expanded = true
@@ -62,6 +83,8 @@ end
 -- position/scale/fade each toast based on its index from the bottom (newest = 0)
 function Notification.relayout()
   local n = #order
+  local cfg = POS[position] or POS["bottom-right"]
+  local vdir = (cfg.ay == 0) and 1 or -1
   local y = 0
   for idx = n, 1, -1 do
     local e = order[idx]
@@ -87,13 +110,52 @@ function Notification.relayout()
         yoff = i * PEEK
       end
       e.frame.Visible = visible
-      Animate.to(e.frame, "base", { Position = UDim2.new(1, 0, 1, -yoff), GroupTransparency = transp }, Animate.EASING.smooth)
+      e.frame.AnchorPoint = Vector2.new(cfg.ax, cfg.ay)
+      Animate.to(e.frame, "base", { Position = UDim2.new(cfg.ax, 0, cfg.ay, vdir * yoff), GroupTransparency = transp }, Animate.EASING.smooth)
       Animate.to(e.scale, "base", { Scale = scale }, Animate.EASING.smooth)
     end
+  end
+  -- Size the container (the hover hit-area) to wrap the visible stack so MouseEnter only fires over
+  -- the toasts, never the empty column above/below them. Set directly (not animated) so the hit-area
+  -- never lags the pointer. Anchored at the edge, so growing height extends toward screen centre.
+  if container then
+    local h = 0
+    if n > 0 then
+      if expanded then
+        h = math.max(0, y - GAP)            -- y accumulated a trailing GAP per toast
+      else
+        local front = order[n]              -- newest = front of the collapsed stack
+        local fh = front and front.frame and front.frame.AbsoluteSize and front.frame.AbsoluteSize.Y or 0
+        if fh <= 0 then fh = 60 end         -- fallback before first engine measure (and headless tests)
+        h = fh + math.min(n - 1, 2) * PEEK  -- front toast + the (up to 2) peeking behind it
+      end
+    end
+    container.Size = UDim2.new(0, 300, 0, h)
   end
 end
 
 local function indexOf(id) for i, e in ipairs(order) do if e.id == id then return i end end end
+
+local function startCountdown(entry, total, accent, theme)
+  local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
+    Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = entry.frame, Create.corner(2) })
+  entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
+end
+
+local function createMsgLabel(text, theme, parent)
+  return Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = text,
+    TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
+    Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = parent })
+end
+
+local function msgText(v, arg)
+  if type(v) == "function" then local ok, r = pcall(v, arg); return ok and r or nil end
+  if type(v) == "string" then return v end
+  return nil
+end
+
+local applyUpdate  -- forward declaration; applyUpdate is assigned after Notification.loading, show's pendingUpdate hook closes over it
 
 function Notification.show(opts)
   if not enabled then return nil end
@@ -106,9 +168,13 @@ function Notification.show(opts)
   Safe.mutate(function()
     local accent = theme.Colors[TYPE_COLOR[opts.Type or "info"]] or theme.Colors.info
     ensureContainer()
+    local pcfg = POS[position] or POS["bottom-right"]
+    local sx = (pcfg.ax == 1 and UDim.new(1, 320)) or (pcfg.ax == 0 and UDim.new(0, -320)) or UDim.new(0.5, 0)
+    -- center toasts slide in vertically from the nearest edge: top-center from above (-60), bottom-center from below (+60)
+    local sy = (pcfg.ax == 0.5) and UDim.new(pcfg.ay, ((pcfg.ay == 0) and -1 or 1) * 60) or UDim.new(pcfg.ay, 0)
     local toast = Create("CanvasGroup", {
       Name = "Toast", BackgroundColor3 = theme.Colors.card, BorderSizePixel = 0, GroupTransparency = 1,
-      AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 320, 1, 0),
+      AnchorPoint = Vector2.new(pcfg.ax, pcfg.ay), Position = UDim2.new(sx.Scale, sx.Offset, sy.Scale, sy.Offset),
       Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = container,
       Create.corner(theme.Radius.md), Create.padding({ all = 10 }),
       Create.listLayout({ Padding = 4 }),
@@ -117,26 +183,26 @@ function Notification.show(opts)
     local scale = Instance.new("UIScale"); scale.Parent = toast
     toast:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
       -- property-changed handler -> engine thread without GUI capability on strict executors; relayout
-      -- reads AbsoluteContentSize/AbsoluteSize raw, so marshal it through Safe.mutate.
-      if expanded then Safe.mutate(Notification.relayout) end
+      -- reads AbsoluteContentSize/AbsoluteSize raw, so marshal it through Safe.mutate. Always relayout
+      -- (not only when expanded): the collapsed container height tracks the front toast's measured
+      -- height, so the hover hit-area must update once the engine measures the toast.
+      Safe.mutate(Notification.relayout)
     end)
     local titleRow = Create("Frame", { Name = "TitleRow", BackgroundTransparency = 1,
       Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 1, Parent = toast })
     local tIcon = Create("ImageLabel", { Name = "Icon", BackgroundTransparency = 1,
       Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 0, 0.5, -8), Parent = titleRow })
     Icons.apply(tIcon, TYPE_ICON[opts.Type or "info"] or "info", accent)
-    Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
+    local titleLabel = Create("TextLabel", { Name = "Title", BackgroundTransparency = 1, Text = opts.Title or "",
       TextColor3 = theme.Colors.foreground, TextXAlignment = Enum.TextXAlignment.Left, TextSize = theme.Font.label.Size,
       Font = Enum.Font.BuilderSans, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 24, 0, 0), Parent = titleRow })
     local closeBtn = Create("ImageButton", { Name = "Close", AutoButtonColor = false, BackgroundTransparency = 1,
       Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(1, -14, 0, 0), Parent = titleRow })
     Icons.apply(closeBtn, "x", theme.Colors.primary)
     closeBtn.MouseButton1Click:Connect(function() Notification.dismiss(id) end)
+    local msgLabel
     if opts.Message then
-      Create("TextLabel", { Name = "Message", BackgroundTransparency = 1, Text = opts.Message,
-        TextColor3 = theme.Colors.mutedForeground, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true,
-        TextYAlignment = Enum.TextYAlignment.Top, TextSize = theme.Font.muted.Size, Font = Enum.Font.BuilderSans,
-        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = toast })
+      msgLabel = createMsgLabel(opts.Message, theme, toast)
     end
     if opts.Action then
       local act = opts.Action
@@ -147,15 +213,89 @@ function Notification.show(opts)
       aBtn.MouseButton1Click:Connect(function() if act.Callback then pcall(act.Callback) end; Notification.dismiss(id) end)
     end
     entry.frame = toast; entry.scale = scale
-    if (opts.Duration or 4000) > 0 then
-      local total = (opts.Duration or 4000) / 1000
-      local bar = Create("Frame", { Name = "Progress", BackgroundColor3 = accent, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 3), LayoutOrder = 99, Parent = toast, Create.corner(2) })
-      entry.total = total; entry.remaining = total; entry.paused = false; entry.bar = bar
+    entry.icon = tIcon; entry.titleLabel = titleLabel; entry.theme = theme
+    entry.type = opts.Type or "info"; entry.accent = accent
+    entry.msgLabel = msgLabel
+    if entry.type == "loading" then
+      entry.spinTween = TweenService:Create(tIcon,
+        TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
+      entry.spinTween:Play()
+    end
+    if entry.type ~= "loading" and (opts.Duration or 4000) > 0 then
+      startCountdown(entry, (opts.Duration or 4000) / 1000, accent, theme)
     end
     Animate.pop(toast, "base")
     Notification.relayout()
+    if entry.pendingUpdate then applyUpdate(entry, entry.pendingUpdate); entry.pendingUpdate = nil end
   end)
+  return id
+end
+
+function Notification.loading(opts)
+  opts = opts or {}
+  opts.Type = "loading"; opts.Duration = 0
+  return Notification.show(opts)
+end
+
+applyUpdate = function(entry, opts)
+  local theme = entry.theme
+  local newType = opts.Type or entry.type
+  local accent = theme.Colors[TYPE_COLOR[newType]] or theme.Colors.info
+  entry.type = newType; entry.accent = accent
+  if entry.spinTween then entry.spinTween:Cancel(); entry.spinTween = nil end
+  if entry.icon then
+    entry.icon.Rotation = 0
+    Icons.apply(entry.icon, TYPE_ICON[newType] or "info", accent)
+  end
+  if opts.Title ~= nil and entry.titleLabel then entry.titleLabel.Text = opts.Title end
+  if opts.Message ~= nil then
+    if entry.msgLabel then
+      entry.msgLabel.Text = opts.Message
+    else
+      entry.msgLabel = createMsgLabel(opts.Message, theme, entry.frame)
+    end
+  end
+  if opts.Duration and opts.Duration > 0 then
+    if entry.bar then entry.bar:Destroy(); entry.bar = nil end
+    startCountdown(entry, opts.Duration / 1000, accent, theme)
+  elseif opts.Duration == 0 then
+    if entry.bar then entry.bar:Destroy(); entry.bar = nil end
+    entry.total = nil; entry.remaining = nil; entry.bar = nil
+  end
+  Notification.relayout()
+end
+
+function Notification.update(id, opts)
+  local i = indexOf(id); if not i then return end
+  local entry = order[i]
+  opts = opts or {}
+  Safe.mutate(function()
+    if not entry.frame then entry.pendingUpdate = opts; return end
+    applyUpdate(entry, opts)
+  end)
+end
+
+function Notification.promise(runner, opts)
+  opts = opts or {}
+  -- Register the runner Heartbeat:Once BEFORE calling loading() so that, when capability is absent,
+  -- this handler is snapshotted first and fires before Safe's flush handler. The runner's
+  -- Notification.update call then lands in the same Safe queue as the loading build, so the flush
+  -- drains both in FIFO order: build frame first, then applyUpdate -- no extra Heartbeat needed.
+  -- `pendingId` is set synchronously (before any Heartbeat fires) so the closure sees the real id.
+  local pendingId
+  RunService.Heartbeat:Once(function()
+    local ok, res = pcall(runner)
+    local dur = opts.Duration or 4000
+    if ok then
+      Notification.update(pendingId, { Type = "success", Title = msgText(opts.Success, res) or "Success", Duration = dur })
+    else
+      Notification.update(pendingId, { Type = "error", Title = msgText(opts.Error, res) or "Error", Duration = dur })
+    end
+    if opts.Finally then pcall(opts.Finally) end
+  end)
+  local id = Notification.loading({
+    Title = msgText(opts.Loading) or "Loading…", Message = opts.Message, Theme = opts.Theme })
+  pendingId = id
   return id
 end
 
@@ -165,6 +305,7 @@ function Notification.dismiss(id)
   local entry = table.remove(order, i)
   if entry.onDismiss then pcall(entry.onDismiss) end
   Safe.mutate(function()
+    if entry.spinTween then entry.spinTween:Cancel(); entry.spinTween = nil end
     if entry.frame then entry.frame:Destroy() end
     Notification.relayout()
   end)
@@ -175,5 +316,20 @@ function Notification.clearAll()
 end
 
 function Notification.count() return #order end
+
+function Notification.setPosition(p)
+  local key = tostring(p):lower():gsub("%s+", "-")
+  if not POS[key] then return position end
+  position = key
+  if container and container.Parent ~= nil then
+    Safe.mutate(function()
+      local cfg = POS[position]
+      container.AnchorPoint = Vector2.new(cfg.ax, cfg.ay)
+      container.Position = containerPosition(cfg)
+      Notification.relayout()
+    end)
+  end
+  return position
+end
 
 return Notification

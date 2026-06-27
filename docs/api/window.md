@@ -27,7 +27,7 @@ local Window = EzUI:CreateWindow({
 |---|---|---|
 | `Title` | `string` | Title-bar text |
 | `Subtitle` | `string` | Secondary line shown under the title (grows the title bar) |
-| `Image` | `string` | Title-bar logo image — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
+| `Image` | `string` \| `{ dark, light }` | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL. Pass a `{ dark = ..., light = ... }` table to swap **per color mode** automatically on `SetMode` (for full-color logo tiles that bake in their own background). See [Color mode](#color-mode) |
 | `ImageAdaptive` | `bool` | Treat `Image` as a **monochrome glyph** and tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Default `false` (the image renders full-color). Supply a **white-on-transparent** PNG — `ImageColor3` multiplies, so white tints cleanly to any color |
 | `Ratio` | `{ Width, Height }` \| `number` | Window size as a **fraction of the viewport**: `{ Width = 0.4, Height = 0.55 }` = 40% wide × 55% tall. A single number applies the same fraction to both axes. Capped at 92% per axis; stays responsive. Default `{ Width = 0.45, Height = 0.6 }` |
 | `Transparency` | `number` | Window background transparency `0..1`; `0` = opaque, higher = more see-through. Default `0.12` |
@@ -36,6 +36,7 @@ local Window = EzUI:CreateWindow({
 | `FloatingToggle` | `table` | Floating toggle button config — see [FloatingToggle config](#floatingtoggle-config). Pass `false` to disable |
 | `StartHidden` | `bool` | Start collapsed to just the floating toggle: the window loads hidden and the FAB is shown so the player can open it (also openable via `ToggleKey`). Default `false` |
 | `Mode` | `"dark"` \| `"light"` | Initial color mode; default `"dark"`. See [Color mode](#color-mode) |
+| `NotificationPosition` | `string` | Corner toasts appear in: `"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`. Default `"bottom-right"`. See [Notification Position](/guide/notifications-dialog#notification-position) |
 | `ConfirmClose` | `bool` | Show a confirm dialog before closing; default `true`. Pass `false` to close immediately |
 | `OnClose` | `function` | Called (pcall-wrapped) when the window closes |
 | `Parent` | `Instance` | Optional parent for the GUI; useful for custom mount points |
@@ -114,7 +115,7 @@ Sets the subtitle line shown under the title. Requires the window to have been c
 
 ### `SetImage(v)`
 
-Updates the title-bar image. Accepts an `rbxassetid://` id or an `http(s)://` URL. Requires the window to have been created with an `Image`.
+Updates the title-bar image. Accepts an `rbxassetid://` id, an `http(s)://` URL, or a `{ dark, light }` table (which keeps swapping on `SetMode`). Requires the window to have been created with an `Image`.
 
 ### `SetTransparency(n)`
 
@@ -155,8 +156,8 @@ The `FloatingToggle` config key accepts a table (or `false` to disable the butto
 | Key | Type | Description |
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) docks a chevron tab at the screen edge; `"circle"` is an accent-colored round button; `"square"` is a rounded surface tile |
-| `Image` | `string` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon) |
-| `Adaptive` | `bool` | Treat `Image` as a monochrome glyph and tint it to the `foreground` token, following dark/light and re-tinting on `SetMode`. Default `false` (full-color white fill). Use a white-on-transparent PNG |
+| `Image` | `string` \| `{ dark, light }` | Icon for the `circle`/`square` button — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL (falls back to a controller icon). A `{ dark, light }` table swaps per color mode, same as the window `Image` |
+| `Adaptive` | `bool` | Treat `Image` as a monochrome glyph and tint it to the `foreground` token, following dark/light and re-tinting on `SetMode`. Default `false` (full-color white fill). Use a white-on-transparent PNG. Ignored when `Image` is a `{ dark, light }` table |
 | `Position` | `string` \| `UDim2` | Anchor — `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. For `simple` it sets which edge the tab docks to (and its height); for `circle`/`square` it places the button fully visible at that anchor. Default: `simple` → `MidLeft`, others → `TopLeft` |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | When `true` (default), the player can drag the button; on release it magnet-snaps to the nearest left/right edge |
@@ -225,13 +226,44 @@ Shorthand for `Notify` with `Type = "error"`.
 
 Shorthand for `Notify` with `Type = "info"`.
 
+### `ShowLoading(opts)`
+
+Shows a persistent toast with a spinner and no countdown — it stays until dismissed. Accepts the same `opts` as `Notify` (`Duration` is ignored). Returns an `id` for `DismissNotification`.
+
+```lua
+local id = Window:ShowLoading({ Title = "Saving…" })
+-- later:
+Window:DismissNotification(id)
+```
+
+### `Promise(fn, opts)`
+
+Runs `fn` (which may yield — HTTP, datastore, `task.wait`) behind a loading toast, then morphs the toast into success or error when `fn` returns or errors. `Success`/`Error` may be a string or a function of the result/error. Returns the toast `id`. See [Loading & Promise Toasts](/guide/notifications-dialog#loading-promise-toasts) for the full options table.
+
+```lua
+Window:Promise(function() task.wait(1.5); return true end, {
+    Loading = "Saving…",
+    Success = function(ok) return "Saved!" end,
+    Error   = function(err) return "Failed: " .. tostring(err) end,
+    Finally = function() end,   -- optional
+})
+```
+
 ### `DismissNotification(id)`
 
-Dismisses the notification identified by `id` (the value returned by `Notify`).
+Dismisses the notification identified by `id` (the value returned by `Notify`, `ShowLoading`, or `Promise`).
 
 ### `ClearNotifications()`
 
 Dismisses all active notifications immediately.
+
+### `SetNotificationPosition(pos)`
+
+Sets the corner toasts stack in (global, affects all windows). `pos` is one of `"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"` — case- and space-insensitive (`"Top Center"` works). Default is `"bottom-right"`. Also settable at creation via the [`NotificationPosition`](#config-table) config key.
+
+```lua
+Window:SetNotificationPosition("top-right")
+```
 
 ---
 

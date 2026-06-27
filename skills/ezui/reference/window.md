@@ -27,8 +27,8 @@ local Window = EzUI:CreateWindow({
 |---|---|---|---|
 | `Title` | `string` | — | Title-bar text |
 | `Subtitle` | `string` | — | Secondary line shown under the title (grows the title bar) |
-| `Image` | `string` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL |
-| `ImageAdaptive` | `bool` | `false` | Treat `Image` as a monochrome glyph: tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Use a white-on-transparent PNG (`ImageColor3` multiplies) |
+| `Image` | `string` \| `{ dark, light }` | — | Title-bar logo — `rbxassetid://` / `rbxthumb://` / `http(s)://` URL. A `{ dark = ..., light = ... }` table swaps per color mode on `SetMode` (for full-color logo tiles) |
+| `ImageAdaptive` | `bool` | `false` | Treat a single-string `Image` as a monochrome glyph: tint it to the `foreground` token so it follows dark/light and re-tints on `SetMode`. Use a white-on-transparent PNG (`ImageColor3` multiplies). Ignored for a `{ dark, light }` table |
 | `Ratio` | `{ Width, Height }` \| `number` | `{ 0.45, 0.6 }` | Window size as a fraction of the viewport — `{ Width = 0.4, Height = 0.55 }` = 40% × 55% (a single number = same fraction both axes); capped at 92% per axis; auto-fits and stays responsive |
 | `Transparency` | `number` | `0.12` | Window background transparency `0..1`; `0` = opaque |
 | `Animations` | `bool` | `true` | Enable entrance/transition motion (FAB pop, window open/close, accordion + tab transitions); pass `false` for reduced/instant motion on low-end devices or for accessibility |
@@ -56,7 +56,7 @@ local Window = EzUI:CreateWindow({
 | `Minimize()` | Hide the window and reveal the floating toggle button |
 | `SetTitle(s)` | Update the title-bar text |
 | `SetSubtitle(s)` | Update the subtitle text |
-| `SetImage(v)` | Update the title-bar image (`rbxassetid://` or URL) |
+| `SetImage(v)` | Update the title-bar image (`rbxassetid://` / URL, or a `{ dark, light }` table that keeps swapping on `SetMode`) |
 | `SetTransparency(n)` | Set background transparency `0..1` |
 | `GetMode()` | Returns the current color mode: `"dark"` or `"light"` |
 | `SetMode(mode)` | Switch the color palette live (`"dark"` or `"light"`); controls re-skin immediately |
@@ -66,7 +66,7 @@ local Window = EzUI:CreateWindow({
 | `SetFloatingToggleVisible(b)` | Show (`true`) or hide (`false`) the floating toggle button |
 | `Destroy()` | Tear down the window and all its children |
 
-**Notification methods:** `Notify(opts)`, `ShowSuccess(opts)`, `ShowWarning(opts)`, `ShowError(opts)`, `ShowInfo(opts)`, `DismissNotification(id)`, `ClearNotifications()` — see [Notifications](#notifications).
+**Notification methods:** `Notify(opts)`, `ShowSuccess(opts)`, `ShowWarning(opts)`, `ShowError(opts)`, `ShowInfo(opts)`, `ShowLoading(opts)`, `Promise(fn, opts)`, `DismissNotification(id)`, `ClearNotifications()`, `SetNotificationPosition(pos)` — see [Notifications](#notifications).
 
 **Dialog method:** `Dialog(opts)` — see [Dialog](#dialog).
 
@@ -141,8 +141,8 @@ EzUI:CreateWindow({
 |---|---|---|
 | `Type` | `string` | `"simple"` (default) — a chevron tab that docks at the screen edge; `"circle"` — accent-colored round button; `"square"` — rounded surface tile |
 | `Position` | `string` \| `UDim2` | `"TopLeft"`, `"MidLeft"`, `"BottomLeft"`, `"TopRight"`, `"MidRight"`, `"BottomRight"`, or a raw `UDim2`. Default: `simple` → `MidLeft`, others → `TopLeft` |
-| `Image` | `string` | Icon for `circle`/`square` buttons — `rbxassetid://` / `rbxthumb://` or an `http(s)://` URL; falls back to a controller icon |
-| `Adaptive` | `bool` | `false` (default): full-color white fill. `true`: tint a monochrome glyph `Image` to the `foreground` token, following dark/light and re-tinting on `SetMode`. Use a white-on-transparent PNG |
+| `Image` | `string` \| `{ dark, light }` | Icon for `circle`/`square` buttons — `rbxassetid://` / `rbxthumb://` / `http(s)://` URL; falls back to a controller icon. A `{ dark, light }` table swaps per color mode |
+| `Adaptive` | `bool` | `false` (default): full-color white fill. `true`: tint a monochrome glyph `Image` to the `foreground` token, following dark/light and re-tinting on `SetMode`. Use a white-on-transparent PNG. Ignored for a `{ dark, light }` table |
 | `Size` | `{ Width, Height }` \| `UDim2` | Button size in pixels |
 | `Draggable` | `bool` | `true` (default): player can drag it; on release it magnet-snaps to the nearest screen edge |
 | `AutoHide` | `bool` | `true` (default): visible only while the window is hidden; `false`: always visible (persistent toggle) |
@@ -198,6 +198,27 @@ Window:ClearNotifications()
 
 `ShowSuccess/ShowWarning/ShowError/ShowInfo(opts)` are shorthands for `Notify` with the corresponding `Type` pre-set; they accept the same opts table.
 
+**`ShowLoading(opts)`** shows a persistent toast with a spinner (no countdown). Returns an id you dismiss with `DismissNotification(id)`.
+
+**`Promise(fn, opts)`** runs `fn` (which may yield — HTTP, datastore, `task.wait`) and morphs a loading toast into success or error when it settles. `Success`/`Error` may be a string or a function of the result/error.
+
+```lua
+Window:Promise(function()
+    local res = game:HttpGet(url)               -- yields
+    return game:GetService("HttpService"):JSONDecode(res)
+end, {
+    Loading = "Loading data…",
+    Success = function(data) return "Loaded " .. #data .. " items" end,
+    Error   = function(err) return "Failed: " .. tostring(err) end,
+    Finally = function() print("done") end,     -- optional
+})
+```
+
+**`SetNotificationPosition(pos)`** sets where toasts appear (global). `pos` is one of
+`"top-left"`, `"top-center"`, `"top-right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`
+(case/space-insensitive, e.g. `"Top Right"`). Default is `"bottom-right"`. Also settable at
+window creation via `CreateWindow({ NotificationPosition = "top-right" })`.
+
 Toasts have a countdown indicator that pauses while the cursor hovers over them.
 
 ---
@@ -225,8 +246,14 @@ Window:Dialog({
 |---|---|---|---|
 | `Title` | `string` | required | Dialog heading |
 | `Message` | `string` | `nil` | Optional body text |
-| `Buttons` | `array` | required | One or more button descriptors — `{ Text, Variant?, Callback? }` |
+| `Buttons` | `array` | required | One or more button descriptors — `{ Text, Variant?, Icon?, Callback? }` |
 | `Modal` | `bool` | `true` | Dim the background while the dialog is open |
+| `Icon` | `string` | `nil` | Optional Lucide icon in the header |
+| `IconColor` | `Color3` | title color | Override the header-icon tint |
+| `IconBadge` | `bool` | `false` | `true` renders the icon in a tinted badge above a centered header; `false` shows it inline before the title |
+| `Width` | `number` | `320` | Card width in px, clamped to the viewport/window minus margins |
+
+The footer right-aligns its buttons on desktop and stacks them full-width (primary action on top) on touch.
 
 **Button descriptor:**
 
@@ -234,4 +261,5 @@ Window:Dialog({
 |---|---|---|
 | `Text` | `string` | Button label |
 | `Variant` | `string` | `"default"`, `"secondary"`, `"outline"`, `"ghost"`, `"destructive"` |
+| `Icon` | `string` | Optional Lucide icon shown on the button |
 | `Callback` | `function` | Called when the button is clicked; dialog closes automatically |

@@ -690,6 +690,68 @@ h.describe("window", function()
     w:SetMode("light")
     h.expect(img.ImageColor3.R8).toBe(R.Theme.PALETTES.light.foreground.R8)
   end)
+  h.it("Image as a { dark, light } table swaps the title logo per mode (Fit, full tile)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "Hub", Parent = screen,
+      Image = { dark = "rbxassetid://11", light = "rbxassetid://22" } })
+    local img = w.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(img.Image).toBe("rbxassetid://11")   -- dark variant at start (default dark mode)
+    h.expect(img.ScaleType.Name).toBe("Fit")      -- full self-contained tile, never cropped
+    w:SetMode("light")
+    h.expect(img.Image).toBe("rbxassetid://22")   -- swapped to the light variant
+    w:SetMode("dark")
+    h.expect(img.Image).toBe("rbxassetid://11")
+  end)
+  h.it("FloatingToggle Image as a { dark, light } table swaps the FAB logo per mode", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = { dark = "rbxassetid://11", light = "rbxassetid://22" } } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    local img = fab:FindFirstChild("Img")
+    h.expect(img.Image).toBe("rbxassetid://11")
+    h.expect(img.ScaleType.Name).toBe("Fit")
+    w:SetMode("light")
+    h.expect(img.Image).toBe("rbxassetid://22")
+  end)
+  h.it("a { dark, light } title image ignores ImageAdaptive (full-color tiles are not tinted)", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "Hub", Parent = screen, ImageAdaptive = true,
+      Image = { dark = "rbxassetid://11", light = "rbxassetid://22" } })
+    local img = w.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(img.ImageColor3.R8).toBe(255)        -- untinted white: the tile renders its own colors
+  end)
+  h.it("SetImage accepts a { dark, light } table and keeps swapping on mode change", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "Hub", Image = "rbxassetid://1", Parent = screen })
+    w:SetImage({ dark = "rbxassetid://11", light = "rbxassetid://22" })
+    local img = w.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(img.Image).toBe("rbxassetid://11")
+    w:SetMode("light")
+    h.expect(img.Image).toBe("rbxassetid://22")
+  end)
+  h.it("an adaptive title logo uses ScaleType.Fit (padded glyph not cropped); non-adaptive keeps Crop", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local adaptive = R.Window.new({ Title = "A", Image = "rbxassetid://42", ImageAdaptive = true, Parent = screen })
+    local aImg = adaptive.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(aImg.ScaleType.Name).toBe("Fit")
+    local plain = R.Window.new({ Title = "B", Image = "rbxassetid://42", Parent = h.roblox.Instance.new("ScreenGui") })
+    local pImg = plain.Main:FindFirstChild("TitleBar"):FindFirstChild("TitleImage")
+    h.expect(pImg.ScaleType.Name).toBe("Crop")   -- full-color logos keep cover behavior
+  end)
+  h.it("an adaptive FAB logo uses ScaleType.Fit", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7", Adaptive = true } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    h.expect(fab:FindFirstChild("Img").ScaleType.Name).toBe("Fit")
+  end)
+  h.it("a non-adaptive FAB logo keeps ScaleType.Crop", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local w = R.Window.new({ Title = "M", Parent = screen,
+      FloatingToggle = { Type = "square", Image = "rbxassetid://7" } })
+    local fab; for _, c in ipairs(R.Overlay.get(screen):GetChildren()) do if c.Name == "FloatingToggle" then fab = c end end
+    h.expect(fab:FindFirstChild("Img").ScaleType.Name).toBe("Crop")
+  end)
   h.it("a non-adaptive FAB logo stays full-color white across mode changes", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen,

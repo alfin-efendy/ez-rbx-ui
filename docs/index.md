@@ -5,8 +5,8 @@ hero:
   text: A modern UI library for Roblox
   tagline: shadcn-inspired design, Fluent acrylic, Lucide icons, engine-driven flex layout, and flag-based config with auto-save.
   image:
-    src: /brand/ezui-hero-mark.svg
-    alt: EzUI Blade Zu mark
+    src: /brand/ezui-docs-hero.png
+    alt: EzUI interface preview
   actions:
     - theme: brand
       text: Get Started
@@ -39,3 +39,15 @@ local EzUI = loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/
 ```
 
 See [Getting Started](/guide/getting-started) for a full walkthrough.
+
+### Try it instantly
+
+Run a full demo or the stress test in your executor — no setup:
+
+```lua
+-- Component playground
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/example.lua"))()
+
+-- Stress test
+loadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/stress.lua"))()
+```
