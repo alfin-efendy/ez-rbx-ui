@@ -536,6 +536,20 @@ h.describe("window", function()
     w2:AdaptToViewport()
     h.expect(w2.Main.Position.X.Scale).toBe(0.5) -- untouched window still re-centers
   end)
+  h.it("title bar drags the window on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local bar = w.Main:FindFirstChild("TitleBar")
+    local x0 = w.Main.Position.X.Offset
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(100, 10) }
+    bar.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(160, 10)   -- drag right by 60
+    uis.InputChanged:Fire(touch)
+    h.expect(w.Main.Position.X.Offset).toBe(x0 + 60)
+    uis.InputEnded:Fire(touch)
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("SetImage updates the title-bar image", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "Hub", Image = "rbxassetid://42", Parent = screen })

@@ -786,22 +786,15 @@ function Window.new(config)
   maid:Give(minBtn.MouseButton1Click:Connect(function() api:Minimize() end))
 
   -- drag by title bar
-  local dragging, dragStart, startPos
-  maid:Give(titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      dragging = true; dragStart = input.Position; startPos = main.Position; Overlay.closeAll()
-    end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-      local delta = { X = input.Position.X - dragStart.X, Y = input.Position.Y - dragStart.Y }
-      main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+  local dragging, dragStartPos
+  Drag.bind(titleBar, {
+    onBegin = function() dragging = true; dragStartPos = main.Position; Overlay.closeAll() end,
+    onChange = function(dx, dy)
+      main.Position = UDim2.new(dragStartPos.X.Scale, dragStartPos.X.Offset + dx, dragStartPos.Y.Scale, dragStartPos.Y.Offset + dy)
       userMoved = true
-    end
-  end))
-  maid:Give(titleBar.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-  end))
+    end,
+    onEnd = function() dragging = false end,
+  }, maid)
 
   -- resize via bottom-right grip. The small icon stays put; a transparent hit target sits
   -- on top of it, finger-sized on touch, so the corner is actually grabbable on mobile.
