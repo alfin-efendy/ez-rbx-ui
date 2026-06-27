@@ -63,6 +63,6 @@ jobs:
         run: |
           TAG="$(git tag --points-at HEAD | head -n1)"
           if [ -z "$TAG" ]; then echo "No new release tag on HEAD; skipping."; exit 0; fi
-          BODY="$(gh release view "$TAG" --json body -q .body)"
+          BODY="$(gh release view "$TAG" --json body -q .body)" || { echo "Failed to read release body for $TAG"; exit 1; }
           SNIPPET=$'\n\n---\n\n### Try it instantly\n\n**Demo playground**\n```lua\nloadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/example.lua"))()\n```\n\n**Stress test**\n```lua\nloadstring(game:HttpGet("https://github.com/alfin-efendy/ez-rbx-ui/releases/latest/download/stress.lua"))()\n```'
           printf '%s%s' "$BODY" "$SNIPPET" | gh release edit "$TAG" --notes-file -
