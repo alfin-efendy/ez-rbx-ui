@@ -277,18 +277,15 @@ function Window.new(config)
     sidebarHandle.Position = UDim2.new(0, sidebarW, 0, 0)
   end
   local sbDrag
-  maid:Give(sidebarHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = true; Overlay.closeAll() end
-  end))
-  maid:Give(UserInputService.InputChanged:Connect(function(input)
-    if sbDrag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+  if Device.IsTouch() then sidebarHandle.Size = UDim2.new(0, 44, 1, 0) end
+  Drag.bind(sidebarHandle, {
+    onBegin = function() sbDrag = true; Overlay.closeAll() end,
+    onChange = function(_, _, pos)
       local bp = body.AbsolutePosition
-      applySidebarWidth(input.Position.X - (bp and bp.X or 0))
-    end
-  end))
-  maid:Give(sidebarHandle.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sbDrag = false end
-  end))
+      applySidebarWidth(pos.X - (bp and bp.X or 0))
+    end,
+    onEnd = function() sbDrag = false end,
+  }, maid)
 
   -- single active-tab indicator that slides between sidebar buttons (lives in Body so the
   -- sidebar's UIListLayout does not lay it out; Body positions its children manually).

@@ -137,6 +137,23 @@ h.describe("window", function()
     uis.InputChanged:Fire({ UserInputType = h.roblox.Enum.UserInputType.MouseMovement, Position = h.roblox.Vector2.new(w0 + 40, 50) })
     h.expect(sidebar.Size.X.Offset > w0).toBeTruthy()
   end)
+  h.it("sidebar handle resizes via touch and is finger-sized on touch", function()
+    local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
+    local uis = h.roblox.game:GetService("UserInputService"); uis.TouchEnabled = true; uis.MouseEnabled = false
+    local w = R.Window.new({ Title = "M", Parent = screen })
+    local body = w.Main:FindFirstChild("Body")
+    local handle = body:FindFirstChild("SidebarHandle")
+    local sidebar = body:FindFirstChild("Sidebar")
+    h.expect(handle.Size.X.Offset >= 44).toBeTruthy()
+    local w0 = sidebar.Size.X.Offset
+    body.AbsolutePosition = h.roblox.Vector2.new(0, 0)
+    local touch = { UserInputType = h.roblox.Enum.UserInputType.Touch, Position = h.roblox.Vector2.new(w0, 50) }
+    handle.InputBegan:Fire(touch)
+    touch.Position = h.roblox.Vector2.new(w0 + 40, 50)
+    uis.InputChanged:Fire(touch)
+    h.expect(sidebar.Size.X.Offset > w0).toBeTruthy()
+    uis.TouchEnabled = false; uis.MouseEnabled = true
+  end)
   h.it("settings APIs: notifications gate, UI scale, acrylic transparency, toggle key", function()
     local R = h.loadLib(); local screen = h.roblox.Instance.new("ScreenGui"); R.Overlay.get(screen)
     local w = R.Window.new({ Title = "M", Parent = screen })
